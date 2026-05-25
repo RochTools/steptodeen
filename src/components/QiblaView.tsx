@@ -84,13 +84,13 @@ export const QiblaView: React.FC<QiblaViewProps> = ({ userCoords, requestLocatio
       // 2. Check explicitly absolute events (Android deviceorientationabsolute)
       else if (event.type === 'deviceorientationabsolute' || (event as any).absolute === true) {
         if (event.alpha !== null && event.alpha !== undefined) {
-          heading = (360 - event.alpha) % 360;
+          heading = event.alpha % 360;
           hasAbsoluteRef.current = true;
         }
       }
       // 3. Fallback standard orientation (Only if no absolute signal was logged yet)
       else if (!hasAbsoluteRef.current && event.alpha !== null && event.alpha !== undefined) {
-        heading = (360 - event.alpha) % 360;
+      heading = event.alpha % 360;
       }
 
       if (heading !== null) {
@@ -196,14 +196,14 @@ export const QiblaView: React.FC<QiblaViewProps> = ({ userCoords, requestLocatio
   };
 
   return (
-    <div className="p-4 flex flex-col items-center justify-start space-y-4 animate-fadeIn pb-14 min-h-[500px] select-none text-right">
+    <div className="absolute inset-x-0 top-[56px] bottom-[56px] flex flex-col items-center justify-center p-4 bg-slate-50 overflow-hidden select-none text-right animate-fadeIn">
       
       {/* Top Banner indicating heading status or permission state */}
       {deviceHeading === null && (
         <button
           type="button"
           onClick={activateCompass}
-          className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 active:scale-[0.98] text-white font-bold font-urdu text-[12px] shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-amber-400/50 transition-all text-center animate-pulse"
+          className="w-full max-w-sm py-3 px-5 mb-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 active:scale-[0.98] text-white font-bold font-urdu text-[12px] shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-amber-400/50 transition-all text-center animate-pulse shrink-0"
         >
           <Compass size={15} className={isCalibrating ? "animate-spin" : ""} />
           موبائل کا خود کار کمپاس سینسر چالو کریں 🧭
@@ -211,7 +211,7 @@ export const QiblaView: React.FC<QiblaViewProps> = ({ userCoords, requestLocatio
       )}
 
       {/* Main Luxury Premium VIP Card Containing Compass */}
-      <div className="w-full relative overflow-hidden bg-gradient-to-b from-[#FAF6E9] via-[#FCF9ED] to-[#F5ECCF] rounded-3xl border-2 border-amber-200/80 p-5 shadow-xl flex flex-col items-center justify-center text-center">
+      <div className="w-full max-w-sm relative overflow-hidden bg-gradient-to-b from-[#FAF6E9] via-[#FCF9ED] to-[#F5ECCF] rounded-3xl border-2 border-amber-200/80 p-4 shadow-xl flex flex-col items-center justify-center text-center flex-1 max-h-[460px]">
         
         {/* Luxury Gold/White background decoration rays behind the compass */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-3xl opacity-[0.25]">
@@ -467,92 +467,12 @@ export const QiblaView: React.FC<QiblaViewProps> = ({ userCoords, requestLocatio
         )}
 
         {/* COMPACT DETAILED STATUS DATA LOGS */}
-        <div className="w-full mt-5 relative z-10">
-          
-          {/* Elegant guidance if device Heading is null */}
-          {deviceHeading === null && (
-            <div className="bg-amber-100/20 rounded-2xl p-3 border border-amber-200/30 text-center text-[10.5px] text-[#7c2d12] font-urdu leading-relaxed mb-3">
-              ⚠️ <strong>ہدایت برائے لائیو کمپاس:</strong> خود کار کمپاس کے لیے اوپر موجود <strong>"موبائل کا خود کار کمپاس سینسر چالو کریں"</strong> والے بٹن پر کلک کریں اور فون کو زمین کے بالکل متوازی (سیدھا فلیٹ) رکھیں۔
-            </div>
-          )}
-
-          {/* VIP COMPASS CALIBRATION & Micro-Adjustment Accordion Box */}
-          <div className="bg-amber-50/50 rounded-2xl p-3.5 border border-amber-200/40 mb-3 text-right">
-            <h4 className="text-[11px] font-black text-amber-950 font-urdu mb-2 flex items-center justify-between flex-row-reverse border-b border-amber-200/20 pb-1.5">
-              <span>🛠️ کمپاس کیلیبریشن اور فائن ٹیوننگ</span>
-              {calibrationOffset !== 0 && (
-                <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-md text-[8.5px] border border-red-200 animate-pulse font-mono font-bold">
-                  Active (Offset: {Math.round(calibrationOffset)}°)
-                </span>
-              )}
-            </h4>
-            
-            <p className="text-[10px] text-[#7c2d12]/85 font-urdu leading-relaxed mb-3 text-right">
-              اگر مقناطیسی مداخلت یا سگنل کم ہونے کی وجہ سے کمپاس غلط ہو، تو ہاتھ سے ٹھیک کریں یا موبائل کو کعبہ شریف کی طرف رکھ کر نیچے والا ہرا بٹن دبائیں۔
-            </p>
-
-            {/* Quick Calibration Action Buttons */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <button
-                type="button"
-                onClick={handleQuickCalibrate}
-                className="py-2 px-1 rounded-xl bg-[#10402b]/95 hover:bg-[#10402b] active:scale-95 font-bold font-urdu text-[9px] text-[#F5ECCF] border border-emerald-600/50 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-              >
-                <Sparkles size={11} className="text-amber-400" />
-                یہاں کی سمت قبلہ پر فکس کریں 🕋
-              </button>
-              
-              <button
-                type="button"
-                onClick={handleResetCalibration}
-                className="py-2 px-1 rounded-xl bg-white hover:bg-stone-50 active:scale-95 text-stone-700 font-bold font-urdu text-[9px] border border-stone-200 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-              >
-                <RefreshCw size={11} />
-                ڈیفالٹ پر ری سیٹ کریں
-              </button>
-            </div>
-
-            {/* Micro-Adjustment Slider */}
-            <div className="space-y-1 bg-white/60 p-2 rounded-xl border border-amber-200/20 mb-2">
-              <div className="flex justify-between text-[9px] font-urdu text-amber-950 font-semibold px-1 flex-row-reverse">
-                <span>باریک فائن ٹیون (سلائیڈر):</span>
-                <span className="font-mono text-amber-700 font-bold">{Math.round(calibrationOffset)}° Offset</span>
-              </div>
-              <div className="flex items-center gap-2.5 px-1">
-                <span className="text-[9px] font-mono text-amber-700">0°</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="359"
-                  value={Math.round(calibrationOffset)}
-                  onChange={(e) => setAndSaveOffset(Number(e.target.value))}
-                  className="flex-1 accent-amber-600 h-1.5 rounded bg-amber-200/40 cursor-pointer"
-                />
-                <span className="text-[9px] font-mono text-amber-700">359°</span>
-              </div>
-            </div>
-
-            {/* Direction Inversion Option (Kept for maximum utility) */}
-            <div className="flex justify-between items-center pt-1 flex-row-reverse border-t border-amber-200/10 mt-2">
-              <span className="text-[9px] text-stone-500 font-urdu">اگر کمپاس گھومنے کی سمت الٹی ہو:</span>
-              <button
-                onClick={() => setIsInvertedSensor(!isInvertedSensor)}
-                className={`px-2 py-1 rounded-lg text-[8.5px] font-bold font-urdu transition-all border cursor-pointer ${
-                  isInvertedSensor 
-                    ? 'bg-amber-600 border-amber-600 text-white shadow-xs' 
-                    : 'bg-white hover:bg-stone-50 text-amber-950 border-amber-200 shadow-xs'
-                }`}
-              >
-                🔄 سمت الٹی کریں ({isInvertedSensor ? 'الٹی ہے' : 'نارمل ہے'})
-              </button>
-            </div>
-          </div>
-
-          {/* Accurate numeric telemetry logs */}
-          <div className="flex justify-between items-center px-1 text-[10px] text-stone-600 font-urdu border-t border-amber-200/30 pt-3">
+        <div className="w-full mt-4 relative z-10 border-t border-amber-200/40 pt-3">
+          <div className="flex justify-between items-center px-1 text-[10px] text-stone-600 font-urdu">
             <button
               onClick={handleRecalibrate}
-              className="px-2 py-1 bg-white/70 hover:bg-white active:scale-95 text-[#7c2d12] hover:text-amber-800 rounded-lg border border-amber-200/40 font-bold transition-all flex items-center gap-1 cursor-pointer animate-duration-300"
+              type="button"
+              className="px-3 py-1.5 bg-[#10402b] hover:bg-[#145036] active:scale-95 text-[#FAF6E9] font-bold rounded-xl border border-emerald-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs font-urdu text-[9.5px]"
             >
               <RefreshCw size={11} className={`${isCalibrating ? 'animate-spin' : ''}`} />
               لوکیشن اپڈیٹ کریں
