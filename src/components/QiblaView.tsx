@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Compass, Key, Sparkles, MapPin, RefreshCw, Info } from 'lucide-react';
 
 interface QiblaViewProps {
@@ -16,6 +16,29 @@ export const QiblaView: React.FC<QiblaViewProps> = ({ userCoords, requestLocatio
   const [sensorPermission, setSensorPermission] = useState<string>('unknown');
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const [manualRotation, setManualRotation] = useState<number>(0);
+  const [isInvertedSensor, setIsInvertedSensor] = useState<boolean>(false);
+  const [calibrationOffset, setCalibrationOffset] = useState<number>(() => {
+    return Number(localStorage.getItem('qibla_calibration_offset') || '0');
+  });
+  const hasAbsoluteRef = useRef<boolean>(false);
+
+  const setAndSaveOffset = (val: number) => {
+    const normalized = (val + 360) % 360;
+    setCalibrationOffset(normalized);
+    localStorage.setItem('qibla_calibration_offset', normalized.toString());
+  };
+
+  const handleQuickCalibrate = () => {
+    // Determine current raw/adjusted heading
+    const rawH = deviceHeading !== null ? deviceHeading : manualRotation;
+    const adjH = isInvertedSensor ? (360 - rawH) % 360 : rawH;
+    const newOffset = (adjH - qiblaAngle + 360) % 360;
+    setAndSaveOffset(newOffset);
+  };
+
+  const handleResetCalibration = () => {
+    setAndSaveOffset(0);
+  };
 
   // Computes the great circle direction (bearing) from user to Makkah
   useEffect(() => {
@@ -40,47 +63,110 @@ export const QiblaView: React.FC<QiblaViewProps> = ({ userCoords, requestLocatio
     }
   }, [userCoords]);
 
-  // Hook-up actual sensor orientation if on mobile phone
+  // Hook-up actual sensor orientation with dual android/ios support
   useEffect(() => {
+    const isIOS = typeof (DeviceOrientationEvent as any).requestPermission === 'function';
+    
+    if (isIOS) {
+      setSensorPermission('prompt');
+    } else {
+      setSensorPermission('android-prompt');
+    }
+
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      // Check for iOS webkit specific heading
-      if ((event as any).webkitCompassHeading !== undefined) {
-        setDeviceHeading((event as any).webkitCompassHeading);
-        setSensorPermission('granted');
-      } else if (event.alpha !== null) {
-        // Standard Android - absolute heading
-        // Note: event.alpha might need absolute flag correction, standard fallback
-        // standard alpha is 0 to 360 increasing counter-clockwise, compass is clockwise
-        // so we derive standard 360 - alpha
-        const heading = (360 - event.alpha) % 360;
-        setDeviceHeading(heading);
+      let heading: number | null = null;
+      
+      // 1. Check iOS Webkit Compass Heading (True absolute bearing)
+      if ((event as any).webkitCompassHeading !== undefined && (event as any).webkitCompassHeading !== null) {
+        heading = (event as any).webkitCompassHeading;
+        hasAbsoluteRef.current = true;
+      } 
+      // 2. Check explicitly absolute events (Android deviceorientationabsolute)
+      else if (event.type === 'deviceorientationabsolute' || (event as any).absolute === true) {
+        if (event.alpha !== null && event.alpha !== undefined) {
+          heading = (360 - event.alpha) % 360;
+          hasAbsoluteRef.current = true;
+        }
+      }
+      // 3. Fallback standard orientation (Only if no absolute signal was logged yet)
+      else if (!hasAbsoluteRef.current && event.alpha !== null && event.alpha !== undefined) {
+        heading = (360 - event.alpha) % 360;
+      }
+
+      if (heading !== null) {
+        const normalized = (heading + 360) % 360;
+        setDeviceHeading(normalized);
         setSensorPermission('granted');
       }
     };
 
-    // Check if absolute event exists
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', handleOrientation, true);
+    // Store listener on window object for easy sharing across functions
+    (window as any).__qiblaHandler = handleOrientation;
+
+    if (!isIOS) {
+      if ((window as any).DeviceOrientationEvent) {
+        // Android Chromium does not prompt - bind both for maximum speed
+        (window as any).addEventListener('deviceorientationabsolute', handleOrientation, true);
+        (window as any).addEventListener('deviceorientation', handleOrientation, true);
+      }
     }
 
     return () => {
-      if (window.DeviceOrientationEvent) {
-        window.removeEventListener('deviceorientation', handleOrientation, true);
+      const handler = (window as any).__qiblaHandler;
+      if (handler) {
+        (window as any).removeEventListener('deviceorientation', handler, true);
+        (window as any).removeEventListener('deviceorientationabsolute', handler, true);
       }
     };
   }, []);
 
-  // Handle manual mock rotation for desktop simulations
-  const handleManualRotateLeft = () => {
-    setManualRotation((prev) => (prev + 345) % 360);
-  };
+  const activateCompass = async () => {
+    setIsCalibrating(true);
+    const isIOS = typeof (DeviceOrientationEvent as any).requestPermission === 'function';
+    
+    if (isIOS) {
+      try {
+        const permissionState = await (DeviceOrientationEvent as any).requestPermission();
+        if (permissionState === 'granted') {
+          setSensorPermission('granted');
+          const handler = (window as any).__qiblaHandler;
+          if (handler) {
+            window.addEventListener('deviceorientation', handler, true);
+          }
+        } else {
+          setSensorPermission('denied');
+        }
+      } catch (err) {
+        console.error('iOS compass permission error:', err);
+        setSensorPermission('error');
+      }
+    } else {
+      // Force Android gesture-triggered listener re-binding for absolute sensors.
+      const handler = (window as any).__qiblaHandler;
+      if (handler) {
+        (window as any).removeEventListener('deviceorientationabsolute', handler, true);
+        (window as any).removeEventListener('deviceorientation', handler, true);
+        
+        (window as any).addEventListener('deviceorientationabsolute', handler, true);
+        (window as any).addEventListener('deviceorientation', handler, true);
+        
+        setSensorPermission('granted');
+      }
+    }
 
-  const handleManualRotateRight = () => {
-    setManualRotation((prev) => (prev + 15) % 360);
+    setTimeout(() => {
+      setIsCalibrating(false);
+    }, 1200);
   };
 
   // Determine relative degree to Kaaba based on device/manual heading
-  const currentHeading = deviceHeading !== null ? deviceHeading : manualRotation;
+  const rawHeading = deviceHeading !== null ? deviceHeading : manualRotation;
+  
+  // Apply inversion offset if user toggled it
+  const adjustedHeading = isInvertedSensor ? (360 - rawHeading) % 360 : rawHeading;
+  
+  // Apply calibration offset
+  const currentHeading = (adjustedHeading - calibrationOffset + 360) % 360;
   
   // Angle user needs to rotate to face the Qibla: (qiblaAngle - currentHeading)
   const relativeAngleToKaaba = (qiblaAngle - currentHeading + 360) % 360;
@@ -93,154 +179,398 @@ export const QiblaView: React.FC<QiblaViewProps> = ({ userCoords, requestLocatio
       if (requestLocation) requestLocation();
     }, 1200);
   };
-
   // Is aligned if within 5 degrees
   const isAligned = Math.abs(relativeAngleToKaaba) < 6 || Math.abs(relativeAngleToKaaba - 360) < 6;
 
+  // Custom arrays for rendering realistic geometric ticks on the SVG compass face
+  const ticks = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340];
+  const cardinalMap: { [key: number]: string } = {
+    0: 'N',
+    45: 'NE',
+    90: 'E',
+    135: 'SE',
+    180: 'S',
+    225: 'SW',
+    270: 'W',
+    315: 'NW',
+  };
+
   return (
-    <div className="p-4 space-y-4 animate-fadeIn pb-12">
-      {/* Informational Guidance bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm text-right space-y-2.5">
-        <h3 className="text-xs font-black text-emerald-850 font-urdu flex items-center gap-1.5 justify-end">
-          <Sparkles size={14} className="text-amber-500" />
-          قبلہ رخ معلوم کرنے کا طریقہ
-        </h3>
-        <p className="text-[11px] text-slate-600 font-urdu leading-relaxed">
-          اپنے موبائل فون کو بالکل ہموار سطح (جیسے زمین یا میز) پر رکھیں۔ اگر فون میں کیلیبریٹر سینسر لائیو ہے تو کمپاس خود بخود گھومے گا۔ سبز رنگ کا تیر کا نشان کعبتہ اللہ کی طرف سیدھی سمت کی رہنمائی کرتا ہے۔
-        </p>
+    <div className="p-4 flex flex-col items-center justify-start space-y-4 animate-fadeIn pb-14 min-h-[500px] select-none text-right">
+      
+      {/* Top Banner indicating heading status or permission state */}
+      {deviceHeading === null && (
+        <button
+          type="button"
+          onClick={activateCompass}
+          className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 active:scale-[0.98] text-white font-bold font-urdu text-[12px] shadow-lg flex items-center justify-center gap-2 cursor-pointer border border-amber-400/50 transition-all text-center animate-pulse"
+        >
+          <Compass size={15} className={isCalibrating ? "animate-spin" : ""} />
+          موبائل کا خود کار کمپاس سینسر چالو کریں 🧭
+        </button>
+      )}
 
-        {/* Coords and calculated Qibla angle Info */}
-        <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-150 text-right text-[10px]">
-          <button
-            onClick={handleRecalibrate}
-            className="flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-urdu font-bold active:scale-95 cursor-pointer"
-          >
-            <RefreshCw size={11} className={`${isCalibrating ? 'animate-spin' : ''}`} />
-            مقام اپڈیٹ کریں
-          </button>
-          
-          <div className="space-y-0.5 text-right">
-            <span className="text-slate-500 font-urdu block">
-              آپ کے مقام سے مستند سمتی زاویہ: <strong className="font-mono text-slate-800">{qiblaAngle}°</strong>
-            </span>
-            <span className="text-[9px] text-slate-400 font-mono block">
-              {userCoords 
-                ? `${userCoords.latitude.toFixed(4)}N, ${userCoords.longitude.toFixed(4)}E` 
-                : 'پاکستان (مرکزی ڈیفالٹ لوکیشن)'
-              }
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Beautiful Rotating Compass Box */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-md flex flex-col items-center justify-center text-center relative overflow-hidden">
-        {/* Dynamic alignment alert header banner */}
-        <div className={`py-1.5 px-4 rounded-full text-[10px] font-bold font-urdu mb-6 border transition-all ${
-          isAligned 
-            ? 'bg-emerald-50 text-emerald-850 border-emerald-200 animate-pulse' 
-            : 'bg-amber-50 text-amber-950 border-amber-200'
-        }`}>
-          {isAligned 
-            ? '● آپ کا رخ بالکل قبلہ شریف کی طرف ہے (Aligned)' 
-            : `قبلہ رخ کے لئے فون کو ${Math.round(relativeAngleToKaaba)}° دائیں گھمائیں`
-          }
+      {/* Main Luxury Premium VIP Card Containing Compass */}
+      <div className="w-full relative overflow-hidden bg-gradient-to-b from-[#FAF6E9] via-[#FCF9ED] to-[#F5ECCF] rounded-3xl border-2 border-amber-200/80 p-5 shadow-xl flex flex-col items-center justify-center text-center">
+        
+        {/* Luxury Gold/White background decoration rays behind the compass */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-3xl opacity-[0.25]">
+          <svg viewBox="0 0 320 320" className="w-full h-full scale-110">
+            <circle cx="160" cy="160" r="145" fill="none" stroke="url(#bg-gold-grad)" strokeWidth="0.5" strokeDasharray="3 6" className="opacity-45" />
+            <circle cx="160" cy="160" r="115" fill="none" stroke="url(#bg-gold-grad)" strokeWidth="0.5" className="opacity-30" />
+            
+            {/* 24 radiating lines of Islamic sacred layout */}
+            {[...Array(24)].map((_, i) => (
+              <line 
+                key={`bgl-${i}`}
+                x1="160" 
+                y1="160" 
+                x2={160 + 200 * Math.cos((i * 15 * Math.PI) / 180)} 
+                y2={160 + 200 * Math.sin((i * 15 * Math.PI) / 180)} 
+                stroke="url(#bg-gold-grad)" 
+                strokeWidth="0.4" 
+                className="opacity-35"
+              />
+            ))}
+            <defs>
+              <linearGradient id="bg-gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#B7950B" />
+                <stop offset="100%" stopColor="#EE9A12" opacity="0.3" />
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
 
-        {/* Visual Simulated Canvas Compass Frame */}
-        <div className="relative w-56 h-56 flex items-center justify-center tracking-normal">
-          {/* Compass Outer static Dial */}
-          <div className="absolute inset-0 rounded-full border border-slate-150-inset bg-slate-50/15" />
-
-          {/* Calibrated Kaaba Target locator Arrow indicator (Outer Ring Pointer) - Constantly pointing to calculated Qibla bearing */}
-          <div 
-            className="absolute inset-0 transition-transform duration-500 flex items-start justify-center"
-            style={{ transform: `rotate(${qiblaAngle - currentHeading}deg)` }}
-          >
-            <div className="flex flex-col items-center -mt-9 relative z-30">
-              <span className="text-2xl animate-bounce">🕋</span>
-              <div className="w-4 h-4 bg-emerald-600 rounded-full border-2 border-white shadow-md flex items-center justify-center text-[8px] text-white">
-                ↑
-              </div>
-              <span className="text-[8px] text-emerald-800 font-black font-urdu bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 shadow-sm mt-0.5">
-                قبلہ رخ
+        {/* Dynamic VIP Status Direction banner */}
+        <div className="relative z-10 w-full mb-5">
+          <div className={`py-2 px-5 rounded-full text-[11px] font-bold font-urdu border transition-all duration-300 shadow-sm flex items-center justify-center gap-1.5 ${
+            isAligned 
+              ? 'bg-[#10402b] text-white border-emerald-500 animate-pulse text-[12px] font-black' 
+              : 'bg-white/90 text-amber-950 border-amber-200/80 shadow-xs'
+          }`}>
+            {isAligned ? (
+              <span className="flex items-center gap-1.5 justify-center flex-row-reverse">
+                <Sparkles size={13} className="text-amber-400 animate-spin" style={{ animationDuration: '4s' }} />
+                <span>● سبحان اللہ! قبلہ شریف کی بالکل ٹھیک سمت</span>
               </span>
-            </div>
+            ) : (
+              <span className="flex items-center gap-1 justify-center flex-row-reverse font-medium">
+                <span>{relativeAngleToKaaba > 180 
+                  ? `قبلہ رخ کے لئے فون کو ${Math.round(360 - relativeAngleToKaaba)}° بائیں (Left) گھمائیں`
+                  : `قبلہ رخ کے لئے فون کو ${Math.round(relativeAngleToKaaba)}° دائیں (Right) گھمائیں`
+                }</span>
+              </span>
+            )}
           </div>
+        </div>
 
-          {/* Active Rotating Compass Card, Rotate Dial opposite of current Heading */}
-          <div 
-            className="w-44 h-44 rounded-full bg-gradient-to-tr from-[#0c2f21] via-[#092218] to-[#124d34] border-4 border-slate-100 text-white shadow-2xl relative flex items-center justify-center transition-transform duration-300"
-            style={{ transform: `rotate(${-currentHeading}deg)` }}
-          >
-            {/* Compass Card Direction Markers */}
-            <span className="absolute top-2.5 font-sans font-black text-amber-400 text-xs text-center">N<br/><span className="text-[7px] text-white/50">شمال</span></span>
-            <span className="absolute bottom-2.5 font-sans font-black text-white/90 text-[10px] text-center"><span className="text-[7px] text-white/50">جنوب</span><br/>S</span>
-            <span className="absolute right-3.5 font-sans font-black text-white/90 text-[10px] flex gap-1 items-center">E <span className="text-[7px] text-white/50">مشرق</span></span>
-            <span className="absolute left-3.5 font-sans font-black text-white/90 text-[10px] flex gap-1 items-center"><span className="text-[7px] text-white/50">مغرب</span> W</span>
+        {/* Visual High-End VIP 3D Gold & Silver Compass Frame */}
+        <div className="relative w-64 h-64 md:w-72 md:h-72 flex items-center justify-center tracking-normal select-none z-10">
+          
+          <svg viewBox="0 0 300 300" className="w-full h-full select-none pointer-events-none drop-shadow-2xl">
+            <defs>
+              {/* Luxury Gold Gradients */}
+              <linearGradient id="gold-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFF9D5" />
+                <stop offset="30%" stopColor="#F1C40F" />
+                <stop offset="60%" stopColor="#E67E22" />
+                <stop offset="85%" stopColor="#D4AC0D" />
+                <stop offset="100%" stopColor="#876605" />
+              </linearGradient>
+              
+              <linearGradient id="gold-metal" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#F9D460" />
+                <stop offset="50%" stopColor="#B7950B" />
+                <stop offset="100%" stopColor="#805603" />
+              </linearGradient>
 
-            {/* Glowing Center Hub and fine crosshairs line */}
-            <div className="absolute inset-x-0 h-0.5 bg-white/[0.05] pointer-events-none" />
-            <div className="absolute inset-y-0 w-0.5 bg-white/[0.05] pointer-events-none" />
+              <linearGradient id="gold-shining" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#B7950B" />
+                <stop offset="45%" stopColor="#F9E79F" />
+                <stop offset="100%" stopColor="#FEFDF9" />
+              </linearGradient>
 
-            {/* Dial Center Needle Hub */}
-            <div className="w-14 h-14 rounded-full bg-emerald-950 border border-white/20 flex flex-col items-center justify-center shadow-2xl relative">
-              <Compass className="text-emerald-400 animate-spin" size={16} style={{ animationDuration: isAligned ? '4s' : '15s' }} />
-              <span className="text-[7px] font-mono font-bold text-amber-200 mt-0.5">{Math.round(currentHeading)}°</span>
-            </div>
-          </div>
+              <linearGradient id="gold-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#B7950B" />
+                <stop offset="100%" stopColor="#4A3102" />
+              </linearGradient>
+
+              {/* Polished Radial Silver Dial Card */}
+              <radialGradient id="silver-face" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="65%" stopColor="#F8F9F9" />
+                <stop offset="88%" stopColor="#E5E8E8" />
+                <stop offset="100%" stopColor="#BDC3C7" />
+              </radialGradient>
+              
+              {/* Inner bezel shadow */}
+              <radialGradient id="ring-shadow" cx="50%" cy="50%" r="50%">
+                <stop offset="88%" stopColor="#000000" stopOpacity="0" />
+                <stop offset="100%" stopColor="#000000" stopOpacity="0.22" />
+              </radialGradient>
+            </defs>
+
+            {/* Layered Golden Outer Compass Bezel */}
+            <circle cx="150" cy="150" r="144" fill="url(#gold-metal)" />
+            <circle cx="150" cy="150" r="141" fill="url(#gold-bright)" />
+            <circle cx="150" cy="150" r="132" fill="url(#gold-dark)" />
+            <circle cx="150" cy="150" r="130" fill="url(#gold-bright)" />
+            
+            {/* Fine Inner Circle Ring & Dial Face */}
+            <circle cx="150" cy="150" r="124" fill="url(#silver-face)" />
+            {/* Shadows inside the golden wall */}
+            <circle cx="150" cy="150" r="124" fill="url(#ring-shadow)" />
+
+            {/* ROTATING COMPASS DIAL (N always points physical North) */}
+            <g 
+              id="rotating-dial-face"
+              transform={`rotate(${-currentHeading}, 150, 150)`}
+            >
+              {/* Fine inner guidelines */}
+              <circle cx="150" cy="150" r="111" fill="none" stroke="#B7950B" strokeWidth="0.5" opacity="0.3" />
+              <circle cx="150" cy="150" r="88" fill="none" stroke="#B7950B" strokeWidth="0.5" opacity="0.2" />
+
+              {/* Ticks and Degrees (Polar Plotting) */}
+              {ticks.map((deg) => {
+                const angleRad = ((deg - 90) * Math.PI) / 180;
+                const isMajor = deg % 40 === 0;
+                
+                // Tick line ends
+                const x1 = 150 + 121 * Math.cos(angleRad);
+                const y1 = 150 + 121 * Math.sin(angleRad);
+                const x2 = 150 + (isMajor ? 111 : 115) * Math.cos(angleRad);
+                const y2 = 150 + (isMajor ? 111 : 115) * Math.sin(angleRad);
+                
+                // Numbers
+                const xText = 150 + 99 * Math.cos(angleRad);
+                const yText = 150 + 99 * Math.sin(angleRad) + 2.5;
+                
+                return (
+                  <g key={`deg-t-${deg}`}>
+                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#6E4D03" strokeWidth={isMajor ? 1.4 : 0.7} opacity="0.75" />
+                    {deg % 20 === 0 && (
+                      <text
+                        x={xText}
+                        y={yText}
+                        fill="#5c1d06"
+                        fontSize="7"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        transform={`rotate(${deg}, ${xText}, ${yText - 2.5})`}
+                      >
+                        {deg}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+
+              {/* Cardinal directions (N, NE, E, SE, S, SW, W, NW) */}
+              {Object.entries(cardinalMap).map(([degStr, label]) => {
+                const deg = Number(degStr);
+                const angleRad = ((deg - 90) * Math.PI) / 180;
+                const xText = 150 + 82 * Math.cos(angleRad);
+                const yText = 150 + 82 * Math.sin(angleRad) + 3.5;
+                const isMajorDir = ['N', 'E', 'S', 'W'].includes(label);
+
+                return (
+                  <text
+                    key={`label-${label}`}
+                    x={xText}
+                    y={yText}
+                    fill={label === 'N' ? '#C0392B' : '#1A252C'}
+                    fontSize={isMajorDir ? '11.5' : '7.5'}
+                    fontWeight="black"
+                    fontFamily="serif"
+                    textAnchor="middle"
+                    transform={`rotate(${deg}, ${xText}, ${yText - 3.5})`}
+                  >
+                    {label}
+                  </text>
+                );
+              })}
+
+              {/* Beautiful luxury compass star inside */}
+              <g transform="translate(150, 150)">
+                {[0, 90, 180, 270].map((rot) => (
+                  <g key={`rose-c-${rot}`} transform={`rotate(${rot})`}>
+                    <polygon points="0,0 0,-63 11,-42" fill="url(#gold-shining)" />
+                    <polygon points="0,0 0,-63 -11,-42" fill="url(#gold-dark)" />
+                  </g>
+                ))}
+                
+                {[45, 135, 225, 315].map((rot) => (
+                  <g key={`rose-d-${rot}`} transform={`rotate(${rot}) scale(0.72)`}>
+                    <polygon points="0,0 0,-63 10,-42" fill="url(#gold-bright)" opacity="0.9" />
+                    <polygon points="0,0 0,-63 -10,-42" fill="#4B2F10" />
+                  </g>
+                ))}
+                
+                <circle cx="0" cy="0" r="15" fill="none" stroke="url(#gold-metal)" strokeWidth="0.8" opacity="0.4" />
+                <circle cx="0" cy="0" r="4.5" fill="url(#gold-bright)" />
+              </g>
+            </g>
+
+            {/* DYNAMIC ROTATING ACTIVE LAYERS (Pointer needle & Kaaba emblem rotates to point directly to Qibla relative to phone orientation) */}
+            <g 
+              id="active-rotating-pointer"
+              transform={`rotate(${relativeAngleToKaaba}, 150, 150)`}
+            >
+              {/* Realistic 3D Bevelled Magnetic Pointer needle showing Qibla directions */}
+              <polygon points="150,150 156,132 150,33" fill="url(#gold-shining)" />
+              <polygon points="150,150 144,132 150,33" fill="url(#gold-dark)" />
+              
+              <polygon points="150,150 155,168 150,267" fill="#85929E" />
+              <polygon points="150,150 145,168 150,267" fill="#34495E" />
+              
+              <circle cx="150" cy="150" r="12" fill="url(#gold-metal)" />
+              <circle cx="150" cy="150" r="10" fill="url(#gold-bright)" />
+              <circle cx="150" cy="150" r="4" fill="#5c1d06" />
+              <circle cx="150" cy="150" r="2" fill="#FFFFFF" />
+
+              {/* 🕋 EXQUISITE SEAMLESS KAABA EMBLEM placed at the pointing tip of the rotating needle */}
+              <g transform="translate(150, 25) scale(0.95)" className="relative">
+                {/* Background Aura Glow */}
+                <circle cx="0" cy="0" r="16" fill="#FFFBEB" stroke="url(#gold-bright)" strokeWidth="1.2" className="animate-pulse shadow-xs" />
+                
+                {/* 3D Model Kaaba Cube */}
+                {/* Left Face shadow */}
+                <polygon points="0,4.5 -12,-0.5 -12,-13 0,-8" fill="#1C1816" stroke="#000000" strokeWidth="0.3" />
+                {/* Right Face shading */}
+                <polygon points="0,4.5 12,-0.5 12,-13 0,-8" fill="#38312C" stroke="#000000" strokeWidth="0.3" />
+                {/* Top Roof Face */}
+                <polygon points="-12,-13 0,-18.5 12,-13 0,-8" fill="#111111" stroke="#000000" strokeWidth="0.3" />
+                {/* Golden Kiswah Belt */}
+                <polygon points="-12,-8.5 0,-3.5 0,-5.2 -12,-10.2" fill="url(#gold-bright)" />
+                <polygon points="12,-8.5 0,-3.5 0,-5.2 12,-10.2" fill="url(#gold-bright)" />
+                {/* Golden Bab Al-Kaaba (Door) */}
+                <polygon points="2.5,-3.5 8,-6.2 8,-1.5 2.5,1.2" fill="url(#gold-bright)" />
+              </g>
+            </g>
+
+            {/* STATIC PHONE TOP ALIGNMENT GUIDELINE INDICATOR (Does not rotate, stays at 12 o'clock) */}
+            <g transform="translate(150, 11)" className="pointer-events-none select-none z-30">
+              <polygon points="0,0 -8,-10 8,-10" fill="url(#gold-bright)" stroke="url(#gold-dark)" strokeWidth="1" />
+              <circle cx="0" cy="-15" r="5" fill="#C0392B" className="animate-ping opacity-75" style={{ animationDuration: '3s' }} />
+              <circle cx="0" cy="-15" r="3.5" fill="#C0392B" />
+            </g>
+          </svg>
+
+          {/* Golden/Glass luxury glare filter overlay on top */}
+          <div className="absolute inset-4 rounded-full bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none mix-blend-overlay border border-white/10" />
         </div>
 
         {/* Alignment Success Ring Overlay */}
         {isAligned && (
-          <div className="absolute inset-0 bg-emerald-950/5 pointer-events-none rounded-3xl border-4 border-emerald-500/35 animate-fadeIn" />
+          <div className="absolute inset-0 bg-[#10402b]/[0.03] pointer-events-none rounded-3xl border-4 border-emerald-500/20 animate-pulse z-20" />
         )}
 
-        {/* Desktop Helper buttons for Manual Calibration / Non-Sensor simulations */}
-        <div className="w-full mt-6 space-y-3.5">
+        {/* COMPACT DETAILED STATUS DATA LOGS */}
+        <div className="w-full mt-5 relative z-10">
+          
+          {/* Elegant guidance if device Heading is null */}
           {deviceHeading === null && (
-            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-150-inset text-center space-y-2">
-              <span className="text-[9px] text-slate-400 font-urdu block">ہم ڈیسک ٹاپ یا بغیر سینسر ڈیوائس پر ہیں، ذیل میں نقلی گھماؤ چیک کریں:</span>
-              <div className="flex justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleManualRotateLeft}
-                  className="py-1 px-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 active:scale-95 transition-all select-none cursor-pointer"
-                >
-                  ↺ بائیں گھمائیں
-                </button>
-                <button
-                  type="button"
-                  onClick={handleManualRotateRight}
-                  className="py-1 px-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 active:scale-95 transition-all select-none cursor-pointer"
-                >
-                  دائیں گھمائیں ↻
-                </button>
-              </div>
+            <div className="bg-amber-100/20 rounded-2xl p-3 border border-amber-200/30 text-center text-[10.5px] text-[#7c2d12] font-urdu leading-relaxed mb-3">
+              ⚠️ <strong>ہدایت برائے لائیو کمپاس:</strong> خود کار کمپاس کے لیے اوپر موجود <strong>"موبائل کا خود کار کمپاس سینسر چالو کریں"</strong> والے بٹن پر کلک کریں اور فون کو زمین کے بالکل متوازی (سیدھا فلیٹ) رکھیں۔
             </div>
           )}
 
-          {/* Exact degrees status log box */}
-          <div className="flex justify-between items-center px-2 text-[10px] text-slate-500">
-            <span className="font-mono text-left bg-slate-50 px-2 py-0.5 rounded border border-slate-100 font-semibold text-slate-700">
-              کہکشاں سمت: {Math.round(relativeAngleToKaaba)}°
-            </span>
-            <span className="font-urdu text-right">
-              حالتِ حسّاسہ: {deviceHeading !== null ? 'لائیو سینسر فعال' : 'سمولیٹر چالو ہے'}
-            </span>
+          {/* VIP COMPASS CALIBRATION & Micro-Adjustment Accordion Box */}
+          <div className="bg-amber-50/50 rounded-2xl p-3.5 border border-amber-200/40 mb-3 text-right">
+            <h4 className="text-[11px] font-black text-amber-950 font-urdu mb-2 flex items-center justify-between flex-row-reverse border-b border-amber-200/20 pb-1.5">
+              <span>🛠️ کمپاس کیلیبریشن اور فائن ٹیوننگ</span>
+              {calibrationOffset !== 0 && (
+                <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-md text-[8.5px] border border-red-200 animate-pulse font-mono font-bold">
+                  Active (Offset: {Math.round(calibrationOffset)}°)
+                </span>
+              )}
+            </h4>
+            
+            <p className="text-[10px] text-[#7c2d12]/85 font-urdu leading-relaxed mb-3 text-right">
+              اگر مقناطیسی مداخلت یا سگنل کم ہونے کی وجہ سے کمپاس غلط ہو، تو ہاتھ سے ٹھیک کریں یا موبائل کو کعبہ شریف کی طرف رکھ کر نیچے والا ہرا بٹن دبائیں۔
+            </p>
+
+            {/* Quick Calibration Action Buttons */}
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button
+                type="button"
+                onClick={handleQuickCalibrate}
+                className="py-2 px-1 rounded-xl bg-[#10402b]/95 hover:bg-[#10402b] active:scale-95 font-bold font-urdu text-[9px] text-[#F5ECCF] border border-emerald-600/50 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                <Sparkles size={11} className="text-amber-400" />
+                یہاں کی سمت قبلہ پر فکس کریں 🕋
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleResetCalibration}
+                className="py-2 px-1 rounded-xl bg-white hover:bg-stone-50 active:scale-95 text-stone-700 font-bold font-urdu text-[9px] border border-stone-200 shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                <RefreshCw size={11} />
+                ڈیفالٹ پر ری سیٹ کریں
+              </button>
+            </div>
+
+            {/* Micro-Adjustment Slider */}
+            <div className="space-y-1 bg-white/60 p-2 rounded-xl border border-amber-200/20 mb-2">
+              <div className="flex justify-between text-[9px] font-urdu text-amber-950 font-semibold px-1 flex-row-reverse">
+                <span>باریک فائن ٹیون (سلائیڈر):</span>
+                <span className="font-mono text-amber-700 font-bold">{Math.round(calibrationOffset)}° Offset</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-1">
+                <span className="text-[9px] font-mono text-amber-700">0°</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="359"
+                  value={Math.round(calibrationOffset)}
+                  onChange={(e) => setAndSaveOffset(Number(e.target.value))}
+                  className="flex-1 accent-amber-600 h-1.5 rounded bg-amber-200/40 cursor-pointer"
+                />
+                <span className="text-[9px] font-mono text-amber-700">359°</span>
+              </div>
+            </div>
+
+            {/* Direction Inversion Option (Kept for maximum utility) */}
+            <div className="flex justify-between items-center pt-1 flex-row-reverse border-t border-amber-200/10 mt-2">
+              <span className="text-[9px] text-stone-500 font-urdu">اگر کمپاس گھومنے کی سمت الٹی ہو:</span>
+              <button
+                onClick={() => setIsInvertedSensor(!isInvertedSensor)}
+                className={`px-2 py-1 rounded-lg text-[8.5px] font-bold font-urdu transition-all border cursor-pointer ${
+                  isInvertedSensor 
+                    ? 'bg-amber-600 border-amber-600 text-white shadow-xs' 
+                    : 'bg-white hover:bg-stone-50 text-amber-950 border-amber-200 shadow-xs'
+                }`}
+              >
+                🔄 سمت الٹی کریں ({isInvertedSensor ? 'الٹی ہے' : 'نارمل ہے'})
+              </button>
+            </div>
+          </div>
+
+          {/* Accurate numeric telemetry logs */}
+          <div className="flex justify-between items-center px-1 text-[10px] text-stone-600 font-urdu border-t border-amber-200/30 pt-3">
+            <button
+              onClick={handleRecalibrate}
+              className="px-2 py-1 bg-white/70 hover:bg-white active:scale-95 text-[#7c2d12] hover:text-amber-800 rounded-lg border border-amber-200/40 font-bold transition-all flex items-center gap-1 cursor-pointer animate-duration-300"
+            >
+              <RefreshCw size={11} className={`${isCalibrating ? 'animate-spin' : ''}`} />
+              لوکیشن اپڈیٹ کریں
+            </button>
+            <div className="text-right">
+              <span className="block font-medium">
+                کعبہ کا مستند زاویہ: <strong className="font-mono text-amber-950 font-bold">{qiblaAngle}°</strong>
+              </span>
+              <span className="text-[9px] text-stone-400 font-mono block">
+                {userCoords 
+                  ? `${userCoords.latitude.toFixed(4)}°N, ${userCoords.longitude.toFixed(4)}°E` 
+                  : 'پاکستان (ڈیفالٹ زاویہ)'
+                }
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Islamic Significance / Sacred Makkah details banner */}
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-sm text-right space-y-1.5">
-        <h4 className="text-xs font-bold text-slate-800 font-urdu flex items-center gap-1 justify-end">
-          <Info size={13} className="text-emerald-600 shrink-0" />
-          قبلہ رخ (مکہ مکرمہ) کے بارے میں
-        </h4>
-        <blockquote className="text-[11px] leading-relaxed font-urdu text-slate-600">
-          مسجد حرام میں قائم مقدس خانہ کعبہ دنیا بھر کے تمام مسلمانوں کا نماز پڑھنے کا رخ ہے، جسے قبلہ کہتے ہیں۔ دنیا کے کسی بھی کونے میں نماز پڑھتے وقت کعبہ کی سمت کی طرف رخ کرنا ہر مسلمان کے لئے لازمی ہے۔
-        </blockquote>
       </div>
     </div>
   );

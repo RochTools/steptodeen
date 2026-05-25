@@ -481,33 +481,44 @@ export const HomeView: React.FC<HomeViewProps> = ({
             {nearbyMosques.length === 0 ? (
               <p className="text-xs text-center text-gray-500 font-urdu py-2">قریبی علاقے میں کوئی مسجد رجسٹرڈ نہیں ہے۔</p>
             ) : (
-              nearbyMosques.slice(0, 3).map((mosque) => {
-                const distance = calculateDistance(
-                  userCoords.latitude,
-                  userCoords.longitude,
-                  mosque.latitude,
-                  mosque.longitude
-                );
-                return (
-                  <div
-                    key={mosque.id}
-                    onClick={() => onOpenMosque(mosque)}
-                    className="p-3 bg-slate-50/50 hover:bg-emerald-50/35 rounded-xl transition-all cursor-pointer border border-slate-150 flex items-center justify-between group"
-                  >
-                    <div className="text-center bg-emerald-600 text-white py-1 px-2.5 rounded-lg text-[9px] font-bold border border-emerald-700 group-hover:bg-emerald-700 transition-colors">
-                      <div className="opacity-95 text-[8px]">جمعہ وقت</div>
-                      <div className="font-mono mt-0.5">{mosque.jumah}</div>
-                    </div>
-                    <div className="text-right flex-1 pr-3">
-                      <div className="text-xs font-bold text-slate-800 font-urdu">{mosque.name}</div>
-                      <div className="text-[9px] text-slate-400 font-urdu flex items-center justify-end gap-1 mt-0.5 font-mono">
-                        <span>{distance} km away</span>
-                        <MapPin size={10} className="text-emerald-500" />
+              (() => {
+                // Calculate distance for all mosques first
+                const mosquesWithDistance = nearbyMosques.map((mosque) => {
+                  const distance = calculateDistance(
+                    userCoords.latitude,
+                    userCoords.longitude,
+                    mosque.latitude,
+                    mosque.longitude
+                  );
+                  return { mosque, distance };
+                });
+
+                // Sort by distance ascending so closest is at the top
+                const sortedMosques = mosquesWithDistance.sort((a, b) => a.distance - b.distance);
+
+                // Take only the top 3 closest mosques
+                return sortedMosques.slice(0, 3).map(({ mosque, distance }) => {
+                  return (
+                    <div
+                      key={mosque.id}
+                      onClick={() => onOpenMosque(mosque)}
+                      className="p-3 bg-slate-50/50 hover:bg-emerald-50/35 rounded-xl transition-all cursor-pointer border border-slate-150 flex items-center justify-between group"
+                    >
+                      <div className="text-center bg-emerald-600 text-white py-1 px-2.5 rounded-lg text-[9px] font-bold border border-emerald-700 group-hover:bg-emerald-700 transition-colors">
+                        <div className="opacity-95 text-[8px]">جمعہ وقت</div>
+                        <div className="font-mono mt-0.5">{mosque.jumah}</div>
+                      </div>
+                      <div className="text-right flex-1 pr-3">
+                        <div className="text-xs font-bold text-slate-800 font-urdu">{mosque.name}</div>
+                        <div className="text-[9px] text-slate-400 font-urdu flex items-center justify-end gap-1 mt-0.5 font-mono">
+                          <span>{distance} km away</span>
+                          <MapPin size={10} className="text-emerald-500" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                });
+              })()
             )}
           </div>
         )}

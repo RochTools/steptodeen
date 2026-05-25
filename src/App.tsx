@@ -502,16 +502,28 @@ export default function App() {
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                alert(`StepToDeen الرٹ:\n\nآپ کو ${selectedMosque.name} کی نماز کے بدلتے ہوئے اوقات کی ریئل ٹائم اپڈیٹس کا نوٹیفیکیشن آن کر دیا گیا ہے۔`);
-                setSelectedMosque(null);
-              }}
-              className="w-full py-2 bg-emerald-600 text-white text-xs font-urdu font-bold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5"
-            >
-              <Bell size={12} />
-              اوقات کی تبدیلی کے الرٹس آن کریں
-            </button>
+            <div className="grid grid-cols-2 gap-2 mt-2 w-full">
+              <button
+                onClick={() => {
+                  alert(`StepToDeen الرٹ:\n\nآپ کو ${selectedMosque.name} کی نماز کے بدلتے ہوئے اوقات کی ریئل ٹائم اپڈیٹس کا نوٹیفیکیشن آن کر دیا گیا ہے۔`);
+                  setSelectedMosque(null);
+                }}
+                className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10.5px] font-urdu font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] flex-row-reverse"
+              >
+                <Bell size={12} />
+                <span>الرٹس آن کریں</span>
+              </button>
+              
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${selectedMosque.latitude},${selectedMosque.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+                className="py-2.5 bg-[#4285F4] hover:bg-[#357ae8] text-white text-[10.5px] font-urdu font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] text-center flex-row-reverse"
+              >
+                <MapPin size={12} />
+                <span>گوگل میپ پر راستہ</span>
+              </a>
+            </div>
           </div>
         </div>
       )}
