@@ -84,13 +84,13 @@ export const QiblaView: React.FC<QiblaViewProps> = ({ userCoords, requestLocatio
       // 2. Check explicitly absolute events (Android deviceorientationabsolute)
       else if (event.type === 'deviceorientationabsolute' || (event as any).absolute === true) {
         if (event.alpha !== null && event.alpha !== undefined) {
-          heading = event.alpha % 360;
+        heading = (360 - event.alpha) % 360;
           hasAbsoluteRef.current = true;
         }
       }
       // 3. Fallback standard orientation (Only if no absolute signal was logged yet)
       else if (!hasAbsoluteRef.current && event.alpha !== null && event.alpha !== undefined) {
-      heading = event.alpha % 360;
+      heading = (360 - event.alpha) % 360;
       }
 
       if (heading !== null) {
