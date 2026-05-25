@@ -1,0 +1,34 @@
+{
+  "entities": {
+    "Mosque": {
+      "title": "Mosque",
+      "description": "Represents a mosque and its prayer timings managed by an Imam",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Name of the mosque in Urdu/English" },
+        "imamName": { "type": "string", "description": "Name of the Imam" },
+        "imamEmail": { "type": "string", "description": "Email of the Imam" },
+        "imamUid": { "type": "string", "description": "Authenticated user ID of the Imam" },
+        "address": { "type": "string", "description": "Address/Location description" },
+        "latitude": { "type": "number", "description": "Latitude coordinate" },
+        "longitude": { "type": "number", "description": "Longitude coordinate" },
+        "fajr": { "type": "string", "description": "Fajr jamaat time" },
+        "zuhr": { "type": "string", "description": "Zuhr jamaat time" },
+        "asr": { "type": "string", "description": "Asr jamaat time" },
+        "maghrib": { "type": "string", "description": "Maghrib jamaat time" },
+        "isha": { "type": "string", "description": "Isha jamaat time" },
+        "jumah": { "type": "string", "description": "Jumah jamaat time" },
+        "announcement": { "type": "string", "description": "Recent notifications or announcements (e.g. changes in timings/lectures)" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Time when the details were last updated" }
+      },
+      "required": ["name", "imamUid", "address", "latitude", "longitude", "fajr", "zuhr", "asr", "maghrib", "isha", "jumah"]
+    }
+  },
+  "firestore": {
+    "mosques/{mosqueId}": {
+      "schema": "Mosque",
+      "description": "Collection of mosques registered by their corresponding Imams"
+    }
+  }
+}

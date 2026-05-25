@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=VT323&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans Arabic", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-naskh: "Noto Naskh Arabic", "Georgia", serif;
+  --font-nastaliq: "Noto Nastaliq Urdu", "Urdu Typesetting", Georgia, serif;
+  --font-amiri: "Amiri Quran", "Amiri", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-digital: "Orbitron", "Share Tech Mono", "VT323", ui-monospace, monospace;
+}
+
+/* Custom animation classes for smooth transitions */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Base styles to handle custom Urdu layouts nicely */
+body {
+  font-family: var(--font-sans);
+}
+
+.font-amiri {
+  font-family: var(--font-amiri);
+  line-height: 1.8;
+}
+
+.font-naskh {
+  font-family: var(--font-naskh);
+  line-height: 1.95 !important;
+}
+
+.font-nastaliq {
+  font-family: var(--font-nastaliq);
+  line-height: 2.3 !important;
+}
+
+.font-urdu {
+  font-family: var(--font-naskh), var(--font-sans);
+  line-height: 1.95 !important;
+}
