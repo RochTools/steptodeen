@@ -1,10 +1,9 @@
 {
-  "projectId": "mineral-episode-d07pf",
-  "appId": "1:572981376918:web:12b5cd7ae6c1d9488b4fb7",
-  "apiKey": "AIzaSyDzf0VI2wA6rj3IUGKdSev1erwcEJpu4NY",
-  "authDomain": "mineral-episode-d07pf.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-6d003877-bbee-4857-a2ba-61a53753edf2",
-  "storageBucket": "mineral-episode-d07pf.firebasestorage.app",
-  "messagingSenderId": "572981376918",
-  "measurementId": ""
+  "apiKey": "AIzaSyAlivb1p_ptLEfxxitQTUZ0jtBz9HDvHk8",
+  "authDomain": "steptodeen.firebaseapp.com",
+  "projectId": "steptodeen",
+  "storageBucket": "steptodeen.firebasestorage.app",
+  "messagingSenderId": "215948293153",
+  "appId": "1:215948293153:web:5a633139552f795bd41f60",
+  "firestoreDatabaseId": "(default)"
 }
