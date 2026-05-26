@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { initializeFirebaseAtRuntime, getLocalMosques, saveLocalMosque, deleteLocalMosque } from './firebase';
+import {
+  initializeFirebaseAtRuntime,
+  getLocalMosques,
+  saveLocalMosque,
+  deleteLocalMosque,
+  subscribeToAuthState
+} from './firebase';
 import { onSnapshot, collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { HomeView } from './components/HomeView';
 import { QuranView } from './components/QuranView';
@@ -35,7 +41,9 @@ export default function App() {
   const [currentView, setCurrentView] = useState<string>('home');
   const [selectedSurahNum, setSelectedSurahNum] = useState<number | null>(null);
   
-  // Persistent Imam Auth States backed by LocalStorage
+  // ── Imam Auth State ─────────────────────────────────────────────────────────
+  // When real Firebase is active these are driven by onAuthStateChanged.
+  // In offline/demo mode they fall back to localStorage (unchanged behaviour).
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('imam_authenticated') === 'true';
   });
@@ -45,19 +53,24 @@ export default function App() {
   const [authName, setAuthName] = useState<string>(() => {
     return localStorage.getItem('imam_name') || '';
   });
+  // Real Firebase UID – used as imamUid in Firestore docs (empty in offline/demo mode)
+  const [authUid, setAuthUid] = useState<string>(() => {
+    return localStorage.getItem('imam_uid') || '';
+  });
 
   // Keep these synced with localStorage
   useEffect(() => {
     localStorage.setItem('imam_authenticated', String(isAuthenticated));
   }, [isAuthenticated]);
-
   useEffect(() => {
     localStorage.setItem('imam_email', authEmail);
   }, [authEmail]);
-
   useEffect(() => {
     localStorage.setItem('imam_name', authName);
   }, [authName]);
+  useEffect(() => {
+    localStorage.setItem('imam_uid', authUid);
+  }, [authUid]);
   
   // Real-time mosques list state
   const [mosques, setMosques] = useState<Mosque[]>([]);
@@ -161,33 +174,56 @@ export default function App() {
 
   // Hook-up real-time Firebase syncing or local storage fallback
   useEffect(() => {
-    let unsub: any = null;
+    let unsubMosques: any = null;
+    let unsubAuth: (() => void) | null = null;
+
     const runSetup = async () => {
       const { db: loadedDb, auth: loadedAuth, isRealFirebase: loadedIsReal } = await initializeFirebaseAtRuntime();
       setRealtimeDb(loadedDb);
       setRealtimeAuth(loadedAuth);
       setRealFirebaseActive(loadedIsReal);
 
-      if (loadedIsReal && loadedDb) {
-        // Connect to Firestore mosques collection in real-time
-        unsub = onSnapshot(collection(loadedDb, 'mosques'), (snapshot) => {
+      if (loadedIsReal && loadedDb && loadedAuth) {
+        // ── Real-time auth state listener ────────────────────────────────────
+        // This is the single source of truth for who is logged in.
+        // It fires immediately on page load (restores session) and on every
+        // sign-in / sign-out, so the app is always in sync with Firebase Auth.
+        unsubAuth = subscribeToAuthState(loadedAuth, (user) => {
+          if (user) {
+            setIsAuthenticated(true);
+            setAuthEmail(user.email || '');
+            setAuthName(user.displayName || user.email?.split('@')[0] || '');
+            setAuthUid(user.uid);
+          } else {
+            setIsAuthenticated(false);
+            setAuthEmail('');
+            setAuthName('');
+            setAuthUid('');
+          }
+        });
+
+        // ── Real-time Firestore mosques listener ─────────────────────────────
+        unsubMosques = onSnapshot(collection(loadedDb, 'mosques'), (snapshot) => {
           const list: Mosque[] = [];
-          snapshot.forEach((doc) => {
-            list.push({ id: doc.id, ...doc.data() } as Mosque);
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...docSnap.data() } as Mosque);
           });
           setMosques(list);
         }, (error) => {
-          console.error("StepToDeen: Firestore load failed. Switching to local storage mode.", error);
+          console.error('StepToDeen: Firestore load failed. Switching to local storage mode.', error);
           setMosques(getLocalMosques());
         });
       } else {
-        // Load and set from LocalStorage
+        // Offline / demo mode – load from LocalStorage
         setMosques(getLocalMosques());
       }
     };
+
     runSetup();
+
     return () => {
-      if (unsub) unsub();
+      if (unsubMosques) unsubMosques();
+      if (unsubAuth) unsubAuth();
     };
   }, []);
 
@@ -350,6 +386,9 @@ export default function App() {
             setAuthEmail={setAuthEmail}
             authName={authName}
             setAuthName={setAuthName}
+            authUid={authUid}
+            setAuthUid={setAuthUid}
+            realtimeAuth={realtimeAuth}
           />
         )}
       </div>
