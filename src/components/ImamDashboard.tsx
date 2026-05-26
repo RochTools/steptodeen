@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogIn, Key, UserPlus, Info, Save, RotateCcw, MapPin, CheckCircle, Trash, PlusCircle, AlertCircle, RefreshCw, Clock } from 'lucide-react';
 import { Mosque } from '../types';
+import { firebaseSignIn, firebaseSignUp, firebaseSignOut } from '../firebase';
 
 interface ImamDashboardProps {
   onAddOrUpdateMosque: (mosque: Omit<Mosque, 'id' | 'updatedAt'> & { id?: string }) => void;
@@ -15,6 +16,11 @@ interface ImamDashboardProps {
   setAuthEmail: (val: string) => void;
   authName: string;
   setAuthName: (val: string) => void;
+  /** Real Firebase UID – empty string in offline/demo mode */
+  authUid: string;
+  setAuthUid: (val: string) => void;
+  /** Firebase Auth instance – null in offline/demo mode */
+  realtimeAuth: any;
 }
 
 export const ImamDashboard: React.FC<ImamDashboardProps> = ({
@@ -29,7 +35,10 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   authEmail,
   setAuthEmail,
   authName,
-  setAuthName
+  setAuthName,
+  authUid,
+  setAuthUid,
+  realtimeAuth
 }) => {
   // Auth simulation/real state
   const [authEmailInput, setAuthEmailInput] = useState('');
@@ -39,6 +48,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [successMessage, setSuccessMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [savingStep, setSavingStep] = useState(3);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -173,32 +183,84 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     }
   };
 
-  // Auth Submit Handlers
-  const handleAuthSubmit = (e: React.FormEvent) => {
+  // ── Auth Submit Handler ──────────────────────────────────────────────────────
+  // Uses real Firebase Auth when available; falls back to demo mode otherwise.
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!authEmailInput || !authPassword) {
       setErrorMessage('براہ کرم تمام معلومات کلاؤڈ میں لکھیں۔');
       return;
     }
-
     if (isSignUp && !authName) {
       setErrorMessage('برائے مہربانی اپنا نام تحریر کریں۔');
       return;
     }
 
-    // Since users usually don't have real cloud connection fully settled instantly in test,
-    // we simulation-auth instantly, and if real Firebase is plugged, we can run it.
-    setIsAuthenticated(true);
-    setAuthEmail(authEmailInput);
-    setSuccessMessage(isSignUp ? 'مبارک ہو! آپ کا امام اکاؤنٹ کامیابی سے رجسٹر ہو گیا ہے۔' : 'خوش آمدید! آپ کامیابی سے لاگ ان ہو گئے ہیں۔');
     setErrorMessage('');
-    setTimeout(() => setSuccessMessage(''), 4000);
+
+    if (isRealFirebase && realtimeAuth) {
+      // ── Real Firebase Auth path ───────────────────────────────────────────
+      try {
+        let user;
+        if (isSignUp) {
+          user = await firebaseSignUp(realtimeAuth, authEmailInput, authPassword, authName);
+        } else {
+          user = await firebaseSignIn(realtimeAuth, authEmailInput, authPassword);
+        }
+        // onAuthStateChanged in App.tsx will update isAuthenticated / authEmail /
+        // authName / authUid automatically – no manual setters needed here.
+        setSuccessMessage(
+          isSignUp
+            ? 'مبارک ہو! آپ کا امام اکاؤنٹ کامیابی سے رجسٹر ہو گیا ہے۔'
+            : 'خوش آمدید! آپ کامیابی سے لاگ ان ہو گئے ہیں۔'
+        );
+        setTimeout(() => setSuccessMessage(''), 4000);
+      } catch (err: any) {
+        // Map Firebase error codes to friendly Urdu messages
+        const code: string = err?.code || '';
+        if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+          setErrorMessage('ای میل یا پاسورڈ غلط ہے۔ دوبارہ کوشش کریں۔');
+        } else if (code === 'auth/email-already-in-use') {
+          setErrorMessage('یہ ای میل پہلے سے رجسٹر ہے۔ لاگ ان کریں۔');
+        } else if (code === 'auth/weak-password') {
+          setErrorMessage('پاسورڈ کم از کم 6 حروف کا ہونا چاہیے۔');
+        } else if (code === 'auth/invalid-email') {
+          setErrorMessage('ای میل کا فارمیٹ درست نہیں ہے۔');
+        } else if (code === 'auth/network-request-failed') {
+          setErrorMessage('انٹرنیٹ کنکشن چیک کریں اور دوبارہ کوشش کریں۔');
+        } else {
+          setErrorMessage('لاگ ان میں دشواری پیش آئی: ' + (err?.message || code));
+        }
+      }
+    } else {
+      // ── Offline / demo mode path (no Firebase configured) ────────────────
+      setIsAuthenticated(true);
+      setAuthEmail(authEmailInput);
+      setAuthUid('demo_' + authEmailInput.split('@')[0]);
+      setSuccessMessage(
+        isSignUp
+          ? 'مبارک ہو! آپ کا امام اکاؤنٹ کامیابی سے رجسٹر ہو گیا ہے۔ (آف لائن موڈ)'
+          : 'خوش آمدید! آپ کامیابی سے لاگ ان ہو گئے ہیں۔ (آف لائن موڈ)'
+      );
+      setTimeout(() => setSuccessMessage(''), 4000);
+    }
   };
 
-  // Log out Imam
-  const handleLogOut = () => {
-    setIsAuthenticated(false);
-    setAuthEmail('');
+  // ── Log out ───────────────────────────────────────────────────────────────
+  const handleLogOut = async () => {
+    if (isRealFirebase && realtimeAuth) {
+      try {
+        await firebaseSignOut(realtimeAuth);
+        // onAuthStateChanged will clear all auth state automatically
+      } catch (err) {
+        console.error('StepToDeen: sign-out error', err);
+      }
+    } else {
+      // Offline / demo mode
+      setIsAuthenticated(false);
+      setAuthEmail('');
+      setAuthUid('');
+    }
     setAuthPassword('');
     setAuthName('');
     setEditId(undefined);
@@ -274,7 +336,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         name,
         imamName,
         imamEmail: authEmail,
-        imamUid: 'uid_' + authEmail.split('@')[0],
+        imamUid: authUid || ('demo_' + authEmail.split('@')[0]),
         address,
         latitude: Number(latitude),
         longitude: Number(longitude),
@@ -423,6 +485,58 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
             <div className="p-3.5 bg-rose-50 text-rose-900 border border-rose-200 text-xs rounded-2xl text-right font-urdu flex items-center gap-2 justify-end shadow-sm animate-scaleUp">
               <span className="font-bold">{errorMessage}</span>
               <AlertCircle size={15} className="text-rose-600 shrink-0" />
+            </div>
+          )}
+
+          {/* ── میری مساجد کی فہرست ── */}
+          {myMosques.length > 0 && (
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-4 shadow-md space-y-3 animate-fadeIn">
+              <div className="border-b border-slate-100 pb-2.5 flex items-center justify-between">
+                <span className="text-[9px] text-emerald-700 font-urdu font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                  {myMosques.length} مسجد
+                </span>
+                <h4 className="text-xs font-black text-slate-800 text-right font-urdu flex items-center gap-2 justify-end">
+                  <MapPin size={14} className="text-emerald-700 shrink-0" />
+                  آپ کی رجسٹر مساجد
+                </h4>
+              </div>
+
+              <div className="space-y-2">
+                {myMosques.map((mosque) => (
+                  <div
+                    key={mosque.id}
+                    className="bg-slate-50/70 rounded-2xl border border-slate-200/60 p-3 flex items-center justify-between gap-2"
+                  >
+                    {/* Mosque info */}
+                    <div className="flex items-center gap-2">
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(mosque.id)}
+                        className="w-7 h-7 flex items-center justify-center rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 hover:text-rose-700 transition-all shrink-0 cursor-pointer"
+                        title="مسجد ڈیلیٹ کریں"
+                      >
+                        <Trash size={13} />
+                      </button>
+                      {/* Edit button */}
+                      <button
+                        type="button"
+                        onClick={() => handleEditMosque(mosque)}
+                        className="w-7 h-7 flex items-center justify-center rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 transition-all shrink-0 cursor-pointer"
+                        title="ترمیم کریں"
+                      >
+                        <RefreshCw size={13} />
+                      </button>
+                    </div>
+
+                    {/* Name & address */}
+                    <div className="text-right flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 font-urdu truncate">{mosque.name}</p>
+                      <p className="text-[10px] text-slate-500 font-urdu truncate">{mosque.address}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -827,6 +941,58 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* ── Delete Mosque Confirmation Dialog ── */}
+      {deleteConfirmId && (() => {
+        const target = myMosques.find(m => m.id === deleteConfirmId);
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-3 sm:p-4 touch-none overscroll-none select-none animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-[325px] shadow-2xl overflow-hidden border border-rose-100 flex flex-col drop-shadow-lg p-4 space-y-4 text-right">
+              <div className="flex items-center gap-2 justify-end text-rose-600 border-b border-rose-100 pb-2">
+                <span className="text-xs font-bold font-urdu">مسجد ڈیلیٹ کریں</span>
+                <Trash size={15} className="shrink-0 text-rose-500" />
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[11px] text-slate-700 leading-relaxed font-urdu">
+                  کیا آپ واقعی یہ مسجد مکمل طور پر ڈیلیٹ کرنا چاہتے ہیں؟
+                </p>
+                {target && (
+                  <p className="text-xs font-bold text-rose-700 font-urdu bg-rose-50 px-2.5 py-1.5 rounded-xl border border-rose-100">
+                    {target.name}
+                  </p>
+                )}
+                <p className="text-[10px] text-slate-400 font-urdu">
+                  یہ عمل واپس نہیں ہو سکتا۔
+                </p>
+              </div>
+
+              <div className="flex gap-2.5 pt-1 font-urdu">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold text-center transition-all cursor-pointer"
+                >
+                  منسوخ کریں
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeleteMosque(deleteConfirmId);
+                    if (editId === deleteConfirmId) resetForm();
+                    setDeleteConfirmId(null);
+                    setSuccessMessage('مسجد کا ریکارڈ کامیابی سے ڈیلیٹ کر دیا گیا ہے۔');
+                    setTimeout(() => setSuccessMessage(''), 4000);
+                  }}
+                  className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold text-center shadow-md transition-all cursor-pointer"
+                >
+                  ہاں، ڈیلیٹ کریں
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Custom Logout Confirmation dialog modal */}
       {showLogoutConfirm && (
