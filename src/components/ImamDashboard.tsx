@@ -49,8 +49,12 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [savingStep, setSavingStep] = useState(3);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // مسجد کی تصویر
+  const [mosqueImage, setMosqueImage] = useState<string | null>(() => {
+    return localStorage.getItem('mosque_profile_image') || null;
+  });
 
   // Active Mosque creation form
   const [editId, setEditId] = useState<string | undefined>(undefined);
@@ -451,26 +455,107 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         </div>
       ) : (
         <div className="space-y-5">
-          {/* Welcome User Profile Header Card */}
-          <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-950 text-white rounded-3xl p-5 shadow-lg text-right relative overflow-hidden border border-emerald-950 animate-fadeIn">
-            <div className="absolute -left-5 -top-5 text-white/[0.04] text-9xl font-serif select-none pointer-events-none">☪</div>
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] bg-emerald-950/60 backdrop-blur-md text-emerald-200 py-1.5 px-3 rounded-full font-bold font-urdu flex items-center gap-1.5 border border-emerald-700/50 shadow-inner">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
-                لائیو کلاؤڈ سنک
-              </span>
-              <div className="text-right">
-                <span className="text-[9px] text-emerald-300 block font-urdu tracking-wider">معزز امام و خطیب</span>
-                <span className="text-sm font-extrabold font-urdu block mt-0.5">{imamName || 'امام صاحب'}</span>
+          {/* ══ نئی پروفائل کارڈ ══ */}
+          <div className="rounded-3xl overflow-hidden shadow-xl border border-emerald-900/20 animate-fadeIn">
+
+            {/* ── Cover / Background ── */}
+            <div className="relative bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 h-28">
+              {/* decorative pattern */}
+              <div className="absolute inset-0 opacity-5 pointer-events-none select-none overflow-hidden">
+                <span className="absolute text-[120px] -top-4 -right-4 font-serif">☪</span>
+                <span className="absolute text-[80px] bottom-0 left-2 font-serif opacity-50">🕌</span>
               </div>
+              {/* live badge */}
+              <div className="absolute top-3 left-3">
+                <span className="text-[9px] bg-black/30 backdrop-blur-md text-emerald-200 py-1 px-2.5 rounded-full font-bold font-urdu flex items-center gap-1.5 border border-emerald-600/40">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                  {isRealFirebase ? 'لائیو کلاؤڈ سنک' : 'آف لائن موڈ'}
+                </span>
+              </div>
+              {/* logout button top right */}
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(true)}
+                className="absolute top-3 right-3 text-[10px] font-urdu font-bold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-2.5 py-1 rounded-full transition-all cursor-pointer"
+              >
+                لاگ آؤٹ
+              </button>
             </div>
-            
-            <div className="mt-4 pt-4 border-t border-emerald-600/30 flex items-center justify-between text-[10px]">
-              <span className="font-mono text-emerald-100 bg-black/25 py-0.5 px-2.5 rounded-md border border-emerald-800/35">{authEmail}</span>
-              <div className="text-emerald-100 font-urdu font-bold flex items-center gap-1">
-                <span>کنکشن محفوظ ہے</span>
-                <span className="text-emerald-400 text-xs">●</span>
+
+            {/* ── Profile Picture + Info ── */}
+            <div className="bg-white px-4 pb-4 text-right">
+              {/* avatar — overlaps cover */}
+              <div className="flex justify-end -mt-10 mb-2 relative">
+                <div className="relative">
+                  {/* circle image */}
+                  <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-emerald-100 flex items-center justify-center">
+                    {mosqueImage ? (
+                      <img src={mosqueImage} alt="مسجد" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-4xl">🕌</span>
+                    )}
+                  </div>
+                  {/* upload button on avatar */}
+                  <label
+                    className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center cursor-pointer border-2 border-white shadow-md transition-all"
+                    title="تصویر تبدیل کریں"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const result = ev.target?.result as string;
+                          setMosqueImage(result);
+                          localStorage.setItem('mosque_profile_image', result);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
+
+              {/* mosque name big */}
+              <h2 className="text-lg font-black text-slate-900 font-urdu leading-snug">
+                {name || myMosques[0]?.name || 'مسجد کا نام'}
+              </h2>
+              {/* imam name small */}
+              <p className="text-xs text-emerald-700 font-bold font-urdu mt-0.5 flex items-center gap-1 justify-end">
+                <span>امام: {imamName || authName || 'امام صاحب'}</span>
+                <span className="text-emerald-400">✦</span>
+              </p>
+              {/* email small */}
+              <p className="text-[10px] text-slate-400 font-mono mt-1">{authEmail}</p>
+
+              {/* stats row */}
+              {myMosques.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-100 flex justify-end gap-4 text-center">
+                  <div>
+                    <p className="text-base font-black text-emerald-700">{myMosques.length}</p>
+                    <p className="text-[9px] text-slate-400 font-urdu">مساجد</p>
+                  </div>
+                  <div>
+                    <p className="text-base font-black text-emerald-700">5</p>
+                    <p className="text-[9px] text-slate-400 font-urdu">نمازیں</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-600 font-urdu mt-1">
+                      {myMosques[0]?.updatedAt
+                        ? new Date(myMosques[0].updatedAt).toLocaleDateString('ur-PK', { day: 'numeric', month: 'short' })
+                        : '—'}
+                    </p>
+                    <p className="text-[9px] text-slate-400 font-urdu">آخری اپڈیٹ</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -795,7 +880,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                 <polyline points="16 17 21 12 16 7" />
                 <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
-              لاگ آؤٹ کریں — امام پورٹل سے باہر نکلیں
+              لاگ آؤٹ کریں
             </button>
           </div>
         </div>
