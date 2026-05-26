@@ -455,107 +455,70 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         </div>
       ) : (
         <div className="space-y-5">
-          {/* ══ نئی پروفائل کارڈ ══ */}
-          <div className="rounded-3xl overflow-hidden shadow-xl border border-emerald-900/20 animate-fadeIn">
+          {/* ══ پروفائل سیکشن ══ */}
+          <div className="animate-fadeIn">
 
-            {/* ── Cover / Background ── */}
-            <div className="relative bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 h-28">
-              {/* decorative pattern */}
-              <div className="absolute inset-0 opacity-5 pointer-events-none select-none overflow-hidden">
-                <span className="absolute text-[120px] -top-4 -right-4 font-serif">☪</span>
-                <span className="absolute text-[80px] bottom-0 left-2 font-serif opacity-50">🕌</span>
-              </div>
-              {/* live badge */}
-              <div className="absolute top-3 left-3">
-                <span className="text-[9px] bg-black/30 backdrop-blur-md text-emerald-200 py-1 px-2.5 rounded-full font-bold font-urdu flex items-center gap-1.5 border border-emerald-600/40">
+            {/* cover strip */}
+            <div className="relative bg-gradient-to-r from-emerald-900 to-emerald-700 h-24 rounded-t-2xl overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.06] pointer-events-none select-none text-right pr-3 pt-1 text-[90px] font-serif leading-none">☪</div>
+              {/* badges */}
+              <div className="absolute bottom-3 left-3">
+                <span className="text-[9px] bg-black/25 text-emerald-100 py-0.5 px-2 rounded-full font-urdu flex items-center gap-1 border border-emerald-600/30">
                   <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
-                  {isRealFirebase ? 'لائیو کلاؤڈ سنک' : 'آف لائن موڈ'}
+                  {isRealFirebase ? 'لائیو' : 'آف لائن'}
                 </span>
               </div>
-              {/* logout button top right */}
               <button
                 type="button"
                 onClick={() => setShowLogoutConfirm(true)}
-                className="absolute top-3 right-3 text-[10px] font-urdu font-bold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-2.5 py-1 rounded-full transition-all cursor-pointer"
+                className="absolute bottom-3 right-3 text-[10px] font-urdu text-white/75 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-0.5 rounded-full border border-white/15 transition-all cursor-pointer"
               >
                 لاگ آؤٹ
               </button>
             </div>
 
-            {/* ── Profile Picture + Info ── */}
-            <div className="bg-white px-4 pb-4 text-right">
-              {/* avatar — overlaps cover */}
-              <div className="flex justify-end -mt-10 mb-2 relative">
+            {/* white area */}
+            <div className="bg-white rounded-b-2xl px-4 pt-0 pb-4 text-center">
+
+              {/* avatar — centred, overlapping cover */}
+              <div className="flex justify-center -mt-9 mb-3">
                 <div className="relative">
-                  {/* circle image */}
-                  <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-emerald-100 flex items-center justify-center">
-                    {mosqueImage ? (
-                      <img src={mosqueImage} alt="مسجد" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-4xl">🕌</span>
-                    )}
+                  <div className="w-[72px] h-[72px] rounded-full border-[3px] border-white shadow-md overflow-hidden bg-emerald-50 flex items-center justify-center">
+                    {mosqueImage
+                      ? <img src={mosqueImage} alt="مسجد" className="w-full h-full object-cover" />
+                      : <span className="text-3xl">🕌</span>
+                    }
                   </div>
-                  {/* upload button on avatar */}
-                  <label
-                    className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center cursor-pointer border-2 border-white shadow-md transition-all"
-                    title="تصویر تبدیل کریں"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <label className="absolute bottom-0 right-0 w-5 h-5 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center cursor-pointer border-2 border-white shadow transition-all" title="تصویر">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          const result = ev.target?.result as string;
-                          setMosqueImage(result);
-                          localStorage.setItem('mosque_profile_image', result);
-                        };
-                        reader.readAsDataURL(file);
-                      }}
-                    />
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const result = ev.target?.result as string;
+                        setMosqueImage(result);
+                        localStorage.setItem('mosque_profile_image', result);
+                      };
+                      reader.readAsDataURL(file);
+                    }} />
                   </label>
                 </div>
               </div>
 
-              {/* mosque name big */}
-              <h2 className="text-lg font-black text-slate-900 font-urdu leading-snug">
+              {/* mosque name */}
+              <h2 className="text-base font-black text-slate-900 font-urdu leading-snug">
                 {name || myMosques[0]?.name || 'مسجد کا نام'}
               </h2>
-              {/* imam name small */}
-              <p className="text-xs text-emerald-700 font-bold font-urdu mt-0.5 flex items-center gap-1 justify-end">
-                <span>امام: {imamName || authName || 'امام صاحب'}</span>
-                <span className="text-emerald-400">✦</span>
+              {/* imam name */}
+              <p className="text-[11px] text-emerald-700 font-bold font-urdu mt-0.5">
+                امام: {imamName || authName || 'امام صاحب'}
               </p>
-              {/* email small */}
-              <p className="text-[10px] text-slate-400 font-mono mt-1">{authEmail}</p>
+              {/* email */}
+              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{authEmail}</p>
 
-              {/* stats row */}
-              {myMosques.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-100 flex justify-end gap-4 text-center">
-                  <div>
-                    <p className="text-base font-black text-emerald-700">{myMosques.length}</p>
-                    <p className="text-[9px] text-slate-400 font-urdu">مساجد</p>
-                  </div>
-                  <div>
-                    <p className="text-base font-black text-emerald-700">5</p>
-                    <p className="text-[9px] text-slate-400 font-urdu">نمازیں</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-600 font-urdu mt-1">
-                      {myMosques[0]?.updatedAt
-                        ? new Date(myMosques[0].updatedAt).toLocaleDateString('ur-PK', { day: 'numeric', month: 'short' })
-                        : '—'}
-                    </p>
-                    <p className="text-[9px] text-slate-400 font-urdu">آخری اپڈیٹ</p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
