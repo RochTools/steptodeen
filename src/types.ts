@@ -24,6 +24,8 @@ export interface Mosque {
   jumah2?: string;
   eidFitr?: string;
   eidAdha?: string;
+  sehri?: string;
+  iftar?: string;
   announcement?: string;
   updatedAt: string;
 }
