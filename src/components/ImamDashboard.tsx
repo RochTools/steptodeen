@@ -457,40 +457,35 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         <div className="space-y-5">
           {/* ══ پروفائل سیکشن ══ */}
           <div className="animate-fadeIn">
+            {/* سفید پروفائل — no cover strip */}
+            <div className="bg-white pt-5 pb-4 px-4 text-center">
 
-            {/* cover strip */}
-            <div className="relative bg-gradient-to-r from-emerald-900 to-emerald-700 h-24 rounded-t-2xl overflow-hidden">
-              <div className="absolute inset-0 opacity-[0.06] pointer-events-none select-none text-right pr-3 pt-1 text-[90px] font-serif leading-none">☪</div>
-              {/* badges */}
-              <div className="absolute bottom-3 left-3">
-                <span className="text-[9px] bg-black/25 text-emerald-100 py-0.5 px-2 rounded-full font-urdu flex items-center gap-1 border border-emerald-600/30">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+              {/* status + logout row */}
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  type="button"
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="text-[10px] font-urdu text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1 rounded-full border border-rose-100 transition-all cursor-pointer"
+                >
+                  لاگ آؤٹ
+                </button>
+                <span className="text-[9px] font-urdu flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                   {isRealFirebase ? 'لائیو' : 'آف لائن'}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(true)}
-                className="absolute bottom-3 right-3 text-[10px] font-urdu text-white/75 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-0.5 rounded-full border border-white/15 transition-all cursor-pointer"
-              >
-                لاگ آؤٹ
-              </button>
-            </div>
 
-            {/* white area */}
-            <div className="bg-white rounded-b-2xl px-4 pt-0 pb-4 text-center">
-
-              {/* avatar — centred, overlapping cover */}
-              <div className="flex justify-center -mt-9 mb-3">
+              {/* avatar */}
+              <div className="flex justify-center mb-3">
                 <div className="relative">
-                  <div className="w-[72px] h-[72px] rounded-full border-[3px] border-white shadow-md overflow-hidden bg-emerald-50 flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-full border-4 border-emerald-100 shadow-lg overflow-hidden bg-emerald-50 flex items-center justify-center">
                     {mosqueImage
                       ? <img src={mosqueImage} alt="مسجد" className="w-full h-full object-cover" />
-                      : <span className="text-3xl">🕌</span>
+                      : <span className="text-4xl">🕌</span>
                     }
                   </div>
-                  <label className="absolute bottom-0 right-0 w-5 h-5 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center cursor-pointer border-2 border-white shadow transition-all" title="تصویر">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <label className="absolute bottom-0.5 right-0.5 w-6 h-6 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center cursor-pointer border-2 border-white shadow-md transition-all" title="تصویر">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => {
@@ -508,16 +503,16 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                 </div>
               </div>
 
-              {/* mosque name */}
-              <h2 className="text-base font-black text-slate-900 font-urdu leading-snug">
-                {name || myMosques[0]?.name || 'مسجد کا نام'}
+              {/* امام کا نام — موٹا */}
+              <h2 className="text-lg font-black text-slate-900 font-urdu leading-snug">
+                {imamName || authName || 'امام صاحب'}
               </h2>
-              {/* imam name */}
-              <p className="text-[11px] text-emerald-700 font-bold font-urdu mt-0.5">
-                امام: {imamName || authName || 'امام صاحب'}
+              {/* مسجد کا نام */}
+              <p className="text-sm text-emerald-700 font-bold font-urdu mt-0.5">
+                {name || myMosques[0]?.name || 'مسجد کا نام'}
               </p>
               {/* email */}
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{authEmail}</p>
+              <p className="text-[10px] text-slate-400 font-mono mt-1">{authEmail}</p>
 
             </div>
           </div>
@@ -536,67 +531,64 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
             </div>
           )}
 
-          {/* ── میری مساجد کی فہرست ── */}
+          {/* ── میری مساجد کی فہرست — compact, no card ── */}
           {myMosques.length > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-4 shadow-md space-y-3 animate-fadeIn">
-              <div className="border-b border-slate-100 pb-2.5 flex items-center justify-between">
-                <span className="text-[9px] text-emerald-700 font-urdu font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+            <div className="px-1 space-y-1.5 animate-fadeIn">
+              {/* header row */}
+              <div className="flex items-center justify-between px-1 mb-2">
+                <span className="text-[9px] text-emerald-700 font-urdu font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                   {myMosques.length} مسجد
                 </span>
-                <h4 className="text-xs font-black text-slate-800 text-right font-urdu flex items-center gap-2 justify-end">
-                  <MapPin size={14} className="text-emerald-700 shrink-0" />
-                  آپ کی رجسٹر مساجد
-                </h4>
+                <span className="text-[10px] font-bold text-slate-500 font-urdu flex items-center gap-1">
+                  <MapPin size={11} className="text-emerald-600" />
+                  رجسٹر مساجد
+                </span>
               </div>
 
-              <div className="space-y-2">
-                {myMosques.map((mosque) => (
-                  <div
-                    key={mosque.id}
-                    className="bg-slate-50/70 rounded-2xl border border-slate-200/60 p-3 flex items-center justify-between gap-2"
-                  >
-                    {/* Mosque info */}
-                    <div className="flex items-center gap-2">
-                      {/* Delete button */}
-                      <button
-                        type="button"
-                        onClick={() => setDeleteConfirmId(mosque.id)}
-                        className="w-7 h-7 flex items-center justify-center rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 hover:text-rose-700 transition-all shrink-0 cursor-pointer"
-                        title="مسجد ڈیلیٹ کریں"
-                      >
-                        <Trash size={13} />
-                      </button>
-                      {/* Edit button */}
-                      <button
-                        type="button"
-                        onClick={() => handleEditMosque(mosque)}
-                        className="w-7 h-7 flex items-center justify-center rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 transition-all shrink-0 cursor-pointer"
-                        title="ترمیم کریں"
-                      >
-                        <RefreshCw size={13} />
-                      </button>
-                    </div>
-
-                    {/* Name & address */}
-                    <div className="text-right flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-800 font-urdu truncate">{mosque.name}</p>
-                      <p className="text-[10px] text-slate-500 font-urdu truncate">{mosque.address}</p>
-                    </div>
+              {myMosques.map((mosque) => (
+                <div
+                  key={mosque.id}
+                  className="flex items-center justify-between gap-2 py-2.5 px-3 bg-white rounded-2xl border border-slate-100 shadow-sm"
+                >
+                  {/* Name & address */}
+                  <div className="text-right flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-800 font-urdu truncate">{mosque.name}</p>
+                    <p className="text-[10px] text-slate-400 font-urdu truncate">{mosque.address}</p>
                   </div>
-                ))}
-              </div>
+                  {/* action buttons */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleEditMosque(mosque)}
+                      className="w-7 h-7 flex items-center justify-center rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 transition-all cursor-pointer"
+                      title="ترمیم"
+                    >
+                      <RefreshCw size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmId(mosque.id)}
+                      className="w-7 h-7 flex items-center justify-center rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-500 transition-all cursor-pointer"
+                      title="ڈیلیٹ"
+                    >
+                      <Trash size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Add / Edit Mosque Form loaded directly */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-md space-y-4 animate-fadeIn">
-            <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+          {/* Add / Edit Mosque Form — compact, no heavy card */}
+          <div className="space-y-4 animate-fadeIn px-1">
+            {/* section label */}
+            <div className="flex items-center justify-between">
               <span className="text-[9px] text-amber-600 font-urdu font-bold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
-                {editId ? 'پبلک اوقات ترمیم' : 'نیا ریکارڈ کلاؤڈ'}
+                {editId ? 'پبلک اوقات ترمیم' : 'نیا ریکارڈ'}
               </span>
-              <h4 className="text-xs font-black text-slate-800 text-right font-urdu flex items-center gap-2 justify-end">
-                <PlusCircle size={16} className="text-emerald-700 shrink-0" />
-                {editId ? 'مسجد کے اوقاتِ جماعت کی ترمیم' : 'نئی مسجد کلاؤڈ رجسٹریشن'}
+              <h4 className="text-xs font-black text-slate-700 text-right font-urdu flex items-center gap-1.5">
+                <PlusCircle size={14} className="text-emerald-700 shrink-0" />
+                {editId ? 'اوقاتِ جماعت کی ترمیم' : 'نئی مسجد رجسٹریشن'}
               </h4>
             </div>
 
@@ -831,12 +823,12 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
             </form>
           </div>
 
-          {/* Logout Button at bottom of Portal */}
-          <div className="pt-2 select-none">
+          {/* Logout Button — compact */}
+          <div className="pt-1 pb-2 select-none px-1">
             <button
               type="button"
               onClick={() => setShowLogoutConfirm(true)}
-              className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 font-urdu font-bold text-xs rounded-xl border border-rose-200/60 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-urdu font-bold text-xs rounded-xl border border-rose-100 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
