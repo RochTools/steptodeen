@@ -222,6 +222,18 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   </div>
                 </div>
 
+                {/* سحری اور افطاری */}
+                {(mosque.sehri || mosque.iftar) && (
+                  <div className="flex justify-between items-center text-[9px] px-2.5 text-teal-800 font-bold font-urdu bg-teal-50/50 p-1.5 rounded-xl border border-teal-100">
+                    <span className="text-[8px] px-1 bg-teal-200 text-teal-900 rounded select-none scale-90">رمضان اوقات</span>
+                    <div className="flex gap-3">
+                      {mosque.sehri && <div>🌙 سحری: <span className="font-mono text-[10px]">{formatTo12Hour(mosque.sehri, '04:30')}</span></div>}
+                      {mosque.sehri && mosque.iftar && <div className="border-r border-teal-200 h-3"></div>}
+                      {mosque.iftar && <div>🌅 افطاری: <span className="font-mono text-[10px]">{formatTo12Hour(mosque.iftar, '18:30')}</span></div>}
+                    </div>
+                  </div>
+                )}
+
                 {/* Last updated badge */}
                 <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-100 pt-2 pb-0.5">
                   <div className="font-mono text-slate-500 font-semibold">
