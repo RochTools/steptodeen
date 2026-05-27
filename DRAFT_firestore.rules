@@ -1,22 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Catch-all default deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Helper to validate path document IDs to prevent injection of trash/junk strings
     function isValidId(id) { 
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
     }
     
-    // Helper for incoming document data
     function incoming() { 
       return request.resource.data; 
     }
 
-    // Strict validator to protect against update-gaps, injection, and denial of wallet attacks
     function isValidMosque(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() <= 100
         && data.address is string && data.address.size() > 0 && data.address.size() <= 200
@@ -32,7 +28,9 @@ service cloud.firestore {
         && (!data.keys().contains('imamName') || (data.imamName is string && data.imamName.size() <= 100))
         && (!data.keys().contains('imamEmail') || (data.imamEmail is string && data.imamEmail.size() <= 100))
         && (!data.keys().contains('announcement') || (data.announcement is string && data.announcement.size() <= 500))
-        && (!data.keys().contains('updatedAt') || (data.updatedAt is string && data.updatedAt.size() <= 50));
+        && (!data.keys().contains('updatedAt') || (data.updatedAt is string && data.updatedAt.size() <= 50))
+        && (!data.keys().contains('eidFitr') || (data.eidFitr is string && data.eidFitr.size() <= 10))
+        && (!data.keys().contains('eidAdha') || (data.eidAdha is string && data.eidAdha.size() <= 10));
     }
 
     match /mosques/{mosqueId} {
