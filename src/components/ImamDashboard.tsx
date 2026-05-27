@@ -71,11 +71,13 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [jumah, setJumah] = useState('13:30');
   const [eidFitr, setEidFitr] = useState('07:00');
   const [eidAdha, setEidAdha] = useState('07:15');
+  const [sehri, setSehri] = useState('04:30');
+  const [iftar, setIftar] = useState('18:30');
   const [announcement, setAnnouncement] = useState('');
 
   // Custom Time Picker State for beautiful internal React clock selection (RTL/LTL and iframe clipping safe)
   const [activePicker, setActivePicker] = useState<{
-    prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha' | 'jumah' | 'eidFitr' | 'eidAdha';
+    prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha' | 'jumah' | 'eidFitr' | 'eidAdha' | 'sehri' | 'iftar';
     label: string;
     hour: number;
     minute: number;
@@ -99,7 +101,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   };
 
   const openCustomTimePicker = (
-    prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha' | 'jumah' | 'eidFitr' | 'eidAdha',
+    prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha' | 'jumah' | 'eidFitr' | 'eidAdha' | 'sehri' | 'iftar',
     label: string,
     currentTimeString: string
   ) => {
@@ -140,6 +142,8 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     else if (prayerKey === 'jumah') setJumah(newTimeValue);
     else if (prayerKey === 'eidFitr') setEidFitr(newTimeValue);
     else if (prayerKey === 'eidAdha') setEidAdha(newTimeValue);
+    else if (prayerKey === 'sehri') setSehri(newTimeValue);
+    else if (prayerKey === 'iftar') setIftar(newTimeValue);
     
     setActivePicker(null);
   };
@@ -285,6 +289,8 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     setJumah('13:30');
     setEidFitr('07:00');
     setEidAdha('07:15');
+    setSehri('04:30');
+    setIftar('18:30');
     setAnnouncement('');
   };
 
@@ -307,6 +313,8 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     setJumah(mosque.jumah);
     setEidFitr(mosque.eidFitr || '07:00');
     setEidAdha(mosque.eidAdha || '07:15');
+    setSehri(mosque.sehri || '04:30');
+    setIftar(mosque.iftar || '18:30');
     setAnnouncement(mosque.announcement || '');
   };
 
@@ -352,6 +360,8 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         jumah,
         eidFitr,
         eidAdha,
+        sehri,
+        iftar,
         announcement
       });
 
@@ -778,6 +788,36 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                       >
                         <Clock size={11} className="text-purple-600 shrink-0" />
                         <span>{formatTo12HourString(eidAdha)}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* سحری اور افطاری */}
+                <div className="bg-teal-50/50 border border-teal-100 rounded-2xl p-3.5 space-y-2 mt-1.5 shadow-sm">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* سحری */}
+                    <div className="space-y-1">
+                      <span className="text-[9px] text-teal-800 font-bold font-urdu block text-right">🌙 سحری کا وقت</span>
+                      <button
+                        type="button"
+                        onClick={() => openCustomTimePicker('sehri', 'سحری کا وقت', sehri)}
+                        className="w-full py-2 bg-white hover:bg-teal-100 active:scale-95 border border-teal-200 rounded-xl text-[10px] text-center font-mono font-bold text-teal-900 select-none flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      >
+                        <Clock size={11} className="text-teal-600 shrink-0" />
+                        <span>{formatTo12HourString(sehri)}</span>
+                      </button>
+                    </div>
+                    {/* افطاری */}
+                    <div className="space-y-1">
+                      <span className="text-[9px] text-teal-800 font-bold font-urdu block text-right">🌅 افطاری کا وقت</span>
+                      <button
+                        type="button"
+                        onClick={() => openCustomTimePicker('iftar', 'افطاری کا وقت', iftar)}
+                        className="w-full py-2 bg-white hover:bg-teal-100 active:scale-95 border border-teal-200 rounded-xl text-[10px] text-center font-mono font-bold text-teal-900 select-none flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      >
+                        <Clock size={11} className="text-teal-600 shrink-0" />
+                        <span>{formatTo12HourString(iftar)}</span>
                       </button>
                     </div>
                   </div>
