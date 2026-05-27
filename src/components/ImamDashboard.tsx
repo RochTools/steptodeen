@@ -365,10 +365,10 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
 
   return (
     <>
-      <div className="space-y-4 p-4 pb-20 animate-fadeIn">
+      <div className="space-y-4 pb-20 animate-fadeIn">
         {/* Informative Header Banner */}
       {!isAuthenticated && (
-        <div className="bg-emerald-50 text-emerald-950 p-3.5 rounded-2xl border border-emerald-100 text-right space-y-1.5 shadow-sm">
+        <div className="mx-4 bg-emerald-50 text-emerald-950 p-3.5 rounded-2xl border border-emerald-100 text-right space-y-1.5 shadow-sm">
           <h3 className="text-xs font-bold text-emerald-800 font-urdu flex items-center gap-1.5 justify-end">
             <Info size={16} className="text-emerald-700" />
             مسجد معلومات — امام پورٹل
@@ -381,7 +381,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
 
       {/* Auth Gate and Form */}
       {!isAuthenticated ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-4.5 p-4 shadow-sm space-y-4">
+        <div className="mx-4 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
           <h4 className="text-xs font-bold text-center text-emerald-700 font-urdu pb-2 border-b border-slate-100 uppercase tracking-wider">
             {isSignUp ? 'نیا امام اکاؤنٹ بنائیں' : 'سائن ان — امام پورٹل'}
           </h4>
@@ -454,7 +454,8 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
           </div>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-3">
+
           {/* ══ پروفائل سیکشن ══ */}
           <div className="animate-fadeIn">
             {/* سفید پروفائل — no cover strip */}
@@ -476,9 +477,9 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
               </div>
 
               {/* avatar */}
-              <div className="flex justify-center mb-3">
+              <div className="flex justify-center -mt-2 mb-2">
                 <div className="relative">
-                  <div className="w-20 h-20 rounded-full border-4 border-emerald-100 shadow-lg overflow-hidden bg-emerald-50 flex items-center justify-center">
+                  <div className="w-28 h-28 rounded-full border-4 border-emerald-100 shadow-lg overflow-hidden bg-emerald-50 flex items-center justify-center">
                     {mosqueImage
                       ? <img src={mosqueImage} alt="مسجد" className="w-full h-full object-cover" />
                       : <span className="text-4xl">🕌</span>
@@ -533,7 +534,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
 
           {/* ── میری مساجد کی فہرست — compact, no card ── */}
           {myMosques.length > 0 && (
-            <div className="px-1 space-y-1.5 animate-fadeIn">
+            <div className="px-4 space-y-1.5 animate-fadeIn">
               {/* header row */}
               <div className="flex items-center justify-between px-1 mb-2">
                 <span className="text-[9px] text-emerald-700 font-urdu font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
@@ -580,24 +581,16 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
           )}
 
           {/* Add / Edit Mosque Form — compact, no heavy card */}
-          <div className="space-y-4 animate-fadeIn px-1">
+          <div className="space-y-4 animate-fadeIn px-4">
             {/* section label */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-end">
               <span className="text-[9px] text-amber-600 font-urdu font-bold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
                 {editId ? 'پبلک اوقات ترمیم' : 'نیا ریکارڈ'}
               </span>
-              <h4 className="text-xs font-black text-slate-700 text-right font-urdu flex items-center gap-1.5">
-                <PlusCircle size={14} className="text-emerald-700 shrink-0" />
-                {editId ? 'اوقاتِ جماعت کی ترمیم' : 'نئی مسجد رجسٹریشن'}
-              </h4>
             </div>
 
             <form onSubmit={handleFormSubmit} className="space-y-4.5 text-right">
-              {/* Mosque Name & Address Section Header */}
               <div className="space-y-3.5">
-                <div className="text-[10px] font-bold text-slate-400 font-urdu border-r-2 border-emerald-600 pr-2 pb-0.5">
-                  بنیادی معلومات (Basic Information)
-                </div>
 
                 {/* Mosque Name */}
                 <div className="space-y-1">
@@ -672,12 +665,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
 
               {/* Jamaat Timings Grid Inputs */}
               <div className="space-y-3 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-slate-400 font-urdu">(گول بٹن دبا کر وقت تبدیل کریں)</span>
-                  <label className="text-[11px] text-emerald-800 font-black font-urdu block pr-1 border-r-2 border-emerald-700">
-                    جماعت کے اوقاتِ کار (Prayer Timings)
-                  </label>
-                </div>
+
 
                 {/* Grid 1: Fajr, Zuhr, Asr */}
                 <div className="grid grid-cols-3 gap-2">
@@ -765,9 +753,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
 
                 {/* Grid 3: Eid Prayers Festive Row */}
                 <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-3.5 space-y-2 pb-3 mt-1.5 shadow-sm">
-                  <div className="text-[10px] font-bold text-purple-900 border-r-2 border-purple-600 pr-2 font-urdu text-right">
-                    عیدین کی نمازوں کے اوقات (Eid Prayers Schedule)
-                  </div>
+
                   <div className="grid grid-cols-2 gap-2.5">
                     {/* Eidul Fitr */}
                     <div className="space-y-1">
@@ -824,7 +810,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
           </div>
 
           {/* Logout Button — compact */}
-          <div className="pt-1 pb-2 select-none px-1">
+          <div className="pt-1 pb-2 select-none px-4">
             <button
               type="button"
               onClick={() => setShowLogoutConfirm(true)}
