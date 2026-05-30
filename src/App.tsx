@@ -390,7 +390,7 @@ export default function App() {
           <HomeView
             onNavigate={(view) => {
               if (view === 'imam-login') {
-                setCurrentView('login-choice');
+                setCurrentView('imam-login');
               } else {
                 setCurrentView(view);
               }
