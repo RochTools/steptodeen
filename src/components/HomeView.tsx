@@ -285,7 +285,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   className="py-1 px-2.5 bg-gradient-to-r from-amber-450 from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-zinc-950 font-urdu font-black text-[10px] rounded-lg border border-amber-300 transition-all flex items-center gap-1 shadow-md cursor-pointer select-none"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-900 inline-block animate-pulse"></span>
-                  میرا اکاؤنٹ (جاری)
+                  امام اکاؤنٹ (جاری)
                 </button>
               ) : (
                 <button
@@ -294,7 +294,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   className="py-1 px-2.5 bg-emerald-950/70 hover:bg-emerald-900 active:scale-95 border border-emerald-800/40 text-[10px] text-emerald-100 font-urdu font-bold rounded-lg transition-all flex items-center gap-1 shadow-inner cursor-pointer select-none"
                 >
                   <LogIn size={10} className="text-amber-400 shrink-0" />
-                  امام لاگ ان
+                  لاگ ان
                 </button>
               )}
             </div>
