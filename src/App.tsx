@@ -585,30 +585,30 @@ export default function App() {
               <div className="grid grid-cols-3 gap-1.5 text-center">
                 <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
                   <div className="text-[9px] text-slate-500 font-urdu">فجر جماعت</div>
-                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{selectedMosque.fajr}</div>
+                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.fajr)}</div>
                 </div>
                 <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
                   <div className="text-[9px] text-slate-500 font-urdu">ظہر جماعت</div>
-                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{selectedMosque.zuhr}</div>
+                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.zuhr)}</div>
                 </div>
                 <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
                   <div className="text-[9px] text-slate-500 font-urdu">عصر جماعت</div>
-                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{selectedMosque.asr}</div>
+                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.asr)}</div>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-1.5 text-center mt-1.5">
                 <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
                   <div className="text-[9px] text-slate-500 font-urdu">مغرب جماعت</div>
-                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{selectedMosque.maghrib}</div>
+                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.maghrib)}</div>
                 </div>
                 <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
                   <div className="text-[9px] text-slate-500 font-urdu">عشاء جماعت</div>
-                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{selectedMosque.isha}</div>
+                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.isha)}</div>
                 </div>
                 <div className="p-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
                   <div className="text-[9px] text-emerald-800 font-bold font-urdu">جمعہ مبارک</div>
-                  <div className="text-xs font-mono font-bold text-emerald-700 mt-0.5">{selectedMosque.jumah}</div>
+                  <div className="text-xs font-mono font-bold text-emerald-700 mt-0.5">{formatTo12Hour(selectedMosque.jumah)}</div>
                 </div>
               </div>
 
