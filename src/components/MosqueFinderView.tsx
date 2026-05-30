@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Compass, Bell, Clock, RefreshCw, AlertCircle, Info } from 'lucide-react';
+import { Search, MapPin, Compass, Bell, Clock, RefreshCw, AlertCircle, Info, Heart } from 'lucide-react';
 import { Mosque } from '../types';
 
 const formatTo12Hour = (timeStr?: string, defaultVal = '') => {
@@ -34,6 +34,31 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [notifPreferences, setNotifPreferences] = useState<{ [key: string]: boolean }>({});
+  const [savedMosques, setSavedMosques] = useState<{ [key: string]: boolean }>(() => {
+    try {
+      const saved = localStorage.getItem('user_saved_mosques');
+      if (!saved) return {};
+      const list: Mosque[] = JSON.parse(saved);
+      return list.reduce((acc, m) => ({ ...acc, [m.id]: true }), {});
+    } catch { return {}; }
+  });
+
+  const handleToggleSave = (mosque: Mosque, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const isSaved = !!savedMosques[mosque.id];
+    const updatedMap = { ...savedMosques, [mosque.id]: !isSaved };
+    setSavedMosques(updatedMap);
+    try {
+      const allSaved: Mosque[] = JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
+      let newList: Mosque[];
+      if (isSaved) {
+        newList = allSaved.filter(m => m.id !== mosque.id);
+      } else {
+        newList = [...allSaved.filter(m => m.id !== mosque.id), mosque];
+      }
+      localStorage.setItem('user_saved_mosques', JSON.stringify(newList));
+    } catch {}
+  };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // radius of Earth in km
@@ -163,17 +188,30 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
               >
                 {/* Mosque header */}
                 <div className="flex items-start justify-between">
-                  <button
-                    onClick={(e) => handleToggleNotification(mosque, e)}
-                    className={`p-1.5 rounded-lg border transition-all ${
-                      hasSubscribed
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-emerald-700'
-                    }`}
-                    title={hasSubscribed ? 'الرٹس آن ہیں' : 'الرٹس آن کریں'}
-                  >
-                    <Bell size={13} className={hasSubscribed ? 'animate-bounce' : ''} />
-                  </button>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      onClick={(e) => handleToggleNotification(mosque, e)}
+                      className={`p-1.5 rounded-lg border transition-all ${
+                        hasSubscribed
+                          ? 'bg-emerald-600 border-emerald-600 text-white'
+                          : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-emerald-700'
+                      }`}
+                      title={hasSubscribed ? 'الرٹس آن ہیں' : 'الرٹس آن کریں'}
+                    >
+                      <Bell size={13} className={hasSubscribed ? 'animate-bounce' : ''} />
+                    </button>
+                    <button
+                      onClick={(e) => handleToggleSave(mosque, e)}
+                      className={`p-1.5 rounded-lg border transition-all ${
+                        savedMosques[mosque.id]
+                          ? 'bg-red-500 border-red-500 text-white'
+                          : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-red-500'
+                      }`}
+                      title={savedMosques[mosque.id] ? 'محفوظ ہے' : 'محفوظ کریں'}
+                    >
+                      <Heart size={13} className={savedMosques[mosque.id] ? 'fill-white' : ''} />
+                    </button>
+                  </div>
 
                   <div className="text-right flex-1 pr-3">
                     <h4 className="text-xs font-bold text-slate-800 font-urdu">{mosque.name}</h4>
