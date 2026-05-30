@@ -464,6 +464,10 @@ export default function App() {
             userName={userAuthName}
             userPhone={userAuthPhone}
             onClose={() => setCurrentView('home')}
+            onOpenMosque={(mosque) => {
+              setSelectedMosque(mosque);
+              setCurrentView('home');
+            }}
             onLogout={() => {
               setIsUserAuthenticated(false);
               setUserAuthName('');
