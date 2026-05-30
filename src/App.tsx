@@ -350,8 +350,8 @@ export default function App() {
             onClick={() => {
               if (currentView === 'surah') {
                 setCurrentView('quran');
-              } else if (currentView === 'imam-login') {
-                setCurrentView('login-choice');
+              } else if (currentView === 'imam-login' || currentView === 'user-dashboard') {
+                setCurrentView('home');
               } else if (currentView === 'user-login') {
                 setCurrentView('login-choice');
               } else {
