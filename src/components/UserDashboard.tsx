@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { LogOut, Camera, User, Heart, RefreshCw } from 'lucide-react';
+import { LogOut, Camera, User, Heart, MapPin } from 'lucide-react';
 import { Mosque } from '../types';
 
 interface UserDashboardProps {
@@ -7,9 +7,10 @@ interface UserDashboardProps {
   userPhone: string;
   onLogout: () => void;
   onClose: () => void;
+  onOpenMosque: (mosque: Mosque) => void;
 }
 
-export function UserDashboard({ userName, onLogout, onClose }: UserDashboardProps) {
+export function UserDashboard({ userName, onLogout, onClose, onOpenMosque }: UserDashboardProps) {
   const [profileImage, setProfileImage] = useState<string | null>(() => {
     return localStorage.getItem('user_profile_image') || null;
   });
@@ -138,19 +139,28 @@ export function UserDashboard({ userName, onLogout, onClose }: UserDashboardProp
         ) : (
           <div className="space-y-2">
             {savedMosques.map(mosque => (
-              <div key={mosque.id} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
-                <button
-                  onClick={() => handleRemoveMosque(mosque.id)}
-                  className="p-1.5 rounded-lg text-red-400 hover:text-red-600 transition-colors"
-                >
-                  <Heart size={14} className="fill-red-400" />
-                </button>
-                <div className="text-right flex-1 pr-2">
-                  <p className="text-slate-800 font-urdu text-sm font-bold">{mosque.name}</p>
-                  {mosque.address && (
-                    <p className="text-slate-400 font-urdu text-[10px] mt-0.5">{mosque.address}</p>
-                  )}
+              <div key={mosque.id} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => handleRemoveMosque(mosque.id)}
+                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    <Heart size={14} className="fill-red-400" />
+                  </button>
+                  <div className="text-right flex-1 pr-2">
+                    <p className="text-slate-800 font-urdu text-sm font-bold">{mosque.name}</p>
+                    {mosque.address && (
+                      <p className="text-slate-400 font-urdu text-[10px] mt-0.5">{mosque.address}</p>
+                    )}
+                  </div>
                 </div>
+                <button
+                  onClick={() => { onOpenMosque(mosque); onClose(); }}
+                  className="w-full py-2 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-urdu text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <MapPin size={12} />
+                  اوقات دیکھیں
+                </button>
               </div>
             ))}
           </div>
