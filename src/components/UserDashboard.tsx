@@ -17,20 +17,25 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque }: Use
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── تسبیح ڈیٹا ─────────────────────────────────────────────
-  const tasbihToday = (() => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const history = JSON.parse(localStorage.getItem('tasbih_history_v4') || '{}');
-      return history[today] || 0;
-    } catch { return 0; }
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  const tasbihHistory = (() => {
+    try { return JSON.parse(localStorage.getItem('tasbih_history_v4') || '{}'); } catch { return {}; }
   })();
 
-  const tasbihTotal = (() => {
+  const tasbihToday = tasbihHistory[today] || 0;
+  const tasbihYesterday = tasbihHistory[yesterday] || 0;
+  const tasbihTotal = Object.values(tasbihHistory).reduce((s: number, v) => s + Number(v), 0);
+
+  const dhikrList = (() => {
     try {
-      const history = JSON.parse(localStorage.getItem('tasbih_history_v4') || '{}');
-      return Object.values(history).reduce((s: number, v) => s + Number(v), 0);
-    } catch { return 0; }
+      const saved = localStorage.getItem('tasbih_dhikr_list_v4');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   })();
+
+  const [showAllDhikr, setShowAllDhikr] = useState(false);
 
   // ── محفوظ مساجد ─────────────────────────────────────────────
   const [savedMosques, setSavedMosques] = useState<Mosque[]>(() => {
@@ -101,7 +106,6 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque }: Use
       {/* Name */}
       <div className="text-center -mt-1">
         <h2 className="text-black font-urdu text-2xl font-black">{userName}</h2>
-        <p className="text-slate-400 font-urdu text-xs mt-0.5">عام صارف</p>
       </div>
 
       <div className="w-full border-t border-slate-100"></div>
@@ -109,16 +113,45 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque }: Use
       {/* ── تسبیح ڈیٹا ── */}
       <div className="w-full">
         <h3 className="text-right text-slate-700 font-urdu font-bold text-sm mb-3">📿 تسبیح کاؤنٹر</h3>
-        <div className="flex gap-3">
-          <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-black text-emerald-700">{tasbihToday.toLocaleString()}</p>
-            <p className="text-[10px] text-emerald-600 font-urdu mt-1">آج کی گنتی</p>
+
+        {/* آج / کل / کل */}
+        <div className="flex gap-2 mb-3">
+          <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-2xl p-3 text-center">
+            <p className="text-xl font-black text-emerald-700">{tasbihToday.toLocaleString()}</p>
+            <p className="text-[10px] text-emerald-600 font-urdu mt-0.5">آج</p>
           </div>
-          <div className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-black text-slate-700">{tasbihTotal.toLocaleString()}</p>
-            <p className="text-[10px] text-slate-500 font-urdu mt-1">کل گنتی</p>
+          <div className="flex-1 bg-amber-50 border border-amber-100 rounded-2xl p-3 text-center">
+            <p className="text-xl font-black text-amber-700">{tasbihYesterday.toLocaleString()}</p>
+            <p className="text-[10px] text-amber-600 font-urdu mt-0.5">کل</p>
+          </div>
+          <div className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl p-3 text-center">
+            <p className="text-xl font-black text-slate-700">{Number(tasbihTotal).toLocaleString()}</p>
+            <p className="text-[10px] text-slate-500 font-urdu mt-0.5">مجموعی</p>
           </div>
         </div>
+
+        {/* ہر ذکر کی گنتی */}
+        {dhikrList.length > 0 && (
+          <div className="space-y-2">
+            {(showAllDhikr ? dhikrList : dhikrList.slice(0, 3)).map((d: any, i: number) => (
+              <div key={i} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5">
+                <span className="text-emerald-700 font-black text-sm">{d.savedProgress || 0} <span className="text-slate-400 font-normal text-[10px]">بار</span></span>
+                <div className="text-right">
+                  <p className="text-slate-800 font-urdu text-xs font-bold">{d.ur}</p>
+                  <p className="text-slate-400 text-[10px]">{d.en}</p>
+                </div>
+              </div>
+            ))}
+            {dhikrList.length > 3 && (
+              <button
+                onClick={() => setShowAllDhikr(!showAllDhikr)}
+                className="w-full py-2 text-emerald-700 font-urdu text-xs font-bold border border-emerald-200 rounded-xl hover:bg-emerald-50 transition-all"
+              >
+                {showAllDhikr ? '← کم دکھائیں' : `مزید دیکھیں (${dhikrList.length - 3}+)`}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="w-full border-t border-slate-100"></div>
