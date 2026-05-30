@@ -379,92 +379,12 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   return (
     <>
       <div className="space-y-4 pb-20 animate-fadeIn">
-        {/* Informative Header Banner */}
-      {!isAuthenticated && (
-        <div className="mx-4 bg-emerald-50 text-emerald-950 p-3.5 rounded-2xl border border-emerald-100 text-right space-y-1.5 shadow-sm">
-          <h3 className="text-xs font-bold text-emerald-800 font-urdu flex items-center gap-1.5 justify-end">
-            <Info size={16} className="text-emerald-700" />
-            مسجد معلومات — امام پورٹل
-          </h3>
-          <p className="text-[11px] text-slate-700 leading-relaxed font-urdu">
-            اس پورٹل کے ذریعے فجر، ظہر، عصر، مغرب، عشاء اور جمعہ مبارک کے نماز کے جماعت کے اوقاتِ کار فوری کلاؤڈ پر سنک کار کے نمازوں کو آ گاہ کریں۔
-          </p>
-        </div>
-      )}
 
       {/* Auth Gate and Form */}
       {!isAuthenticated ? (
-        <div className="mx-4 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
-          <h4 className="text-xs font-bold text-center text-emerald-700 font-urdu pb-2 border-b border-slate-100 uppercase tracking-wider">
-            {isSignUp ? 'نیا امام اکاؤنٹ بنائیں' : 'سائن ان — امام پورٹل'}
-          </h4>
-
-          {errorMessage && (
-            <div className="p-3 bg-red-50 text-red-850 text-xs rounded-lg text-right font-urdu flex items-center gap-2 justify-end">
-              <span>{errorMessage}</span>
-              <AlertCircle size={14} className="text-red-500 shrink-0" />
-            </div>
-          )}
-
-          <form onSubmit={handleAuthSubmit} className="space-y-4 text-right">
-            {isSignUp && (
-              <div className="space-y-1.5Packed">
-                <label className="text-xs text-slate-600 font-urdu block">آپ کا نام *</label>
-                <input
-                  type="text"
-                  placeholder="مثال: مولانا ساجد الرحمن"
-                  value={authName}
-                  onChange={(e) => setAuthName(e.target.value)}
-                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-600 text-right font-urdu"
-                  dir="rtl"
-                />
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <label className="text-[10px] text-slate-500 font-urdu block">ای میل ایڈریس *</label>
-              <input
-                type="email"
-                placeholder="example@deen.com"
-                value={authEmailInput}
-                onChange={(e) => setAuthEmailInput(e.target.value)}
-                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-600 text-left font-mono"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] text-slate-500 font-urdu block">پاس ورڈ *</label>
-              <div className="relative flex items-center">
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-600 text-left font-mono"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-2 bg-emerald-600 text-white rounded-lg text-xs font-urdu font-bold hover:bg-emerald-700 transition-colors shadow-sm flex items-center justify-center gap-1.5"
-            >
-              {isSignUp ? <UserPlus size={13} /> : <LogIn size={13} />}
-              {isSignUp ? 'اکاؤنٹ بنائیں' : 'ڈیش بورڈ میں داخل ہوں'}
-            </button>
-          </form>
-
-          <div className="text-center pt-1.5 border-t border-slate-100">
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrorMessage('');
-              }}
-              className="text-xs text-emerald-700 font-bold font-urdu hover:underline cursor-pointer"
-            >
-              {isSignUp ? 'پہلے سے اکاؤنٹ موجود ہے؟ لاگ ان کریں' : 'نیا اکاؤنٹ بنانا چاہتے ہیں؟ یہاں کلک کریں'}
-            </button>
-          </div>
+        <div className="mx-4 mt-8 bg-slate-50 rounded-2xl border border-slate-200 p-6 text-center space-y-3">
+          <span className="text-3xl">🔒</span>
+          <p className="text-slate-500 font-urdu text-sm">براہ کرم پہلے لاگ ان کریں</p>
         </div>
       ) : (
         <div className="space-y-3">
