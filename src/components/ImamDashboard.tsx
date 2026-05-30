@@ -7,6 +7,7 @@ interface ImamDashboardProps {
   onAddOrUpdateMosque: (mosque: Omit<Mosque, 'id' | 'updatedAt'> & { id?: string }) => void;
   onDeleteMosque: (id: string) => void;
   mosques: Mosque[];
+  onLoggedOut?: () => void;
   userCoords: { latitude: number; longitude: number } | null;
   requestLocation: () => void;
   isRealFirebase: boolean;
@@ -38,7 +39,8 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   setAuthName,
   authUid,
   setAuthUid,
-  realtimeAuth
+  realtimeAuth,
+  onLoggedOut
 }) => {
   // Auth simulation/real state
   const [authEmailInput, setAuthEmailInput] = useState('');
@@ -273,6 +275,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     setAuthName('');
     setEditId(undefined);
     resetForm();
+    if (onLoggedOut) onLoggedOut();
   };
 
   const resetForm = () => {
