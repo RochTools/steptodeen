@@ -195,7 +195,7 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   </div>
                 )}
 
-                {/* Grid for jamaat timings */}
+                {/* Grid for jamaat timings — 12 گھنٹے والا فارمیٹ */}
                 <div className="grid grid-cols-6 gap-1 bg-slate-50 p-1.5 rounded-xl text-center border border-slate-150">
                   {[
                     { label: 'فجر', val: mosque.fajr },
@@ -207,7 +207,9 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   ].map((item, idx) => (
                     <div key={idx} className="space-y-0.5 border-r border-slate-200/50 last:border-0">
                       <div className="text-[8px] text-slate-500 font-urdu font-medium">{item.label}</div>
-                      <div className="text-[11px] font-mono font-bold text-slate-800">{item.val}</div>
+                      <div className="text-[11px] font-mono font-bold text-slate-800">
+                        {formatTo12Hour(item.val)}
+                      </div>
                     </div>
                   ))}
                 </div>
