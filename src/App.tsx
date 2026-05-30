@@ -107,6 +107,12 @@ export default function App() {
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
+  const [savedPopupMosques, setSavedPopupMosques] = useState<string[]>(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
+      return list.map((m: any) => m.id);
+    } catch { return []; }
+  });
 
   // Firebase runtime config states
   const [realtimeDb, setRealtimeDb] = useState<any>(null);
@@ -553,6 +559,29 @@ export default function App() {
                 className="p-1 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
               >
                 <X size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    const list: any[] = JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
+                    const exists = list.find(m => m.id === selectedMosque.id);
+                    let newList;
+                    if (exists) {
+                      newList = list.filter(m => m.id !== selectedMosque.id);
+                    } else {
+                      newList = [...list, selectedMosque];
+                    }
+                    localStorage.setItem('user_saved_mosques', JSON.stringify(newList));
+                    setSavedPopupMosques(newList.map((m: any) => m.id));
+                  } catch {}
+                }}
+                className={`p-1.5 rounded-full transition-all ${
+                  savedPopupMosques.includes(selectedMosque.id)
+                    ? 'text-red-500'
+                    : 'text-slate-300 hover:text-red-400'
+                }`}
+              >
+                <Heart size={16} className={savedPopupMosques.includes(selectedMosque.id) ? 'fill-red-500' : ''} />
               </button>
               <h3 className="text-sm font-bold font-urdu text-slate-800">{selectedMosque.name}</h3>
             </div>
