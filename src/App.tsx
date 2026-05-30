@@ -553,37 +553,34 @@ export default function App() {
       {selectedMosque && (
         <div className="fixed inset-0 bg-slate-900/42 bg-black/50 z-50 flex items-end justify-center p-3 animate-fadeIn">
           <div className="bg-white w-full max-w-sm rounded-2xl p-4 space-y-3.5 shadow-2xl pb-6 border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <button
-                onClick={() => setSelectedMosque(null)}
-                className="p-1 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
-              >
-                <X size={16} />
-              </button>
-              <button
-                onClick={() => {
-                  try {
-                    const list: any[] = JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
-                    const exists = list.find(m => m.id === selectedMosque.id);
-                    let newList;
-                    if (exists) {
-                      newList = list.filter(m => m.id !== selectedMosque.id);
-                    } else {
-                      newList = [...list, selectedMosque];
-                    }
-                    localStorage.setItem('user_saved_mosques', JSON.stringify(newList));
-                    setSavedPopupMosques(newList.map((m: any) => m.id));
-                  } catch {}
-                }}
-                className={`p-1.5 rounded-full transition-all ${
-                  savedPopupMosques.includes(selectedMosque.id)
-                    ? 'text-red-500'
-                    : 'text-slate-300 hover:text-red-400'
-                }`}
-              >
-                <Heart size={16} className={savedPopupMosques.includes(selectedMosque.id) ? 'fill-red-500' : ''} />
-              </button>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2" dir="rtl">
               <h3 className="text-sm font-bold font-urdu text-slate-800">{selectedMosque.name}</h3>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    try {
+                      const list: any[] = JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
+                      const exists = list.find(m => m.id === selectedMosque.id);
+                      const newList = exists ? list.filter(m => m.id !== selectedMosque.id) : [...list, selectedMosque];
+                      localStorage.setItem('user_saved_mosques', JSON.stringify(newList));
+                      setSavedPopupMosques(newList.map((m: any) => m.id));
+                    } catch {}
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
+                    savedPopupMosques.includes(selectedMosque.id)
+                      ? 'bg-red-50 border-red-200 text-red-500'
+                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-red-300 hover:text-red-400'
+                  }`}
+                >
+                  {savedPopupMosques.includes(selectedMosque.id) ? '✓ Saved' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setSelectedMosque(null)}
+                  className="p-1 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Address */}
