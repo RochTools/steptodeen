@@ -202,14 +202,13 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                     </button>
                     <button
                       onClick={(e) => handleToggleSave(mosque, e)}
-                      className={`p-1.5 rounded-lg border transition-all ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
                         savedMosques[mosque.id]
-                          ? 'bg-red-500 border-red-500 text-white'
-                          : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-red-500'
+                          ? 'bg-red-50 border-red-200 text-red-500'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-red-300 hover:text-red-400'
                       }`}
-                      title={savedMosques[mosque.id] ? 'محفوظ ہے' : 'محفوظ کریں'}
                     >
-                      <Heart size={13} className={savedMosques[mosque.id] ? 'fill-white' : ''} />
+                      {savedMosques[mosque.id] ? '✓ Saved' : 'Save'}
                     </button>
                   </div>
 
