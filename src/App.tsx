@@ -18,7 +18,7 @@ import { ImamDashboard } from './components/ImamDashboard';
 import { TasbihView } from './components/TasbihView';
 import { QiblaView } from './components/QiblaView';
 import { LoginChoiceView } from './components/LoginChoiceView';
-import { UserLoginView } from './components/UserLoginView';
+
 import { UserDashboard } from './components/UserDashboard';
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, Info, MapPin } from 'lucide-react';
@@ -41,7 +41,14 @@ const formatTo12Hour = (timeStr?: string, defaultVal = '') => {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<string>('home');
+  // App opens on login screen if not authenticated
+  const getInitialView = () => {
+    const imamAuth = localStorage.getItem('imam_authenticated') === 'true';
+    const userAuth = localStorage.getItem('user_authenticated') === 'true';
+    if (imamAuth || userAuth) return 'home';
+    return 'login-splash';
+  };
+  const [currentView, setCurrentView] = useState<string>(getInitialView);
   const [selectedSurahNum, setSelectedSurahNum] = useState<number | null>(null);
   
   // ── Imam Auth State ─────────────────────────────────────────────────────────
@@ -309,6 +316,23 @@ export default function App() {
 
   return (
     <div className={`w-full max-w-md mx-auto min-h-screen relative flex flex-col shadow-xl overflow-hidden pb-14 ${currentView === 'tasbih' ? 'bg-[#fef2c7]' : 'bg-slate-50'}`}>
+
+      {/* ── Full-screen Login Splash (no header/footer) ── */}
+      {currentView === 'login-splash' && (
+        <LoginChoiceView
+          onImamLogin={(_email, _password) => {
+            setCurrentView('imam-login');
+          }}
+          onUserLogin={(name, phone) => {
+            setIsUserAuthenticated(true);
+            setUserAuthName(name);
+            setUserAuthPhone(phone);
+            setCurrentView('home');
+          }}
+        />
+      )}
+
+      {currentView !== 'login-splash' && (<>
       {/* Elegant Atmospheric Header (Only shown on non-Home views for smooth navigation without technical clutters) */}
       {currentView !== 'home' && (
         <header className="h-14 bg-gradient-to-r from-[#0c2f21] to-[#10402b] text-white flex items-center justify-between px-4 shadow-sm shrink-0 border-b border-[#05170f] relative z-50">
@@ -337,6 +361,7 @@ export default function App() {
             {currentView === 'duas' && 'مسنون دعائیں'}
             {currentView === 'mosques' && 'قریبی مساجد'}
             {currentView === 'imam-login' && 'امام لاگ ان'}
+            {currentView === 'login-splash' && 'لاگ ان'}
             {currentView === 'login-choice' && 'لاگ ان'}
             {currentView === 'user-login' && 'یوزر لاگ ان'}
             {currentView === 'user-dashboard' && 'میرا اکاؤنٹ'}
@@ -369,6 +394,9 @@ export default function App() {
             requestLocation={requestLocation}
             isRealFirebase={realFirebaseActive}
             isAuthenticated={isAuthenticated}
+            isUserAuthenticated={isUserAuthenticated}
+            userAuthName={userAuthName}
+            authName={authName}
           />
         )}
 
@@ -405,24 +433,14 @@ export default function App() {
 
         {currentView === 'login-choice' && (
           <LoginChoiceView
-            onImamLogin={() => setCurrentView('imam-login')}
-            onUserLogin={() => {
-              if (isUserAuthenticated) {
-                setCurrentView('user-dashboard');
-              } else {
-                setCurrentView('user-login');
-              }
+            onImamLogin={(_email, _password) => {
+              setCurrentView('imam-login');
             }}
-          />
-        )}
-
-        {currentView === 'user-login' && (
-          <UserLoginView
-            onLoginSuccess={(name, phone) => {
+            onUserLogin={(name, phone) => {
               setIsUserAuthenticated(true);
               setUserAuthName(name);
               setUserAuthPhone(phone);
-              setCurrentView('user-dashboard');
+              setCurrentView('home');
             }}
           />
         )}
@@ -431,6 +449,7 @@ export default function App() {
           <UserDashboard
             userName={userAuthName}
             userPhone={userAuthPhone}
+            onClose={() => setCurrentView('home')}
             onLogout={() => {
               setIsUserAuthenticated(false);
               setUserAuthName('');
@@ -438,7 +457,7 @@ export default function App() {
               localStorage.removeItem('user_authenticated');
               localStorage.removeItem('user_name');
               localStorage.removeItem('user_phone');
-              setCurrentView('home');
+              setCurrentView('login-splash');
             }}
           />
         )}
@@ -452,7 +471,10 @@ export default function App() {
             requestLocation={requestLocation}
             isRealFirebase={realFirebaseActive}
             isAuthenticated={isAuthenticated}
-            setIsAuthenticated={setIsAuthenticated}
+            setIsAuthenticated={(val) => {
+              setIsAuthenticated(val);
+              if (val) setCurrentView('home');
+            }}
             authEmail={authEmail}
             setAuthEmail={setAuthEmail}
             authName={authName}
@@ -460,6 +482,7 @@ export default function App() {
             authUid={authUid}
             setAuthUid={setAuthUid}
             realtimeAuth={realtimeAuth}
+            onLoggedOut={() => setCurrentView('login-splash')}
           />
         )}
       </div>
@@ -637,6 +660,7 @@ export default function App() {
           </div>
         </div>
       )}
+    </>)}
     </div>
   );
 }
