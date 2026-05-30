@@ -326,15 +326,19 @@ export default function App() {
       {/* ── Full-screen Login Splash (no header/footer) ── */}
       {currentView === 'login-splash' && (
         <LoginChoiceView
-          onImamLogin={(_email, _password) => {
-            setCurrentView('imam-login');
-          }}
+          onImamLoginSuccess={() => setCurrentView('home')}
           onUserLogin={(name, phone) => {
             setIsUserAuthenticated(true);
             setUserAuthName(name);
             setUserAuthPhone(phone);
             setCurrentView('home');
           }}
+          isRealFirebase={realFirebaseActive}
+          realtimeAuth={realtimeAuth}
+          setIsAuthenticated={setIsAuthenticated}
+          setAuthEmail={setAuthEmail}
+          setAuthName={setAuthName}
+          setAuthUid={setAuthUid}
         />
       )}
 
@@ -439,15 +443,19 @@ export default function App() {
 
         {currentView === 'login-choice' && (
           <LoginChoiceView
-            onImamLogin={(_email, _password) => {
-              setCurrentView('imam-login');
-            }}
+            onImamLoginSuccess={() => setCurrentView('home')}
             onUserLogin={(name, phone) => {
               setIsUserAuthenticated(true);
               setUserAuthName(name);
               setUserAuthPhone(phone);
               setCurrentView('home');
             }}
+            isRealFirebase={realFirebaseActive}
+            realtimeAuth={realtimeAuth}
+            setIsAuthenticated={setIsAuthenticated}
+            setAuthEmail={setAuthEmail}
+            setAuthName={setAuthName}
+            setAuthUid={setAuthUid}
           />
         )}
 
