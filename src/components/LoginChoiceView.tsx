@@ -35,8 +35,49 @@ export function LoginChoiceView({
 
   // User states
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPassword, setUserPassword] = useState('');
+  const [isUserSignUp, setIsUserSignUp] = useState(false);
   const [userError, setUserError] = useState('');
+  const [userLoading, setUserLoading] = useState(false);
+
+  // ── User Login Handler ────────────────────────────────────────────────────
+  const handleUserSubmit = async () => {
+    if (!userEmail || !userPassword) { setUserError('براہ کرم ای میل اور پاسورڈ لکھیں'); return; }
+    if (isUserSignUp && !name.trim()) { setUserError('براہ کرم اپنا نام لکھیں'); return; }
+    setUserError('');
+    setUserLoading(true);
+
+    if (isRealFirebase && realtimeAuth) {
+      try {
+        if (isUserSignUp) {
+          await firebaseSignUp(realtimeAuth, userEmail, userPassword, name.trim());
+        } else {
+          const user = await firebaseSignIn(realtimeAuth, userEmail, userPassword);
+          name || setName(user.displayName || userEmail.split('@')[0]);
+        }
+        onUserLogin(name.trim() || userEmail.split('@')[0], '');
+      } catch (err: any) {
+        const code: string = err?.code || '';
+        if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+          setUserError('ای میل یا پاسورڈ غلط ہے۔ دوبارہ کوشش کریں۔');
+        } else if (code === 'auth/email-already-in-use') {
+          setUserError('یہ ای میل پہلے سے رجسٹر ہے۔ لاگ ان کریں۔');
+        } else if (code === 'auth/weak-password') {
+          setUserError('پاسورڈ کم از کم 6 حروف کا ہونا چاہیے۔');
+        } else if (code === 'auth/invalid-email') {
+          setUserError('ای میل کا فارمیٹ درست نہیں۔');
+        } else if (code === 'auth/network-request-failed') {
+          setUserError('انٹرنیٹ کنکشن چیک کریں۔');
+        } else {
+          setUserError('لاگ ان میں دشواری: ' + (err?.message || code));
+        }
+      }
+    } else {
+      setUserError('Firebase سے کنکشن نہیں ہے۔ انٹرنیٹ چیک کریں۔');
+    }
+    setUserLoading(false);
+  };
 
   // ── Imam Login Handler ────────────────────────────────────────────────────
   const handleImamSubmit = async () => {
@@ -204,51 +245,71 @@ export function LoginChoiceView({
         <div className="w-16 h-16 rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-sm">
           <UserCircle size={38} className="text-slate-700" />
         </div>
-        <h2 className="text-black font-urdu text-2xl font-black">یوزر لاگ ان</h2>
+        <h2 className="text-black font-urdu text-2xl font-black">{isUserSignUp ? 'نیا اکاؤنٹ بنائیں' : 'یوزر لاگ ان'}</h2>
         <p className="text-slate-500 font-urdu text-xs">عام صارفین کے لیے</p>
       </div>
 
       <div className="w-full max-w-xs space-y-4">
-        <div className="space-y-1.5">
-          <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">نام <span className="text-red-400">*</span></label>
-          <input
-            type="text"
-            placeholder="آپ کا نام"
-            value={name}
-            onChange={e => { setName(e.target.value); setUserError(''); }}
-            className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 font-urdu text-right text-black placeholder:text-slate-300 outline-none transition-all text-sm"
-          />
-        </div>
+
+        {isUserSignUp && (
+          <div className="space-y-1.5">
+            <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">نام <span className="text-red-400">*</span></label>
+            <input
+              type="text"
+              placeholder="آپ کا نام"
+              value={name}
+              onChange={e => { setName(e.target.value); setUserError(''); }}
+              className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 font-urdu text-right text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+            />
+          </div>
+        )}
 
         <div className="space-y-1.5">
-          <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">فون نمبر <span className="text-slate-400 font-normal">(اختیاری)</span></label>
+          <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">ای میل</label>
           <input
-            type="tel"
-            placeholder="03XX-XXXXXXX"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
+            type="email"
+            placeholder="user@email.com"
+            value={userEmail}
+            onChange={e => { setUserEmail(e.target.value); setUserError(''); }}
             className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
             dir="ltr"
           />
         </div>
 
-        {userError && <p className="text-right text-xs text-red-500 font-urdu">{userError}</p>}
+        <div className="space-y-1.5">
+          <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">پاسورڈ</label>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={userPassword}
+            onChange={e => { setUserPassword(e.target.value); setUserError(''); }}
+            className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+            dir="ltr"
+          />
+        </div>
+
+        {userError && <p className="text-right text-xs text-red-500 font-urdu bg-red-50 p-2 rounded-lg">{userError}</p>}
 
         <button
-          onClick={() => {
-            if (!name.trim()) { setUserError('براہ کرم اپنا نام لکھیں'); return; }
-            onUserLogin(name.trim(), phone.trim());
-          }}
-          className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all"
+          onClick={handleUserSubmit}
+          disabled={userLoading || !userEmail || !userPassword}
+          className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
         >
-          داخل ہوں ✓
+          {userLoading ? '...' : isUserSignUp ? 'اکاؤنٹ بنائیں' : 'داخل ہوں'}
+        </button>
+
+        <button
+          onClick={() => { setIsUserSignUp(!isUserSignUp); setUserError(''); }}
+          className="w-full text-center text-emerald-700 font-urdu text-sm hover:underline"
+        >
+          {isUserSignUp ? 'پہلے سے اکاؤنٹ ہے؟ لاگ ان کریں' : 'نیا اکاؤنٹ بنانا چاہتے ہیں؟ یہاں کلک کریں'}
         </button>
 
         <button onClick={() => setMode('choice')} className="w-full text-center text-slate-400 font-urdu text-sm hover:text-slate-600 transition-colors">
           ← واپس جائیں
         </button>
       </div>
-      <p className="text-slate-300 font-urdu text-xs text-center max-w-xs">آپ کی معلومات صرف آپ کے ڈیوائس پر محفوظ رہے گی</p>
+      <p className="text-slate-300 font-urdu text-xs text-center max-w-xs">آپ کی معلومات Firebase میں محفوظ رہے گی</p>
     </div>
   );
 }
