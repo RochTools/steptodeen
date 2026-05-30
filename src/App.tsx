@@ -17,6 +17,9 @@ import { MosqueFinderView } from './components/MosqueFinderView';
 import { ImamDashboard } from './components/ImamDashboard';
 import { TasbihView } from './components/TasbihView';
 import { QiblaView } from './components/QiblaView';
+import { LoginChoiceView } from './components/LoginChoiceView';
+import { UserLoginView } from './components/UserLoginView';
+import { UserDashboard } from './components/UserDashboard';
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, Info, MapPin } from 'lucide-react';
 
@@ -72,6 +75,27 @@ export default function App() {
     localStorage.setItem('imam_uid', authUid);
   }, [authUid]);
   
+  // ── User Auth State ──────────────────────────────────────────────────────────
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('user_authenticated') === 'true';
+  });
+  const [userAuthName, setUserAuthName] = useState<string>(() => {
+    return localStorage.getItem('user_name') || '';
+  });
+  const [userAuthPhone, setUserAuthPhone] = useState<string>(() => {
+    return localStorage.getItem('user_phone') || '';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('user_authenticated', String(isUserAuthenticated));
+  }, [isUserAuthenticated]);
+  useEffect(() => {
+    localStorage.setItem('user_name', userAuthName);
+  }, [userAuthName]);
+  useEffect(() => {
+    localStorage.setItem('user_phone', userAuthPhone);
+  }, [userAuthPhone]);
+
   // Real-time mosques list state
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -292,6 +316,10 @@ export default function App() {
             onClick={() => {
               if (currentView === 'surah') {
                 setCurrentView('quran');
+              } else if (currentView === 'imam-login') {
+                setCurrentView('login-choice');
+              } else if (currentView === 'user-login') {
+                setCurrentView('login-choice');
               } else {
                 setCurrentView('home');
               }
@@ -309,6 +337,9 @@ export default function App() {
             {currentView === 'duas' && 'مسنون دعائیں'}
             {currentView === 'mosques' && 'قریبی مساجد'}
             {currentView === 'imam-login' && 'امام لاگ ان'}
+            {currentView === 'login-choice' && 'لاگ ان'}
+            {currentView === 'user-login' && 'یوزر لاگ ان'}
+            {currentView === 'user-dashboard' && 'میرا اکاؤنٹ'}
             {currentView === 'tasbih' && 'تسبیح کاؤنٹر'}
             {currentView === 'qibla' && 'قبلہ رخ'}
           </h1>
@@ -324,7 +355,7 @@ export default function App() {
           <HomeView
             onNavigate={(view) => {
               if (view === 'imam-login') {
-                setCurrentView('imam-login');
+                setCurrentView('login-choice');
               } else {
                 setCurrentView(view);
               }
@@ -369,6 +400,46 @@ export default function App() {
             userCoords={userCoords}
             requestLocation={requestLocation}
             onOpenMosque={(m) => setSelectedMosque(m)}
+          />
+        )}
+
+        {currentView === 'login-choice' && (
+          <LoginChoiceView
+            onImamLogin={() => setCurrentView('imam-login')}
+            onUserLogin={() => {
+              if (isUserAuthenticated) {
+                setCurrentView('user-dashboard');
+              } else {
+                setCurrentView('user-login');
+              }
+            }}
+          />
+        )}
+
+        {currentView === 'user-login' && (
+          <UserLoginView
+            onLoginSuccess={(name, phone) => {
+              setIsUserAuthenticated(true);
+              setUserAuthName(name);
+              setUserAuthPhone(phone);
+              setCurrentView('user-dashboard');
+            }}
+          />
+        )}
+
+        {currentView === 'user-dashboard' && (
+          <UserDashboard
+            userName={userAuthName}
+            userPhone={userAuthPhone}
+            onLogout={() => {
+              setIsUserAuthenticated(false);
+              setUserAuthName('');
+              setUserAuthPhone('');
+              localStorage.removeItem('user_authenticated');
+              localStorage.removeItem('user_name');
+              localStorage.removeItem('user_phone');
+              setCurrentView('home');
+            }}
           />
         )}
 
