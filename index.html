@@ -25,13 +25,31 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Service Worker Register -->
+    <!-- Service Worker + Background Sync + Periodic Sync -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('SW registered:', reg.scope))
-            .catch(err => console.log('SW error:', err));
+        window.addEventListener('load', async () => {
+          try {
+            const reg = await navigator.serviceWorker.register('/sw.js');
+            console.log('SW registered:', reg.scope);
+
+            // Background Sync
+            if ('sync' in reg) {
+              await reg.sync.register('prayer-times-sync');
+            }
+
+            // Periodic Background Sync (اگر permission ملے)
+            if ('periodicSync' in reg) {
+              const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+              if (status.state === 'granted') {
+                await reg.periodicSync.register('daily-prayer-update', {
+                  minInterval: 24 * 60 * 60 * 1000 // روزانہ
+                });
+              }
+            }
+          } catch (err) {
+            console.log('SW error:', err);
+          }
         });
       }
     </script>
