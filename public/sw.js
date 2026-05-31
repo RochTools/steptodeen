@@ -1,23 +1,15 @@
-const CACHE_NAME = 'steptodeen-v1';
+const CACHE_NAME = 'steptodeen-v2';
+const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
-// آف لائن کیش کرنے والی فائلیں
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
-];
-
-// Install — static assets cache کریں
+// ── Install ──────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
 
-// Activate — پرانا cache صاف کریں
+// ── Activate ─────────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -27,9 +19,8 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch — پہلے network، پھر cache
+// ── Fetch (Offline Support) ───────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
-  // Firebase / API calls cache نہ کریں
   if (
     event.request.url.includes('firestore') ||
     event.request.url.includes('firebase') ||
@@ -48,7 +39,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Push Notification
+// ── Push Notifications ────────────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
   const title = data.title || 'StepToDeen 🕌';
@@ -68,10 +59,40 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// Notification click
+// ── Notification Click ────────────────────────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   if (event.action === 'open' || !event.action) {
     event.waitUntil(clients.openWindow(event.notification.data || '/'));
+  }
+});
+
+// ── Background Sync ───────────────────────────────────────────────────────────
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'prayer-times-sync') {
+    event.waitUntil(
+      fetch('/manifest.json')
+        .then(() => console.log('StepToDeen: background sync done'))
+        .catch(() => console.log('StepToDeen: background sync failed'))
+    );
+  }
+});
+
+// ── Periodic Background Sync ──────────────────────────────────────────────────
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'daily-prayer-update') {
+    event.waitUntil(
+      fetch('/manifest.json')
+        .then(() => {
+          self.registration.showNotification('StepToDeen 🕌', {
+            body: 'آج کے نماز اوقات تازہ ہو گئے',
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
+            dir: 'rtl',
+            lang: 'ur'
+          });
+        })
+        .catch(() => {})
+    );
   }
 });
