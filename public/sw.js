@@ -1,98 +1,79 @@
-const CACHE_NAME = 'steptodeen-v2';
-const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
+const CACHE = "steptodeen-offline-v1";
+const offlineFallbackPage = "offline.html";
 
-// ── Install ──────────────────────────────────────────────────────────────────
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
-  self.skipWaiting();
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js');
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
-// ── Activate ─────────────────────────────────────────────────────────────────
-self.addEventListener('activate', (event) => {
+self.addEventListener('install', async (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.open(CACHE).then((cache) => cache.addAll([
+      offlineFallbackPage,
+      '/',
+      '/index.html',
+      '/manifest.json',
+      '/icon-192.png',
+      '/icon-512.png'
+    ]))
   );
-  self.clients.claim();
 });
 
-// ── Fetch (Offline Support) ───────────────────────────────────────────────────
+if (workbox.navigationPreload.isSupported()) {
+  workbox.navigationPreload.enable();
+}
+
+workbox.routing.registerRoute(
+  new RegExp('/*'),
+  new workbox.strategies.StaleWhileRevalidate({ cacheName: CACHE })
+);
+
 self.addEventListener('fetch', (event) => {
-  if (
-    event.request.url.includes('firestore') ||
-    event.request.url.includes('firebase') ||
-    event.request.url.includes('googleapis') ||
-    event.request.method !== 'GET'
-  ) return;
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
-  );
+  if (event.request.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const preloadResp = await event.preloadResponse;
+        if (preloadResp) return preloadResp;
+        return await fetch(event.request);
+      } catch (error) {
+        const cache = await caches.open(CACHE);
+        return await cache.match(offlineFallbackPage);
+      }
+    })());
+  }
 });
 
 // ── Push Notifications ────────────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
-  const title = data.title || 'StepToDeen 🕌';
-  const options = {
+  event.waitUntil(self.registration.showNotification(data.title || 'StepToDeen 🕌', {
     body: data.body || 'نماز کا وقت ہو گیا',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    dir: 'rtl',
-    lang: 'ur',
+    dir: 'rtl', lang: 'ur',
     vibrate: [200, 100, 200],
-    data: data.url || '/',
-    actions: [
-      { action: 'open', title: 'کھولیں' },
-      { action: 'close', title: 'بند کریں' }
-    ]
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
+    data: data.url || '/'
+  }));
 });
 
-// ── Notification Click ────────────────────────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  if (event.action === 'open' || !event.action) {
-    event.waitUntil(clients.openWindow(event.notification.data || '/'));
-  }
+  event.waitUntil(clients.openWindow(event.notification.data || '/'));
 });
 
 // ── Background Sync ───────────────────────────────────────────────────────────
 self.addEventListener('sync', (event) => {
   if (event.tag === 'prayer-times-sync') {
-    event.waitUntil(
-      fetch('/manifest.json')
-        .then(() => console.log('StepToDeen: background sync done'))
-        .catch(() => console.log('StepToDeen: background sync failed'))
-    );
+    event.waitUntil(fetch('/manifest.json').catch(() => {}));
   }
 });
 
-// ── Periodic Background Sync ──────────────────────────────────────────────────
+// ── Periodic Sync ─────────────────────────────────────────────────────────────
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'daily-prayer-update') {
-    event.waitUntil(
-      fetch('/manifest.json')
-        .then(() => {
-          self.registration.showNotification('StepToDeen 🕌', {
-            body: 'آج کے نماز اوقات تازہ ہو گئے',
-            icon: '/icon-192.png',
-            badge: '/icon-192.png',
-            dir: 'rtl',
-            lang: 'ur'
-          });
-        })
-        .catch(() => {})
-    );
+    event.waitUntil(fetch('/manifest.json').catch(() => {}));
   }
 });
