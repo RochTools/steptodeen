@@ -17,7 +17,7 @@ import { MosqueFinderView } from './components/MosqueFinderView';
 import { ImamDashboard } from './components/ImamDashboard';
 import { TasbihView } from './components/TasbihView';
 import { QiblaView } from './components/QiblaView';
-import { LoginChoiceView } from './components/LoginChoiceView';
+import { initFCM, listenForegroundMessages } from './utils/fcm';
 
 import { UserDashboard } from './components/UserDashboard';
 import { Mosque } from './types';
@@ -103,7 +103,15 @@ export default function App() {
     localStorage.setItem('user_phone', userAuthPhone);
   }, [userAuthPhone]);
 
-  // Real-time mosques list state
+  // ── FCM Initialize ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isUserAuthenticated || isAuthenticated) {
+      initFCM().then(token => {
+        if (token) console.log('FCM ready ✅');
+      });
+      listenForegroundMessages();
+    }
+  }, [isUserAuthenticated, isAuthenticated]);
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
