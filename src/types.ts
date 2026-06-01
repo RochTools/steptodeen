@@ -52,6 +52,7 @@ export interface Hadith {
   num: string | number;
   ar: string;
   ur: string;
+  grades?: { name: string; grade: string }[];
 }
 
 export interface NamazStep {
