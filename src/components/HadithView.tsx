@@ -20,6 +20,69 @@ const HADITH_BOOKS: HadithBook[] = [
     icon: '📚',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-muslim.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-muslim.min.json'
+  },
+  {
+    key: 'abudawud',
+    name: 'سنن ابو داود',
+    ar: 'سنن أبي داود',
+    total: 5274,
+    icon: '📗',
+    ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-abudawud.min.json',
+    ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-abudawud.min.json'
+  },
+  {
+    key: 'tirmidhi',
+    name: 'جامع ترمذی',
+    ar: 'جامع الترمذي',
+    total: 3956,
+    icon: '📘',
+    ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-tirmidhi.min.json',
+    ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-tirmidhi.min.json'
+  },
+  {
+    key: 'nasai',
+    name: 'سنن نسائی',
+    ar: 'سنن النسائي',
+    total: 5758,
+    icon: '📙',
+    ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-nasai.min.json',
+    ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-nasai.min.json'
+  },
+  {
+    key: 'ibnmajah',
+    name: 'سنن ابن ماجہ',
+    ar: 'سنن ابن ماجه',
+    total: 4341,
+    icon: '📕',
+    ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-ibnmajah.min.json',
+    ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-ibnmajah.min.json'
+  },
+  {
+    key: 'malik',
+    name: 'موطا امام مالک',
+    ar: 'موطأ مالك',
+    total: 1857,
+    icon: '📜',
+    ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-malik.min.json',
+    ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-malik.min.json'
+  },
+  {
+    key: 'riyadussalihin',
+    name: 'ریاض الصالحین',
+    ar: 'رياض الصالحين',
+    total: 1896,
+    icon: '🌿',
+    ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-riyadussalihin.min.json',
+    ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-riyadussalihin.min.json'
+  },
+  {
+    key: 'adab',
+    name: 'الادب المفرد',
+    ar: 'الأدب المفرد',
+    total: 1322,
+    icon: '✨',
+    ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-adab.min.json',
+    ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-adab.min.json'
   }
 ];
 
@@ -90,7 +153,8 @@ export const HadithView: React.FC = () => {
       const parsed = arHadiths.map((h: any) => ({
         num: h.hadithnumber,
         ar: h.text || '',
-        ur: urMap[h.hadithnumber] || ''
+        ur: urMap[h.hadithnumber] || '',
+        grades: h.grades || []
       }));
 
       setHadiths(parsed);
@@ -103,8 +167,8 @@ export const HadithView: React.FC = () => {
       return;
     }
 
-    const arEdition = selectedBook.key === 'bukhari' ? 'ara-bukhari' : 'ara-muslim';
-    const urEdition = selectedBook.key === 'bukhari' ? 'urd-bukhari' : 'urd-muslim';
+    const arEdition = `ara-${selectedBook.key}`;
+    const urEdition = `urd-${selectedBook.key}`;
     const arSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${arEdition}/sections/${chapterKey}.min.json`;
     const urSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${urEdition}/sections/${chapterKey}.min.json`;
 
@@ -177,12 +241,8 @@ export const HadithView: React.FC = () => {
                     {b.ar} • کل {b.total} احادیث مبارکہ
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-[#1a6b4a] flex items-center justify-center shadow-inner">
-                  {b.key === 'bukhari' ? (
-                    <BookOpen size={20} className="text-emerald-700" />
-                  ) : (
-                    <Book size={20} className="text-emerald-700" />
-                  )}
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-[#1a6b4a] flex items-center justify-center shadow-inner text-lg">
+                  {b.icon}
                 </div>
               </div>
             ))}
@@ -262,7 +322,26 @@ export const HadithView: React.FC = () => {
             {currentHadiths.map((hadith) => (
               <div key={hadith.num} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-right">
                 <div className="bg-emerald-50 border-b border-slate-100 p-2 px-3 flex justify-between items-center text-emerald-900 text-[10px] font-bold">
-                  <span className="font-mono bg-white text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg">{hadith.num}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono bg-white text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg">{hadith.num}</span>
+                    {/* Grade Badge */}
+                    {hadith.grades && hadith.grades.length > 0 && (() => {
+                      const g = hadith.grades[0].grade?.toLowerCase() || '';
+                      const isSahih = g.includes('sahih') || g.includes('صحيح');
+                      const isDaif = g.includes('da') || g.includes('weak') || g.includes('ضعيف');
+                      const isHasan = g.includes('hasan') || g.includes('حسن');
+                      return (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                          isSahih ? 'bg-green-50 text-green-700 border-green-200' :
+                          isHasan ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          isDaif  ? 'bg-red-50 text-red-600 border-red-200' :
+                                    'bg-slate-50 text-slate-500 border-slate-200'
+                        }`}>
+                          {isSahih ? '✓ صحیح' : isHasan ? '◎ حسن' : isDaif ? '✗ ضعیف' : hadith.grades[0].grade}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <span className="font-urdu">{selectedBook.name}</span>
                 </div>
                 <div className="p-3.5 space-y-2 text-right">
