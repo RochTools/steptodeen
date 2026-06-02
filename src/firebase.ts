@@ -7,6 +7,8 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
   User
 } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
@@ -47,7 +49,7 @@ export async function initializeFirebaseAtRuntime(): Promise<{
 
 // ─── Real Firebase Auth helpers ───────────────────────────────────────────────
 
-/** Sign in existing imam with email + password */
+/** Sign in existing user with email + password */
 export async function firebaseSignIn(
   firebaseAuth: Auth,
   email: string,
@@ -57,7 +59,7 @@ export async function firebaseSignIn(
   return cred.user;
 }
 
-/** Register new imam with email + password + display name */
+/** Register new user with email + password + display name */
 export async function firebaseSignUp(
   firebaseAuth: Auth,
   email: string,
@@ -65,12 +67,18 @@ export async function firebaseSignUp(
   displayName: string
 ): Promise<User> {
   const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-  // Store display name so it's readable from the user object
   await updateProfile(cred.user, { displayName });
   return cred.user;
 }
 
-/** Sign out current imam */
+/** Google Sign-In */
+export async function firebaseGoogleSignIn(firebaseAuth: Auth): Promise<User> {
+  const provider = new GoogleAuthProvider();
+  const result = await signInWithPopup(firebaseAuth, provider);
+  return result.user;
+}
+
+/** Sign out current user */
 export async function firebaseSignOut(firebaseAuth: Auth): Promise<void> {
   await signOut(firebaseAuth);
 }
