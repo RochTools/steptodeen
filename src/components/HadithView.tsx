@@ -17,7 +17,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'صحیح مسلم',
     ar: 'صحيح مسلم',
     total: 3033,
-    icon: '📚',
+    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-muslim.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-muslim.min.json'
   },
@@ -26,7 +26,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن ابو داود',
     ar: 'سنن أبي داود',
     total: 5274,
-    icon: '📗',
+    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-abudawud.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-abudawud.min.json'
   },
@@ -35,7 +35,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'جامع ترمذی',
     ar: 'جامع الترمذي',
     total: 3956,
-    icon: '📘',
+    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-tirmidhi.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-tirmidhi.min.json'
   },
@@ -44,7 +44,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن نسائی',
     ar: 'سنن النسائي',
     total: 5758,
-    icon: '📙',
+    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-nasai.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-nasai.min.json'
   },
@@ -53,7 +53,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن ابن ماجہ',
     ar: 'سنن ابن ماجه',
     total: 4341,
-    icon: '📕',
+    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-ibnmajah.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-ibnmajah.min.json'
   },
@@ -62,7 +62,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'موطا امام مالک',
     ar: 'موطأ مالك',
     total: 1857,
-    icon: '📜',
+    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-malik.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-malik.min.json'
   },
@@ -71,7 +71,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'ریاض الصالحین',
     ar: 'رياض الصالحين',
     total: 1896,
-    icon: '🌿',
+    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-riyadussalihin.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-riyadussalihin.min.json'
   },
@@ -80,7 +80,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'الادب المفرد',
     ar: 'الأدب المفرد',
     total: 1322,
-    icon: '✨',
+    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-adab.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-adab.min.json'
   }
@@ -241,8 +241,8 @@ export const HadithView: React.FC = () => {
                     {b.ar} • کل {b.total} احادیث مبارکہ
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-[#1a6b4a] flex items-center justify-center shadow-inner text-lg">
-                  {b.icon}
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-inner">
+                  <BookOpen size={20} className="text-emerald-700" />
                 </div>
               </div>
             ))}
@@ -319,7 +319,26 @@ export const HadithView: React.FC = () => {
 
           {/* Reader items */}
           <div className="space-y-3">
-            {currentHadiths.map((hadith) => (
+            {currentHadiths.map((hadith) => {
+              const savedHadiths = (() => { try { return JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]'); } catch { return []; } })();
+              const isSaved = savedHadiths.some((h: any) => h.num === hadith.num && h.book === selectedBook.key);
+
+              const handleSaveHadith = (e: React.MouseEvent) => {
+                e.stopPropagation();
+                try {
+                  const list = JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]');
+                  if (isSaved) {
+                    const updated = list.filter((h: any) => !(h.num === hadith.num && h.book === selectedBook.key));
+                    localStorage.setItem('user_saved_hadiths', JSON.stringify(updated));
+                  } else {
+                    list.push({ num: hadith.num, book: selectedBook.key, bookName: selectedBook.name, ar: hadith.ar, ur: hadith.ur });
+                    localStorage.setItem('user_saved_hadiths', JSON.stringify(list));
+                  }
+                  window.dispatchEvent(new Event('storage'));
+                } catch {}
+              };
+
+              return (
               <div key={hadith.num} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-right">
                 <div className="bg-emerald-50 border-b border-slate-100 p-2 px-3 flex justify-between items-center text-emerald-900 text-[10px] font-bold">
                   <div className="flex items-center gap-1.5">
@@ -341,6 +360,17 @@ export const HadithView: React.FC = () => {
                         </span>
                       );
                     })()}
+                    {/* Save Button */}
+                    <button
+                      onClick={handleSaveHadith}
+                      className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border transition-all ${
+                        isSaved
+                          ? 'bg-red-50 border-red-200 text-red-500'
+                          : 'bg-white border-slate-200 text-slate-400 hover:border-red-300 hover:text-red-400'
+                      }`}
+                    >
+                      {isSaved ? '✓ Saved' : 'Save'}
+                    </button>
                   </div>
                   <span className="font-urdu">{selectedBook.name}</span>
                 </div>
@@ -349,13 +379,14 @@ export const HadithView: React.FC = () => {
                     {hadith.ar}
                   </p>
                   {hadith.ur && (
-                    <p className="text-xs text-slate-650 text-slate-650 leading-relaxed font-urdu text-right border-t border-slate-100 pt-2.5" dir="rtl">
+                    <p className="text-xs text-emerald-700 leading-relaxed font-urdu text-right border-t border-slate-100 pt-2.5" dir="rtl">
                       {hadith.ur}
                     </p>
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Pagination controls */}
