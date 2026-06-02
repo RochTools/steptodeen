@@ -242,7 +242,19 @@ export const HadithView: React.FC = () => {
                   </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-inner">
-                  <BookOpen size={20} className="text-emerald-700" />
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* کتاب کی جلد */}
+                    <rect x="3" y="3" width="18" height="18" rx="2" fill="#d1fae5" stroke="#059669" strokeWidth="1.5"/>
+                    {/* ریڑھ کی ہڈی */}
+                    <line x1="8" y1="3" x2="8" y2="21" stroke="#059669" strokeWidth="1.5"/>
+                    {/* صفحات کی لکیریں */}
+                    <line x1="11" y1="7" x2="19" y2="7" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
+                    <line x1="11" y1="10" x2="19" y2="10" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
+                    <line x1="11" y1="13" x2="19" y2="13" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
+                    <line x1="11" y1="16" x2="16" y2="16" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
+                    {/* بک مارک */}
+                    <path d="M5 3 L5 10 L6.5 8.5 L8 10 L8 3" fill="#059669"/>
+                  </svg>
                 </div>
               </div>
             ))}
