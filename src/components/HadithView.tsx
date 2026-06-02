@@ -2,12 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, AlertCircle, RefreshCw, Scroll, Book, BookOpen } from 'lucide-react';
 import { HadithBook, Hadith } from '../types';
 
+const BookIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3" width="18" height="18" rx="2" fill="#d1fae5" stroke="#059669" strokeWidth="1.5"/>
+    <line x1="8" y1="3" x2="8" y2="21" stroke="#059669" strokeWidth="1.5"/>
+    <line x1="11" y1="7" x2="19" y2="7" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
+    <line x1="11" y1="10" x2="19" y2="10" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
+    <line x1="11" y1="13" x2="19" y2="13" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
+    <line x1="11" y1="16" x2="16" y2="16" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
+    <path d="M5 3 L5 10 L6.5 8.5 L8 10 L8 3" fill="#059669"/>
+  </svg>
+);
+
+const StarIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#d97706" stroke="#d97706" strokeWidth="1"/>
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0">
+    <circle cx="11" cy="11" r="8" stroke="#94a3b8" strokeWidth="2"/>
+    <path d="M21 21l-4.35-4.35" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
 const HADITH_BOOKS: HadithBook[] = [
   {
     key: 'bukhari',
     name: 'صحیح بخاری',
     ar: 'صحيح البخاري',
     total: 7563,
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-bukhari.min.json'
   },
@@ -16,6 +42,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'صحیح مسلم',
     ar: 'صحيح مسلم',
     total: 3033,
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-muslim.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-muslim.min.json'
   },
@@ -24,6 +51,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن ابو داود',
     ar: 'سنن أبي داود',
     total: 5274,
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-abudawud.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-abudawud.min.json'
   },
@@ -32,6 +60,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'جامع ترمذی',
     ar: 'جامع الترمذي',
     total: 3956,
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-tirmidhi.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-tirmidhi.min.json'
   },
@@ -40,6 +69,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن نسائی',
     ar: 'سنن النسائي',
     total: 5758,
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-nasai.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-nasai.min.json'
   },
@@ -48,6 +78,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن ابن ماجہ',
     ar: 'سنن ابن ماجه',
     total: 4341,
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-ibnmajah.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-ibnmajah.min.json'
   },
@@ -56,7 +87,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'موطا امام مالک',
     ar: 'موطأ مالك',
     total: 1857,
-    
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-malik.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-malik.min.json'
   },
@@ -65,7 +96,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'ریاض الصالحین',
     ar: 'رياض الصالحين',
     total: 1896,
-    
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-riyadussalihin.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-riyadussalihin.min.json'
   },
@@ -74,38 +105,51 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'الادب المفرد',
     ar: 'الأدب المفرد',
     total: 1322,
-
+    icon: '',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-adab.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-adab.min.json'
   }
 ];
 
 export const HadithView: React.FC = () => {
-  // Navigation states: 'books' | 'chapters' | 'reader'
   const [currentScreen, setCurrentScreen] = useState<'books' | 'chapters' | 'reader'>('books');
   const [selectedBook, setSelectedBook] = useState<HadithBook | null>(null);
   const [chapters, setChapters] = useState<{ [key: string]: any } | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<{ key: string; name: string; from: number; to: number } | null>(null);
   
-  // Reader navigation & list loaded state
   const [loading, setLoading] = useState(false);
   const [errorObj, setErrorObj] = useState<string | null>(null);
   const [hadiths, setHadiths] = useState<Hadith[]>([]);
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Search within book
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<Hadith | null | 'not-found'>(null);
+  const [savedHadithsState, setSavedHadithsState] = useState<any[]>(() => {
+    try { return JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]'); } catch { return []; }
+  });
 
-  // Last seen hadith
   const [lastSeen, setLastSeen] = useState<{ bookKey: string; bookName: string; chapterKey: string; chapterName: string; from: number; to: number; hadithNum: number } | null>(() => {
     try { return JSON.parse(localStorage.getItem('last_seen_hadith') || 'null'); } catch { return null; }
   });
 
-  // Global cache of books / sections
   const [cacheChapters, setCacheChapters] = useState<{ [key: string]: any }>({});
   const [cachePages, setCachePages] = useState<{ [key: string]: any }>({});
+
+  useEffect(() => {
+    setTotalPages(Math.ceil(hadiths.length / perPage));
+  }, [hadiths, perPage]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        setSavedHadithsState(JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]'));
+      } catch {}
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const handleOpenChapters = (book: HadithBook) => {
     setSelectedBook(book);
@@ -201,13 +245,32 @@ export const HadithView: React.FC = () => {
     const found = hadiths.find(h => h.num === num);
     if (found) {
       setSearchResult(found);
-      // jump to the correct page
       const idx = hadiths.indexOf(found);
       const targetPage = Math.ceil((idx + 1) / perPage);
       setPage(targetPage);
     } else {
       setSearchResult('not-found');
     }
+  };
+
+  const handleSaveHadith = (e: React.MouseEvent, hadith: Hadith) => {
+    e.stopPropagation();
+    if (!selectedBook) return;
+    try {
+      const list = JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]');
+      const isSaved = list.some((h: any) => h.num === hadith.num && h.book === selectedBook.key);
+      
+      let updated;
+      if (isSaved) {
+        updated = list.filter((h: any) => !(h.num === hadith.num && h.book === selectedBook.key));
+      } else {
+        updated = [...list, { num: hadith.num, book: selectedBook.key, bookName: selectedBook.name, ar: hadith.ar, ur: hadith.ur }];
+      }
+      
+      localStorage.setItem('user_saved_hadiths', JSON.stringify(updated));
+      setSavedHadithsState(updated);
+      window.dispatchEvent(new Event('storage'));
+    } catch {}
   };
 
   const handleSaveLastSeen = (hadithNum: number) => {
@@ -223,7 +286,6 @@ export const HadithView: React.FC = () => {
     if (!book) return;
     handleOpenReader(lastSeen.chapterKey, lastSeen.chapterName, lastSeen.from, lastSeen.to, book);
   };
-
 
   const currentHadiths = hadiths.slice((page - 1) * perPage, page * perPage);
 
@@ -257,29 +319,26 @@ export const HadithView: React.FC = () => {
 
   return (
     <div className="animate-fadeIn">
-      {/* 1. Books List screen */}
+      {/* Books List screen */}
       {currentScreen === 'books' && (
         <div className="space-y-4 p-4 pb-20">
           <div className="bg-emerald-50 text-emerald-950 p-3.5 text-center space-y-1.5 border border-emerald-100 rounded-2xl shadow-sm">
             <h2 className="text-xl font-bold font-amiri leading-normal text-emerald-700">الحديث الشريف</h2>
-            <p className="text-[11px] text-slate-750 text-slate-700 font-urdu leading-relaxed">صحیح اور مستند کتبِ احادیث کا عظیم سورس</p>
+            <p className="text-[11px] text-slate-700 font-urdu leading-relaxed">صحیح اور مستند کتبِ احادیث کا عظیم سورس</p>
           </div>
 
-          {/* آخری دیکھی حدیث بٹن */}
           {lastSeen && (
             <button
               onClick={handleGoToLastSeen}
               className="w-full flex items-center justify-between bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 shadow-sm hover:bg-amber-100 transition-all"
             >
-              <span className="text-amber-600 text-[11px] font-bold font-urdu">← جاری رکھیں</span>
+              <span className="text-amber-600 text-[11px] font-bold font-urdu">جاری رکھیں</span>
               <div className="text-right">
                 <p className="text-amber-800 font-urdu text-xs font-bold">{lastSeen.bookName}</p>
                 <p className="text-amber-600 font-mono text-[10px]">آخری دیکھی حدیث: #{lastSeen.hadithNum}</p>
               </div>
               <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#d97706" stroke="#d97706" strokeWidth="1"/>
-                </svg>
+                <StarIcon />
               </div>
             </button>
           )}
@@ -291,27 +350,15 @@ export const HadithView: React.FC = () => {
                 onClick={() => handleOpenChapters(b)}
                 className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:bg-emerald-50 hover:border-emerald-200 transition-all cursor-pointer group"
               >
-                <span className="text-xs text-slate-300 group-hover:text-emerald-700 transition-colors">←</span>
+                <span className="text-xs text-slate-300 group-hover:text-emerald-700 transition-colors"></span>
                 <div className="text-right flex-1 pr-3">
                   <div className="text-xs font-bold text-slate-800 font-urdu">{b.name}</div>
-                  <div className="text-[10px] text-slate-450 text-slate-400 font-urdu mt-0.5">
-                    {b.ar} • کل {b.total} احادیث مبارکہ
+                  <div className="text-[10px] text-slate-400 font-urdu mt-0.5">
+                    {b.ar} | کل {b.total} احادیث مبارکہ
                   </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-inner">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    {/* کتاب کی جلد */}
-                    <rect x="3" y="3" width="18" height="18" rx="2" fill="#d1fae5" stroke="#059669" strokeWidth="1.5"/>
-                    {/* ریڑھ کی ہڈی */}
-                    <line x1="8" y1="3" x2="8" y2="21" stroke="#059669" strokeWidth="1.5"/>
-                    {/* صفحات کی لکیریں */}
-                    <line x1="11" y1="7" x2="19" y2="7" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
-                    <line x1="11" y1="10" x2="19" y2="10" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
-                    <line x1="11" y1="13" x2="19" y2="13" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
-                    <line x1="11" y1="16" x2="16" y2="16" stroke="#059669" strokeWidth="1" strokeLinecap="round"/>
-                    {/* بک مارک */}
-                    <path d="M5 3 L5 10 L6.5 8.5 L8 10 L8 3" fill="#059669"/>
-                  </svg>
+                  <BookIcon />
                 </div>
               </div>
             ))}
@@ -319,7 +366,7 @@ export const HadithView: React.FC = () => {
         </div>
       )}
 
-      {/* 2. Chapters List screen */}
+      {/* Chapters List screen */}
       {currentScreen === 'chapters' && selectedBook && (
         <div className="space-y-3 p-4 pb-20">
           <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
@@ -344,14 +391,14 @@ export const HadithView: React.FC = () => {
                 const from = sec.hadithnumber_first || sec.hadith_number_first || 0;
                 const to = sec.hadithnumber_last || sec.hadith_number_last || 0;
                 const range = from && to ? `${from} - ${to}` : '';
- 
+
                 return (
                   <div
                     key={k}
                     onClick={() => handleOpenReader(k, name, from, to)}
                     className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-emerald-300 cursor-pointer transition-all flex items-center justify-between gap-2"
                   >
-                    <span className="text-xs text-slate-350 text-slate-300">←</span>
+                    <span className="text-xs text-slate-300"></span>
                     <div className="text-right flex-1 pr-1">
                       <div className="text-xs font-bold text-slate-800 font-urdu leading-normal">{name}</div>
                       {range && (
@@ -370,7 +417,7 @@ export const HadithView: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Paginated Reader screen */}
+      {/* Paginated Reader screen */}
       {currentScreen === 'reader' && selectedBook && selectedChapter && (
         <div className="space-y-3 p-4 pb-20">
           <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
@@ -386,7 +433,6 @@ export const HadithView: React.FC = () => {
             </span>
           </div>
 
-          {/* سرچ بار — حدیث نمبر سے */}
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
             <button
               onClick={handleSearchHadith}
@@ -403,103 +449,84 @@ export const HadithView: React.FC = () => {
               dir="rtl"
               className="flex-1 text-xs font-urdu text-right bg-transparent outline-none text-slate-700 placeholder:text-slate-300"
             />
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0">
-              <circle cx="11" cy="11" r="8" stroke="#94a3b8" strokeWidth="2"/>
-              <path d="M21 21l-4.35-4.35" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            <SearchIcon />
           </div>
+          
           {searchResult === 'not-found' && (
             <p className="text-center text-red-500 font-urdu text-[11px]">یہ حدیث نمبر اس باب میں نہیں ملی</p>
           )}
           {searchResult && searchResult !== 'not-found' && (
-            <p className="text-center text-emerald-700 font-urdu text-[11px]">حدیث نمبر {searchResult.num} مل گئی — صفحہ {page} پر دیکھیں</p>
+            <p className="text-center text-emerald-700 font-urdu text-[11px]">حدیث نمبر {searchResult.num} مل گئی، صفحہ {page} پر دیکھیں</p>
           )}
 
-          {/* Reader items */}
           <div className="space-y-3">
             {currentHadiths.map((hadith) => {
-              const savedHadiths = (() => { try { return JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]'); } catch { return []; } })();
-              const isSaved = savedHadiths.some((h: any) => h.num === hadith.num && h.book === selectedBook.key);
-
-              const handleSaveHadith = (e: React.MouseEvent) => {
-                e.stopPropagation();
-                try {
-                  const list = JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]');
-                  if (isSaved) {
-                    const updated = list.filter((h: any) => !(h.num === hadith.num && h.book === selectedBook.key));
-                    localStorage.setItem('user_saved_hadiths', JSON.stringify(updated));
-                  } else {
-                    list.push({ num: hadith.num, book: selectedBook.key, bookName: selectedBook.name, ar: hadith.ar, ur: hadith.ur });
-                    localStorage.setItem('user_saved_hadiths', JSON.stringify(list));
-                  }
-                  window.dispatchEvent(new Event('storage'));
-                } catch {}
-              };
+              const isSaved = savedHadithsState.some((h: any) => h.num === hadith.num && h.book === selectedBook.key);
+              const isLastSeen = lastSeen?.hadithNum === hadith.num && lastSeen?.bookKey === selectedBook.key;
 
               return (
-              <div key={hadith.num} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-right">
-                <div className="bg-emerald-50 border-b border-slate-100 p-2 px-3 flex justify-between items-center text-emerald-900 text-[10px] font-bold">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono bg-white text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg">{hadith.num}</span>
-                    {/* Grade Badge */}
-                    {hadith.grades && hadith.grades.length > 0 && (() => {
-                      const g = hadith.grades[0].grade?.toLowerCase() || '';
-                      const isSahih = g.includes('sahih') || g.includes('صحيح');
-                      const isDaif = g.includes('da') || g.includes('weak') || g.includes('ضعيف');
-                      const isHasan = g.includes('hasan') || g.includes('حسن');
-                      return (
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
-                          isSahih ? 'bg-green-50 text-green-700 border-green-200' :
-                          isHasan ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          isDaif  ? 'bg-red-50 text-red-600 border-red-200' :
-                                    'bg-slate-50 text-slate-500 border-slate-200'
-                        }`}>
-                          {isSahih ? '✓ صحیح' : isHasan ? '◎ حسن' : isDaif ? '✗ ضعیف' : hadith.grades[0].grade}
-                        </span>
-                      );
-                    })()}
-                    {/* Save Button */}
-                    <button
-                      onClick={handleSaveHadith}
-                      className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border transition-all ${
-                        isSaved
-                          ? 'bg-red-50 border-red-200 text-red-500'
-                          : 'bg-white border-slate-200 text-slate-400 hover:border-red-300 hover:text-red-400'
-                      }`}
-                    >
-                      {isSaved ? '✓ Saved' : 'Save'}
-                    </button>
-                    {/* Last Seen Button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleSaveLastSeen(hadith.num); }}
-                      className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border transition-all ${
-                        lastSeen?.hadithNum === hadith.num && lastSeen?.bookKey === selectedBook.key
-                          ? 'bg-amber-50 border-amber-300 text-amber-600'
-                          : 'bg-white border-slate-200 text-slate-400 hover:border-amber-300 hover:text-amber-500'
-                      }`}
-                      title="آخری سین محفوظ کریں"
-                    >
-                      {lastSeen?.hadithNum === hadith.num && lastSeen?.bookKey === selectedBook.key ? '★ آخری سین' : '☆ آخری سین'}
-                    </button>
+                <div key={hadith.num} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-right">
+                  <div className="bg-emerald-50 border-b border-slate-100 p-2 px-3 flex justify-between items-center text-emerald-900 text-[10px] font-bold">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono bg-white text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg">{hadith.num}</span>
+                      
+                      {hadith.grades && hadith.grades.length > 0 && (() => {
+                        const g = hadith.grades[0].grade?.toLowerCase() || '';
+                        const isSahih = g.includes('sahih') || g.includes('صحيح');
+                        const isDaif = g.includes('da') || g.includes('weak') || g.includes('ضعيف');
+                        const isHasan = g.includes('hasan') || g.includes('حسن');
+                        return (
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                            isSahih ? 'bg-green-50 text-green-700 border-green-200' :
+                            isHasan ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            isDaif  ? 'bg-red-50 text-red-600 border-red-200' :
+                                      'bg-slate-50 text-slate-500 border-slate-200'
+                          }`}>
+                            {isSahih ? 'صحیح' : isHasan ? 'حسن' : isDaif ? 'ضعیف' : hadith.grades[0].grade}
+                          </span>
+                        );
+                      })()}
+                      
+                      <button
+                        onClick={(e) => handleSaveHadith(e, hadith)}
+                        className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border transition-all ${
+                          isSaved
+                            ? 'bg-red-50 border-red-200 text-red-500'
+                            : 'bg-white border-slate-200 text-slate-400 hover:border-red-300 hover:text-red-400'
+                        }`}
+                      >
+                        {isSaved ? 'محفوظ' : 'محفوظ کریں'}
+                      </button>
+                      
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleSaveLastSeen(hadith.num); }}
+                        className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border transition-all ${
+                          isLastSeen
+                            ? 'bg-amber-50 border-amber-300 text-amber-600'
+                            : 'bg-white border-slate-200 text-slate-400 hover:border-amber-300 hover:text-amber-500'
+                        }`}
+                        title="آخری سین محفوظ کریں"
+                      >
+                        {isLastSeen ? 'آخری سین' : 'آخری سین'}
+                      </button>
+                    </div>
+                    <span className="font-urdu">{selectedBook.name}</span>
                   </div>
-                  <span className="font-urdu">{selectedBook.name}</span>
-                </div>
-                <div className="p-3.5 space-y-2 text-right">
-                  <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-bold" dir="rtl">
-                    {hadith.ar}
-                  </p>
-                  {hadith.ur && (
-                    <p className="text-xs text-emerald-700 leading-relaxed font-urdu text-right border-t border-slate-100 pt-2.5 font-bold" dir="rtl">
-                      {hadith.ur}
+                  <div className="p-3.5 space-y-2 text-right">
+                    <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-bold" dir="rtl">
+                      {hadith.ar}
                     </p>
-                  )}
+                    {hadith.ur && (
+                      <p className="text-xs text-emerald-700 leading-relaxed font-urdu text-right border-t border-slate-100 pt-2.5 font-bold" dir="rtl">
+                        {hadith.ur}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
               );
             })}
           </div>
 
-          {/* Pagination controls */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between bg-white border border-slate-200 p-2 rounded-2xl shadow-sm">
               <button
@@ -508,7 +535,7 @@ export const HadithView: React.FC = () => {
                   setPage(page + 1);
                   window.scrollTo(0, 0);
                 }}
-                className="py-1 px-3 text-emerald-750 text-emerald-700 disabled:text-slate-300 font-bold font-urdu text-xs flex items-center hover:underline"
+                className="py-1 px-3 text-emerald-700 disabled:text-slate-300 font-bold font-urdu text-xs flex items-center hover:underline"
               >
                 اگلا
                 <ChevronLeft size={13} />
@@ -524,7 +551,7 @@ export const HadithView: React.FC = () => {
                   setPage(page - 1);
                   window.scrollTo(0, 0);
                 }}
-                className="py-1 px-3 text-emerald-750 text-emerald-700 disabled:text-slate-300 font-bold font-urdu text-xs flex items-center hover:underline"
+                className="py-1 px-3 text-emerald-700 disabled:text-slate-300 font-bold font-urdu text-xs flex items-center hover:underline"
               >
                 <ChevronRight size={13} />
                 پچھلا
