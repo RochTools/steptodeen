@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { UserCircle } from 'lucide-react';
 import { firebaseSignIn, firebaseSignUp, firebaseGoogleSignIn } from '../firebase';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface LoginChoiceViewProps {
   onImamLoginSuccess: () => void;
@@ -42,18 +42,29 @@ export function LoginChoiceView({
   const [userError, setUserError] = useState('');
   const [userLoading, setUserLoading] = useState(false);
 
-  // ── Google Sign-In Handler ────────────────────────────────────────────────
+  // ── Google Sign-In Handler (صرف user کے لیے) ─────────────────────────────
   const handleGoogleSignIn = async () => {
     setUserError('');
     setUserLoading(true);
     try {
       const user = await firebaseGoogleSignIn(realtimeAuth);
       const db = getFirestore();
+
+      // پہلے چیک کریں کہ یہ imam تو نہیں
+      const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+      if (userDocSnap.exists() && userDocSnap.data()?.role === 'imam') {
+        setUserError('یہ اکاؤنٹ امام کا ہے۔ امام لاگ ان استعمال کریں۔');
+        setUserLoading(false);
+        return;
+      }
+
+      // role: user کے ساتھ save کریں
       await setDoc(doc(db, 'users', user.uid), {
         role: 'user',
         email: user.email,
         name: user.displayName || '',
       }, { merge: true });
+
       onUserLogin(user.displayName || user.email?.split('@')[0] || 'User', '');
     } catch (err: any) {
       const code: string = err?.code || '';
@@ -78,16 +89,29 @@ export function LoginChoiceView({
     if (isRealFirebase && realtimeAuth) {
       try {
         if (isUserSignUp) {
+          // نیا یوزر بنائیں - role: user
           const newUser = await firebaseSignUp(realtimeAuth, userEmail, userPassword, name.trim());
-          try {
-            const db = getFirestore();
-            await setDoc(doc(db, 'users', newUser.uid), { role: 'user', email: userEmail, name: name.trim() });
-          } catch {}
+          const db = getFirestore();
+          await setDoc(doc(db, 'users', newUser.uid), {
+            role: 'user',
+            email: userEmail,
+            name: name.trim(),
+          });
+          onUserLogin(name.trim(), '');
         } else {
+          // لاگ ان کریں اور role چیک کریں
           const user = await firebaseSignIn(realtimeAuth, userEmail, userPassword);
-          name || setName(user.displayName || userEmail.split('@')[0]);
+          const db = getFirestore();
+          const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+
+          if (userDocSnap.exists() && userDocSnap.data()?.role === 'imam') {
+            setUserError('یہ اکاؤنٹ امام کا ہے۔ امام لاگ ان استعمال کریں۔');
+            setUserLoading(false);
+            return;
+          }
+
+          onUserLogin(user.displayName || userEmail.split('@')[0], '');
         }
-        onUserLogin(name.trim() || userEmail.split('@')[0], '');
       } catch (err: any) {
         const code: string = err?.code || '';
         if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
@@ -120,15 +144,29 @@ export function LoginChoiceView({
     if (isRealFirebase && realtimeAuth) {
       try {
         if (isSignUp) {
+          // نیا امام بنائیں - role: imam
           const newImam = await firebaseSignUp(realtimeAuth, email, password, imamName);
-          try {
-            const db = getFirestore();
-            await setDoc(doc(db, 'users', newImam.uid), { role: 'imam', email: email, name: imamName });
-          } catch {}
+          const db = getFirestore();
+          await setDoc(doc(db, 'users', newImam.uid), {
+            role: 'imam',
+            email: email,
+            name: imamName,
+          });
+          onImamLoginSuccess();
         } else {
-          await firebaseSignIn(realtimeAuth, email, password);
+          // لاگ ان کریں اور role چیک کریں
+          const user = await firebaseSignIn(realtimeAuth, email, password);
+          const db = getFirestore();
+          const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+
+          if (userDocSnap.exists() && userDocSnap.data()?.role === 'user') {
+            setImamError('یہ اکاؤنٹ یوزر کا ہے۔ یوزر لاگ ان استعمال کریں۔');
+            setLoading(false);
+            return;
+          }
+
+          onImamLoginSuccess();
         }
-        onImamLoginSuccess();
       } catch (err: any) {
         const code: string = err?.code || '';
         if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
@@ -204,7 +242,7 @@ export function LoginChoiceView({
           <div className="w-16 h-16 rounded-2xl bg-black flex items-center justify-center shadow-lg">
             <span className="text-3xl">🕌</span>
           </div>
-          <h2 className="text-black font-urdu text-2xl font-black">{isSignUp ? 'نیا اکاؤنٹ بنائیں' : 'امام لاگ ان'}</h2>
+          <h2 className="text-black font-urdu text-2xl font-black">{isSignUp ? 'نیا امام اکاؤنٹ' : 'امام لاگ ان'}</h2>
           <p className="text-slate-500 font-urdu text-xs">مسجد انتظامیہ کے لیے</p>
         </div>
 
@@ -255,14 +293,14 @@ export function LoginChoiceView({
             disabled={loading || !email || !password}
             className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
           >
-            {loading ? '...' : isSignUp ? 'اکاؤنٹ بنائیں' : 'لاگ ان کریں'}
+            {loading ? '...' : isSignUp ? 'امام اکاؤنٹ بنائیں' : 'لاگ ان کریں'}
           </button>
 
           <button
             onClick={() => { setIsSignUp(!isSignUp); setImamError(''); }}
             className="w-full text-center text-emerald-700 font-urdu text-sm hover:underline"
           >
-            {isSignUp ? 'پہلے سے اکاؤنٹ ہے؟ لاگ ان کریں' : 'نیا اکاؤنٹ بنانا چاہتے ہیں؟ یہاں کلک کریں'}
+            {isSignUp ? 'پہلے سے اکاؤنٹ ہے؟ لاگ ان کریں' : 'نیا امام اکاؤنٹ بنانا چاہتے ہیں؟'}
           </button>
 
           <button onClick={() => setMode('choice')} className="w-full text-center text-slate-400 font-urdu text-sm hover:text-slate-600 transition-colors">
@@ -280,7 +318,7 @@ export function LoginChoiceView({
         <div className="w-16 h-16 rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-sm">
           <UserCircle size={38} className="text-slate-700" />
         </div>
-        <h2 className="text-black font-urdu text-2xl font-black">{isUserSignUp ? 'نیا اکاؤنٹ بنائیں' : 'یوزر لاگ ان'}</h2>
+        <h2 className="text-black font-urdu text-2xl font-black">{isUserSignUp ? 'نیا یوزر اکاؤنٹ' : 'یوزر لاگ ان'}</h2>
         <p className="text-slate-500 font-urdu text-xs">عام صارفین کے لیے</p>
       </div>
 
@@ -330,7 +368,7 @@ export function LoginChoiceView({
           disabled={userLoading || !userEmail || !userPassword}
           className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
         >
-          {userLoading ? '...' : isUserSignUp ? 'اکاؤنٹ بنائیں' : 'داخل ہوں'}
+          {userLoading ? '...' : isUserSignUp ? 'یوزر اکاؤنٹ بنائیں' : 'داخل ہوں'}
         </button>
 
         {/* OR Divider */}
@@ -359,7 +397,7 @@ export function LoginChoiceView({
           onClick={() => { setIsUserSignUp(!isUserSignUp); setUserError(''); }}
           className="w-full text-center text-emerald-700 font-urdu text-sm hover:underline"
         >
-          {isUserSignUp ? 'پہلے سے اکاؤنٹ ہے؟ لاگ ان کریں' : 'نیا اکاؤنٹ بنانا چاہتے ہیں؟ یہاں کلک کریں'}
+          {isUserSignUp ? 'پہلے سے اکاؤنٹ ہے؟ لاگ ان کریں' : 'نیا یوزر اکاؤنٹ بنانا چاہتے ہیں؟'}
         </button>
 
         <button onClick={() => setMode('choice')} className="w-full text-center text-slate-400 font-urdu text-sm hover:text-slate-600 transition-colors">
