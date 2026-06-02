@@ -8,13 +8,19 @@ interface UserDashboardProps {
   onLogout: () => void;
   onClose: () => void;
   onOpenMosque: (mosque: Mosque) => void;
+  onGoToLastSeen?: () => void;
 }
 
-export function UserDashboard({ userName, onLogout, onClose, onOpenMosque }: UserDashboardProps) {
+export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoToLastSeen }: UserDashboardProps) {
   const [profileImage, setProfileImage] = useState<string | null>(() => {
     return localStorage.getItem('user_profile_image') || null;
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── آخری دیکھی حدیث ─────────────────────────────────────────────
+  const lastSeenHadith = (() => {
+    try { return JSON.parse(localStorage.getItem('last_seen_hadith') || 'null'); } catch { return null; }
+  })();
 
   // ── تسبیح ڈیٹا ─────────────────────────────────────────────
   const today = new Date().toISOString().split('T')[0];
@@ -161,6 +167,29 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque }: Use
           </div>
         )}
       </div>
+
+      {/* ── آخری دیکھی حدیث ── */}
+      {lastSeenHadith && (
+        <>
+          <div className="w-full border-t border-slate-100"></div>
+          <div className="w-full">
+            <h3 className="text-right text-slate-700 font-urdu font-bold text-sm mb-3">⭐ آخری دیکھی حدیث</h3>
+            <button
+              onClick={() => { if (onGoToLastSeen) { onGoToLastSeen(); onClose(); } }}
+              className="w-full bg-amber-50 border border-amber-200 rounded-xl p-3 text-right hover:bg-amber-100 active:scale-95 transition-all"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-amber-600 text-[10px] font-bold font-mono">← واپس جائیں</span>
+                <div>
+                  <span className="text-[10px] text-amber-700 font-urdu font-bold">{lastSeenHadith.bookName}</span>
+                  <span className="text-[10px] text-amber-500 font-mono mr-1"> #{lastSeenHadith.hadithNum}</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-amber-600 font-urdu">{lastSeenHadith.chapterName}</p>
+            </button>
+          </div>
+        </>
+      )}
 
       <div className="w-full border-t border-slate-100"></div>
 
