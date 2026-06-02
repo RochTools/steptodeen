@@ -43,7 +43,7 @@ export interface HadithBook {
   name: string;
   ar: string;
   total: number;
-  icon: string;
+  icon?: string;
   ar_url: string;
   ur_url: string;
 }
