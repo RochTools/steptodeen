@@ -6,7 +6,7 @@ import {
   deleteLocalMosque,
   subscribeToAuthState
 } from './firebase';
-import { onSnapshot, collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { onSnapshot, collection, addDoc, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { HomeView } from './components/HomeView';
 import { QuranView } from './components/QuranView';
 import { SurahReader } from './components/SurahReader';
@@ -17,10 +17,10 @@ import { MosqueFinderView } from './components/MosqueFinderView';
 import { ImamDashboard } from './components/ImamDashboard';
 import { TasbihView } from './components/TasbihView';
 import { QiblaView } from './components/QiblaView';
-import { LoginChoiceView } from './components/LoginChoiceView';
 import { initFCM, listenForegroundMessages } from './utils/fcm';
 
 import { UserDashboard } from './components/UserDashboard';
+import { LoginChoiceView } from './components/LoginChoiceView';
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, Info, MapPin } from 'lucide-react';
 
@@ -234,14 +234,30 @@ export default function App() {
         // This is the single source of truth for who is logged in.
         // It fires immediately on page load (restores session) and on every
         // sign-in / sign-out, so the app is always in sync with Firebase Auth.
-        unsubAuth = subscribeToAuthState(loadedAuth, (user) => {
+        unsubAuth = subscribeToAuthState(loadedAuth, async (user) => {
           if (user) {
-            setIsAuthenticated(true);
             setAuthEmail(user.email || '');
             setAuthName(user.displayName || user.email?.split('@')[0] || '');
             setAuthUid(user.uid);
+
+            // Firestore سے role چیک کریں
+            try {
+              const userDocSnap = await getDoc(doc(loadedDb, 'users', user.uid));
+              const role = userDocSnap.exists() ? userDocSnap.data()?.role : 'user';
+              if (role === 'imam') {
+                setIsAuthenticated(true);
+                setIsUserAuthenticated(false);
+              } else {
+                setIsAuthenticated(false);
+                setIsUserAuthenticated(true);
+                setUserAuthName(user.displayName || user.email?.split('@')[0] || '');
+              }
+            } catch {
+              setIsAuthenticated(true);
+            }
           } else {
             setIsAuthenticated(false);
+            setIsUserAuthenticated(false);
             setAuthEmail('');
             setAuthName('');
             setAuthUid('');
