@@ -100,6 +100,15 @@ export const HadithView: React.FC = () => {
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
 
+  // Search within book
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResult, setSearchResult] = useState<Hadith | null | 'not-found'>(null);
+
+  // Last seen hadith
+  const [lastSeen, setLastSeen] = useState<{ bookKey: string; bookName: string; chapterKey: string; chapterName: string; from: number; to: number; hadithNum: number } | null>(() => {
+    try { return JSON.parse(localStorage.getItem('last_seen_hadith') || 'null'); } catch { return null; }
+  });
+
   // Global cache of books / sections
   const [cacheChapters, setCacheChapters] = useState<{ [key: string]: any }>({});
   const [cachePages, setCachePages] = useState<{ [key: string]: any }>({});
@@ -109,6 +118,8 @@ export const HadithView: React.FC = () => {
     setCurrentScreen('chapters');
     setLoading(true);
     setErrorObj(null);
+    setSearchQuery('');
+    setSearchResult(null);
 
     if (cacheChapters[book.key]) {
       setChapters(cacheChapters[book.key]);
@@ -134,15 +145,19 @@ export const HadithView: React.FC = () => {
       });
   };
 
-  const handleOpenReader = (chapterKey: string, chapterName: string, from: number, to: number) => {
-    if (!selectedBook) return;
+  const handleOpenReader = (chapterKey: string, chapterName: string, from: number, to: number, bookOverride?: HadithBook) => {
+    const book = bookOverride || selectedBook;
+    if (!book) return;
+    if (bookOverride) setSelectedBook(bookOverride);
     setSelectedChapter({ key: chapterKey, name: chapterName, from, to });
     setCurrentScreen('reader');
     setPage(1);
     setLoading(true);
     setErrorObj(null);
+    setSearchQuery('');
+    setSearchResult(null);
 
-    const cacheKey = `${selectedBook.key}_sec_${chapterKey}`;
+    const cacheKey = `${book.key}_sec_${chapterKey}`;
 
     const loadChapterData = (dataAr: any, dataUr: any) => {
       const arHadiths = dataAr.hadiths || [];
@@ -167,8 +182,8 @@ export const HadithView: React.FC = () => {
       return;
     }
 
-    const arEdition = `ara-${selectedBook.key}`;
-    const urEdition = `urd-${selectedBook.key}`;
+    const arEdition = `ara-${book.key}`;
+    const urEdition = `urd-${book.key}`;
     const arSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${arEdition}/sections/${chapterKey}.min.json`;
     const urSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${urEdition}/sections/${chapterKey}.min.json`;
 
@@ -186,7 +201,36 @@ export const HadithView: React.FC = () => {
       });
   };
 
-  const totalPages = Math.ceil(hadiths.length / perPage);
+  const handleSearchHadith = () => {
+    const num = parseInt(searchQuery.trim(), 10);
+    if (isNaN(num)) { setSearchResult('not-found'); return; }
+    const found = hadiths.find(h => h.num === num);
+    if (found) {
+      setSearchResult(found);
+      // jump to the correct page
+      const idx = hadiths.indexOf(found);
+      const targetPage = Math.ceil((idx + 1) / perPage);
+      setPage(targetPage);
+    } else {
+      setSearchResult('not-found');
+    }
+  };
+
+  const handleSaveLastSeen = (hadithNum: number) => {
+    if (!selectedBook || !selectedChapter) return;
+    const data = { bookKey: selectedBook.key, bookName: selectedBook.name, chapterKey: selectedChapter.key, chapterName: selectedChapter.name, from: selectedChapter.from, to: selectedChapter.to, hadithNum };
+    setLastSeen(data);
+    localStorage.setItem('last_seen_hadith', JSON.stringify(data));
+  };
+
+  const handleGoToLastSeen = () => {
+    if (!lastSeen) return;
+    const book = HADITH_BOOKS.find(b => b.key === lastSeen.bookKey);
+    if (!book) return;
+    handleOpenReader(lastSeen.chapterKey, lastSeen.chapterName, lastSeen.from, lastSeen.to, book);
+  };
+
+
   const currentHadiths = hadiths.slice((page - 1) * perPage, page * perPage);
 
   if (loading) {
@@ -226,6 +270,25 @@ export const HadithView: React.FC = () => {
             <h2 className="text-xl font-bold font-amiri leading-normal text-emerald-700">الحديث الشريف</h2>
             <p className="text-[11px] text-slate-750 text-slate-700 font-urdu leading-relaxed">صحیح اور مستند کتبِ احادیث کا عظیم سورس</p>
           </div>
+
+          {/* آخری دیکھی حدیث بٹن */}
+          {lastSeen && (
+            <button
+              onClick={handleGoToLastSeen}
+              className="w-full flex items-center justify-between bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 shadow-sm hover:bg-amber-100 transition-all"
+            >
+              <span className="text-amber-600 text-[11px] font-bold font-urdu">← جاری رکھیں</span>
+              <div className="text-right">
+                <p className="text-amber-800 font-urdu text-xs font-bold">{lastSeen.bookName}</p>
+                <p className="text-amber-600 font-mono text-[10px]">آخری دیکھی حدیث: #{lastSeen.hadithNum}</p>
+              </div>
+              <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#d97706" stroke="#d97706" strokeWidth="1"/>
+                </svg>
+              </div>
+            </button>
+          )}
 
           <div className="space-y-3">
             {HADITH_BOOKS.map((b) => (
@@ -329,6 +392,35 @@ export const HadithView: React.FC = () => {
             </span>
           </div>
 
+          {/* سرچ بار — حدیث نمبر سے */}
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
+            <button
+              onClick={handleSearchHadith}
+              className="bg-emerald-700 text-white text-[10px] font-bold font-urdu px-3 py-1.5 rounded-lg hover:bg-emerald-800 transition-all whitespace-nowrap"
+            >
+              تلاش
+            </button>
+            <input
+              type="number"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setSearchResult(null); }}
+              onKeyDown={e => e.key === 'Enter' && handleSearchHadith()}
+              placeholder="حدیث نمبر... مثلاً 123"
+              dir="rtl"
+              className="flex-1 text-xs font-urdu text-right bg-transparent outline-none text-slate-700 placeholder:text-slate-300"
+            />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-slate-400 shrink-0">
+              <circle cx="11" cy="11" r="8" stroke="#94a3b8" strokeWidth="2"/>
+              <path d="M21 21l-4.35-4.35" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          {searchResult === 'not-found' && (
+            <p className="text-center text-red-500 font-urdu text-[11px]">یہ حدیث نمبر اس باب میں نہیں ملی</p>
+          )}
+          {searchResult && searchResult !== 'not-found' && (
+            <p className="text-center text-emerald-700 font-urdu text-[11px]">حدیث نمبر {searchResult.num} مل گئی — صفحہ {page} پر دیکھیں</p>
+          )}
+
           {/* Reader items */}
           <div className="space-y-3">
             {currentHadiths.map((hadith) => {
@@ -383,15 +475,27 @@ export const HadithView: React.FC = () => {
                     >
                       {isSaved ? '✓ Saved' : 'Save'}
                     </button>
+                    {/* Last Seen Button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleSaveLastSeen(hadith.num); }}
+                      className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border transition-all ${
+                        lastSeen?.hadithNum === hadith.num && lastSeen?.bookKey === selectedBook.key
+                          ? 'bg-amber-50 border-amber-300 text-amber-600'
+                          : 'bg-white border-slate-200 text-slate-400 hover:border-amber-300 hover:text-amber-500'
+                      }`}
+                      title="آخری سین محفوظ کریں"
+                    >
+                      {lastSeen?.hadithNum === hadith.num && lastSeen?.bookKey === selectedBook.key ? '★ آخری سین' : '☆ آخری سین'}
+                    </button>
                   </div>
                   <span className="font-urdu">{selectedBook.name}</span>
                 </div>
                 <div className="p-3.5 space-y-2 text-right">
-                  <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-medium" dir="rtl">
+                  <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-bold" dir="rtl">
                     {hadith.ar}
                   </p>
                   {hadith.ur && (
-                    <p className="text-xs text-emerald-700 leading-relaxed font-urdu text-right border-t border-slate-100 pt-2.5" dir="rtl">
+                    <p className="text-xs text-emerald-700 leading-relaxed font-urdu text-right border-t border-slate-100 pt-2.5 font-bold" dir="rtl">
                       {hadith.ur}
                     </p>
                   )}
