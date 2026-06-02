@@ -17,6 +17,7 @@ import { MosqueFinderView } from './components/MosqueFinderView';
 import { ImamDashboard } from './components/ImamDashboard';
 import { TasbihView } from './components/TasbihView';
 import { QiblaView } from './components/QiblaView';
+import { LoginChoiceView } from './components/LoginChoiceView';
 import { initFCM, listenForegroundMessages } from './utils/fcm';
 
 import { UserDashboard } from './components/UserDashboard';
