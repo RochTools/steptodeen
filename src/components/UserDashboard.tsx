@@ -53,6 +53,9 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
     setSavedHadiths(updated);
     localStorage.setItem('user_saved_hadiths', JSON.stringify(updated));
   };
+
+  // ── محفوظ مساجد ─────────────────────────────────────────────
+  const [savedMosques, setSavedMosques] = useState<any[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
     } catch { return []; }
