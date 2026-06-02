@@ -8,7 +8,6 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'صحیح بخاری',
     ar: 'صحيح البخاري',
     total: 7563,
-    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-bukhari.min.json'
   },
@@ -17,7 +16,6 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'صحیح مسلم',
     ar: 'صحيح مسلم',
     total: 3033,
-    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-muslim.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-muslim.min.json'
   },
@@ -26,7 +24,6 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن ابو داود',
     ar: 'سنن أبي داود',
     total: 5274,
-    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-abudawud.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-abudawud.min.json'
   },
@@ -35,7 +32,6 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'جامع ترمذی',
     ar: 'جامع الترمذي',
     total: 3956,
-    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-tirmidhi.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-tirmidhi.min.json'
   },
@@ -44,7 +40,6 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن نسائی',
     ar: 'سنن النسائي',
     total: 5758,
-    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-nasai.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-nasai.min.json'
   },
@@ -53,7 +48,6 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'سنن ابن ماجہ',
     ar: 'سنن ابن ماجه',
     total: 4341,
-    icon: '📖',
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-ibnmajah.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-ibnmajah.min.json'
   },
@@ -62,7 +56,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'موطا امام مالک',
     ar: 'موطأ مالك',
     total: 1857,
-    icon: '📖',
+    
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-malik.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-malik.min.json'
   },
@@ -71,7 +65,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'ریاض الصالحین',
     ar: 'رياض الصالحين',
     total: 1896,
-    icon: '📖',
+    
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-riyadussalihin.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-riyadussalihin.min.json'
   },
@@ -80,7 +74,7 @@ const HADITH_BOOKS: HadithBook[] = [
     name: 'الادب المفرد',
     ar: 'الأدب المفرد',
     total: 1322,
-    icon: '📖',
+
     ar_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-adab.min.json',
     ur_url: 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-adab.min.json'
   }
