@@ -37,8 +37,16 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque }: Use
 
   const [showAllDhikr, setShowAllDhikr] = useState(false);
 
-  // ── محفوظ مساجد ─────────────────────────────────────────────
-  const [savedMosques, setSavedMosques] = useState<Mosque[]>(() => {
+  // ── محفوظ احادیث ─────────────────────────────────────────────
+  const [savedHadiths, setSavedHadiths] = useState<any[]>(() => {
+    try { return JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]'); } catch { return []; }
+  });
+
+  const handleRemoveHadith = (num: any, book: string) => {
+    const updated = savedHadiths.filter(h => !(h.num === num && h.book === book));
+    setSavedHadiths(updated);
+    localStorage.setItem('user_saved_hadiths', JSON.stringify(updated));
+  };
     try {
       return JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
     } catch { return []; }
@@ -150,6 +158,39 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque }: Use
                 {showAllDhikr ? '← کم دکھائیں' : `مزید دیکھیں (${dhikrList.length - 3}+)`}
               </button>
             )}
+          </div>
+        )}
+      </div>
+
+      <div className="w-full border-t border-slate-100"></div>
+
+      {/* ── محفوظ احادیث ── */}
+      <div className="w-full">
+        <h3 className="text-right text-slate-700 font-urdu font-bold text-sm mb-3">
+          📚 محفوظ احادیث
+          <span className="text-slate-400 font-normal text-xs mr-1">({savedHadiths.length})</span>
+        </h3>
+
+        {savedHadiths.length === 0 ? (
+          <div className="text-center py-5 bg-slate-50 rounded-2xl border border-slate-100">
+            <p className="text-slate-400 font-urdu text-xs">ابھی کوئی حدیث محفوظ نہیں</p>
+            <p className="text-slate-300 font-urdu text-[10px] mt-1">حدیث پر Save بٹن دبائیں</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {savedHadiths.map((h, i) => (
+              <div key={i} className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <button onClick={() => handleRemoveHadith(h.num, h.book)} className="text-[10px] text-red-400 font-bold border border-red-200 bg-red-50 px-2 py-0.5 rounded-lg">✕</button>
+                  <div className="text-right">
+                    <span className="text-[10px] text-emerald-700 font-urdu font-bold">{h.bookName}</span>
+                    <span className="text-[10px] text-slate-400 font-mono mr-1"> #{h.num}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-700 font-amiri text-right leading-relaxed line-clamp-2" dir="rtl">{h.ar}</p>
+                {h.ur && <p className="text-[10px] text-slate-500 font-urdu text-right leading-relaxed line-clamp-2 border-t border-slate-100 pt-1" dir="rtl">{h.ur}</p>}
+              </div>
+            ))}
           </div>
         )}
       </div>
