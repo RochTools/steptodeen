@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { UserCircle } from 'lucide-react';
-import { firebaseSignIn, firebaseSignUp } from '../firebase';
+import { firebaseSignIn, firebaseSignUp, firebaseGoogleSignIn } from '../firebase';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 interface LoginChoiceViewProps {
   onImamLoginSuccess: () => void;
@@ -41,6 +42,32 @@ export function LoginChoiceView({
   const [userError, setUserError] = useState('');
   const [userLoading, setUserLoading] = useState(false);
 
+  // ── Google Sign-In Handler ────────────────────────────────────────────────
+  const handleGoogleSignIn = async () => {
+    setUserError('');
+    setUserLoading(true);
+    try {
+      const user = await firebaseGoogleSignIn(realtimeAuth);
+      const db = getFirestore();
+      await setDoc(doc(db, 'users', user.uid), {
+        role: 'user',
+        email: user.email,
+        name: user.displayName || '',
+      }, { merge: true });
+      onUserLogin(user.displayName || user.email?.split('@')[0] || 'User', '');
+    } catch (err: any) {
+      const code: string = err?.code || '';
+      if (code === 'auth/popup-closed-by-user') {
+        setUserError('Google popup بند ہو گیا۔ دوبارہ کوشش کریں۔');
+      } else if (code === 'auth/network-request-failed') {
+        setUserError('انٹرنیٹ کنکشن چیک کریں۔');
+      } else {
+        setUserError('Google لاگ ان میں دشواری: ' + (err?.message || code));
+      }
+    }
+    setUserLoading(false);
+  };
+
   // ── User Login Handler ────────────────────────────────────────────────────
   const handleUserSubmit = async () => {
     if (!userEmail || !userPassword) { setUserError('براہ کرم ای میل اور پاسورڈ لکھیں'); return; }
@@ -51,7 +78,11 @@ export function LoginChoiceView({
     if (isRealFirebase && realtimeAuth) {
       try {
         if (isUserSignUp) {
-          await firebaseSignUp(realtimeAuth, userEmail, userPassword, name.trim());
+          const newUser = await firebaseSignUp(realtimeAuth, userEmail, userPassword, name.trim());
+          try {
+            const db = getFirestore();
+            await setDoc(doc(db, 'users', newUser.uid), { role: 'user', email: userEmail, name: name.trim() });
+          } catch {}
         } else {
           const user = await firebaseSignIn(realtimeAuth, userEmail, userPassword);
           name || setName(user.displayName || userEmail.split('@')[0]);
@@ -89,7 +120,11 @@ export function LoginChoiceView({
     if (isRealFirebase && realtimeAuth) {
       try {
         if (isSignUp) {
-          await firebaseSignUp(realtimeAuth, email, password, imamName);
+          const newImam = await firebaseSignUp(realtimeAuth, email, password, imamName);
+          try {
+            const db = getFirestore();
+            await setDoc(doc(db, 'users', newImam.uid), { role: 'imam', email: email, name: imamName });
+          } catch {}
         } else {
           await firebaseSignIn(realtimeAuth, email, password);
         }
@@ -296,6 +331,28 @@ export function LoginChoiceView({
           className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
         >
           {userLoading ? '...' : isUserSignUp ? 'اکاؤنٹ بنائیں' : 'داخل ہوں'}
+        </button>
+
+        {/* OR Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="text-slate-400 text-xs font-urdu">یا</span>
+          <div className="flex-1 h-px bg-slate-200" />
+        </div>
+
+        {/* Google Sign-In Button */}
+        <button
+          onClick={handleGoogleSignIn}
+          disabled={userLoading}
+          className="w-full py-3.5 bg-white border-2 border-slate-200 hover:bg-slate-50 active:scale-95 rounded-xl shadow-sm transition-all flex items-center justify-center gap-3 disabled:opacity-40"
+        >
+          <svg width="20" height="20" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.2 0 5.9 1.1 8.1 2.9l6-6C34.5 3.1 29.6 1 24 1 14.8 1 7 6.7 3.7 14.6l7 5.4C12.4 13.8 17.7 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.4 6.7l7 5.4c4-3.8 6.3-9.4 6.3-16.1z"/>
+            <path fill="#FBBC05" d="M10.7 28.6A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.2.7-4.6l-7-5.4A23.9 23.9 0 0 0 .1 24c0 3.8.9 7.4 2.5 10.6l8.1-6z"/>
+            <path fill="#34A853" d="M24 47c5.6 0 10.3-1.9 13.7-5.1l-7-5.4c-1.9 1.3-4.3 2-6.7 2-6.3 0-11.6-4.3-13.5-10l-8.1 6C7 41.3 14.8 47 24 47z"/>
+          </svg>
+          <span className="font-urdu font-bold text-sm text-black">Google سے لاگ ان کریں</span>
         </button>
 
         <button
