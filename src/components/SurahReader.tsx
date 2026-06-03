@@ -163,10 +163,32 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
         <h2 className="text-2xl font-bold font-naskh text-white drop-shadow text-right">{surahData?.info.name}</h2>
       </div>
 
+      {/* بسم اللہ سیکشن */}
+      {surahNum !== 9 && (
+        <div className="mx-4 mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-4 text-center shadow-sm">
+          <p className="font-amiri text-xl text-emerald-900 font-bold leading-loose" dir="rtl">
+            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+          </p>
+        </div>
+      )}
+
       {/* Verses */}
       <div className="p-4 space-y-3 pt-4">
         {surahData?.arrAr.map((ayah, i) => {
-          const cleanAr = ayah.text;
+          let cleanAr = ayah.text;
+          if (surahNum !== 9 && ayah.numberInSurah === 1) {
+            const bismillahs = [
+              "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+              "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+              "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ",
+            ];
+            for (const b of bismillahs) {
+              if (cleanAr.startsWith(b)) {
+                cleanAr = cleanAr.slice(b.length).trim();
+                break;
+              }
+            }
+          }
 
           const urText = surahData?.arrUr[i] ? surahData.arrUr[i].text : '';
           const isPlaying = playingAyah === ayah.numberInSurah;
@@ -184,7 +206,7 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
               </div>
 
               {/* عربی متن */}
-              <p className="text-base leading-loose text-slate-900 text-right pr-6 font-amiri font-bold" dir="rtl">
+              <p className="text-base leading-[3rem] tracking-wide text-blue-900 text-right pr-6 font-amiri font-bold" dir="rtl">
                 {cleanAr}
               </p>
 
