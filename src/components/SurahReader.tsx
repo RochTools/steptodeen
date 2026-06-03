@@ -195,7 +195,8 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
         {surahData?.arrAr.map((ayah, i) => {
           const cleanAr = ayah.text;
 
-          const urText = surahData?.arrUr[i] ? surahData.arrUr[i].text : '';
+          const rawUr = surahData?.arrUr[i] ? surahData.arrUr[i].text : '';
+          const urText = rawUr.replace(/<[^>]*>/g, '');
           const isPlaying = playingAyah === ayah.numberInSurah;
           const isLoading = loadingAyah === ayah.numberInSurah;
 
