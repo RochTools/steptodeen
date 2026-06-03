@@ -4,6 +4,7 @@ import { Surah } from '../types';
 
 interface SurahReaderProps {
   surahNum: number;
+  onBack: () => void;
 }
 
 const SURAH_NAMES_UR = [
@@ -23,7 +24,7 @@ const SURAH_NAMES_UR = [
   'النصر','المسد','الاخلاص','الفلق','الناس'
 ];
 
-export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
+export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [errorObj, setErrorObj] = useState<string | null>(null);
   const [surahData, setSurahData] = useState<{
@@ -172,8 +173,14 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
         {/* دائیں طرف — عربی نام */}
         <h2 className="text-2xl font-bold font-naskh text-white drop-shadow">{surahData?.info.name}</h2>
 
-        {/* بائیں طرف — تفصیل */}
+        {/* بائیں طرف — تفصیل + back بٹن */}
         <div className="text-right space-y-1" dir="ltr">
+          <button
+            onClick={onBack}
+            className="py-1 px-3 bg-white/10 hover:bg-white/20 border border-white/20 text-xs rounded-lg transition-all font-urdu font-bold flex items-center gap-1 mb-1"
+          >
+            ← پیچھے
+          </button>
           <div className="text-[9px] text-emerald-200 font-mono font-bold tracking-widest uppercase opacity-80">سورت نمبر {surahNum}</div>
           <p className="text-[11px] text-emerald-100 font-urdu">
             {surahData?.info.numberOfAyahs} آیات • {surahData?.info.revelationType === 'Meccan' ? 'مکی' : 'مدنی'}
