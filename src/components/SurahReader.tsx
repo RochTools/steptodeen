@@ -150,17 +150,17 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
   return (
     <div className="pb-20 animate-fadeIn">
       {/* Header card */}
-      <div className="bg-gradient-to-b from-emerald-900 to-emerald-600 text-white px-4 py-4 shadow-lg w-full rounded-b-3xl flex items-center justify-between">
+      <div className="bg-gradient-to-b from-emerald-900 to-emerald-600 text-white px-4 py-4 shadow-lg w-full rounded-b-3xl flex items-center justify-between" dir="rtl">
+        {/* دائیں طرف — عربی نام */}
+        <h2 className="text-2xl font-bold font-naskh text-white drop-shadow">{surahData?.info.name}</h2>
+
         {/* بائیں طرف — تفصیل */}
-        <div className="text-left space-y-1">
+        <div className="text-right space-y-1" dir="ltr">
           <div className="text-[9px] text-emerald-200 font-mono font-bold tracking-widest uppercase opacity-80">سورت نمبر {surahNum}</div>
           <p className="text-[11px] text-emerald-100 font-urdu">
             {surahData?.info.numberOfAyahs} آیات • {surahData?.info.revelationType === 'Meccan' ? 'مکی' : 'مدنی'}
           </p>
         </div>
-
-        {/* دائیں طرف — عربی نام */}
-        <h2 className="text-2xl font-bold font-naskh text-white drop-shadow text-right">{surahData?.info.name}</h2>
       </div>
 
       {/* بسم اللہ سیکشن */}
@@ -177,9 +177,10 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
         {surahData?.arrAr.map((ayah, i) => {
           let cleanAr = ayah.text;
           if (surahNum !== 9 && ayah.numberInSurah === 1) {
-            // رَّحِيمِ کے بعد سے آیت شروع کریں
+            console.log('🔍 پہلی آیت API سے:', JSON.stringify(cleanAr.slice(0, 80)));
             const marker = 'رَّحِيمِ';
             const idx = cleanAr.indexOf(marker);
+            console.log('🔍 رَّحِيمِ index:', idx);
             if (idx !== -1) {
               cleanAr = cleanAr.slice(idx + marker.length).trim();
             }
