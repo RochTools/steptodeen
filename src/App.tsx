@@ -369,7 +369,7 @@ export default function App() {
 
       {currentView !== 'login-splash' && (<>
       {/* Elegant Atmospheric Header (Only shown on non-Home views for smooth navigation without technical clutters) */}
-      {currentView !== 'home' && (
+      {currentView !== 'home' && currentView !== 'surah' && (
         <header className="h-14 bg-gradient-to-r from-[#0c2f21] to-[#10402b] text-white flex items-center justify-between px-4 shadow-sm shrink-0 border-b border-[#05170f] relative z-50">
           <button
             onClick={() => {
@@ -438,7 +438,7 @@ export default function App() {
         {currentView === 'quran' && <QuranView onSelectSurah={handleSelectSurah} />}
 
         {currentView === 'surah' && selectedSurahNum !== null && (
-          <SurahReader surahNum={selectedSurahNum} />
+        <SurahReader surahNum={selectedSurahNum} onBack={() => setCurrentView('quran')} />
         )}
 
         {currentView === 'hadith' && <HadithView />}
