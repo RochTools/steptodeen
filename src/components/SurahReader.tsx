@@ -95,27 +95,45 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
     setLoadingAyah(null);
   }, [surahNum]);
 
-  const fetchSurah = () => {
+  const fetchSurah = async () => {
     setLoading(true);
     setErrorObj(null);
-    fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/editions/quran-uthmani,ur.jalandhry`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.code === 200 && json.data && json.data.length >= 2) {
-          setSurahData({
-            info: json.data[0],
-            arrAr: json.data[0].ayahs,
-            arrUr: json.data[1].ayahs
-          });
-        } else {
-          setErrorObj('قرآن پاک سرور سے رابطے میں ناکامی ہوئی۔ برائے مہربانی اپنا انٹرنیٹ کنکشن چیک کریں۔');
-        }
-        setLoading(false);
-      })
-      .catch(() => {
+    try {
+      const [versesRes, infoRes] = await Promise.all([
+        fetch(`https://api.quran.com/api/v4/verses/by_chapter/${surahNum}?language=ur&translations=97&fields=text_uthmani&per_page=286`),
+        fetch(`https://api.quran.com/api/v4/chapters/${surahNum}?language=ur`)
+      ]);
+      const versesJson = await versesRes.json();
+      const infoJson = await infoRes.json();
+
+      if (versesJson.verses && infoJson.chapter) {
+        const arrAr = versesJson.verses.map((v: any) => ({
+          number: v.id,
+          numberInSurah: v.verse_number,
+          text: v.text_uthmani,
+        }));
+        const arrUr = versesJson.verses.map((v: any) => ({
+          number: v.id,
+          numberInSurah: v.verse_number,
+          text: v.translations?.[0]?.text || '',
+        }));
+        setSurahData({
+          info: {
+            name: infoJson.chapter.name_arabic,
+            numberOfAyahs: infoJson.chapter.verses_count,
+            revelationType: infoJson.chapter.revelation_place === 'mecca' ? 'Meccan' : 'Medinan',
+          },
+          arrAr,
+          arrUr,
+        });
+      } else {
         setErrorObj('قرآن پاک سرور سے رابطے میں ناکامی ہوئی۔ برائے مہربانی اپنا انٹرنیٹ کنکشن چیک کریں۔');
-        setLoading(false);
-      });
+      }
+    } catch {
+      setErrorObj('قرآن پاک سرور سے رابطے میں ناکامی ہوئی۔ برائے مہربانی اپنا انٹرنیٹ کنکشن چیک کریں۔');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -175,16 +193,7 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
       {/* Verses */}
       <div className="p-4 space-y-3 pt-4">
         {surahData?.arrAr.map((ayah, i) => {
-          let cleanAr = ayah.text;
-          if (surahNum !== 9 && ayah.numberInSurah === 1) {
-            console.log('🔍 پہلی آیت API سے:', JSON.stringify(cleanAr.slice(0, 80)));
-            const marker = 'رَّحِيمِ';
-            const idx = cleanAr.indexOf(marker);
-            console.log('🔍 رَّحِيمِ index:', idx);
-            if (idx !== -1) {
-              cleanAr = cleanAr.slice(idx + marker.length).trim();
-            }
-          }
+          const cleanAr = ayah.text;
 
           const urText = surahData?.arrUr[i] ? surahData.arrUr[i].text : '';
           const isPlaying = playingAyah === ayah.numberInSurah;
@@ -193,8 +202,8 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
           return (
             <div
               key={ayah.number}
-              className={`relative bg-white rounded-2xl border p-3 py-3.5 shadow-sm space-y-2.5 transition-all
-                ${isPlaying ? 'border-emerald-400 bg-emerald-50/40' : 'border-slate-200'}`}
+              className={`relative bg-[#ffffff] rounded-md border-hidden p-3 py-3.5 shadow-md space-y-2.5 transition-all
+                ${isPlaying ? 'shadow-emerald-200' : ''}`}
             >
               {/* آیت نمبر */}
               <div className="absolute top-2 left-2 w-6 h-6 rounded bg-emerald-50 text-emerald-800 border border-emerald-150 flex items-center justify-center text-[9px] font-bold font-mono">
