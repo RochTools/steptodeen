@@ -147,34 +147,26 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
     );
   }
 
-  const hasBismillah = surahNum !== 9 && surahNum !== 1;
-
   return (
     <div className="pb-20 animate-fadeIn">
       {/* Header card */}
-      <div className="bg-gradient-to-b from-emerald-900 to-emerald-600 text-white pt-6 pb-5 px-4 text-center space-y-2 shadow-lg w-full rounded-b-3xl">
-        <div className="text-[9px] text-emerald-200 font-mono font-bold tracking-widest uppercase opacity-80">سورت نمبر {surahNum}</div>
-        <h2 className="text-2xl font-bold font-amiri text-white leading-normal drop-shadow">{surahData?.info.name}</h2>
-        <div className="w-16 h-px bg-emerald-300 opacity-50 mx-auto" />
-        <h3 className="text-sm font-bold font-urdu text-emerald-100">{SURAH_NAMES_UR[surahNum - 1]}</h3>
-        <p className="text-[10px] text-emerald-200 font-urdu opacity-80">
-          {surahData?.info.numberOfAyahs} آیات • {surahData?.info.revelationType === 'Meccan' ? 'مکی' : 'مدنی'}
-        </p>
+      <div className="bg-gradient-to-b from-emerald-900 to-emerald-600 text-white px-4 py-4 shadow-lg w-full rounded-b-3xl flex items-center justify-between">
+        {/* بائیں طرف — تفصیل */}
+        <div className="text-left space-y-1">
+          <div className="text-[9px] text-emerald-200 font-mono font-bold tracking-widest uppercase opacity-80">سورت نمبر {surahNum}</div>
+          <p className="text-[11px] text-emerald-100 font-urdu">
+            {surahData?.info.numberOfAyahs} آیات • {surahData?.info.revelationType === 'Meccan' ? 'مکی' : 'مدنی'}
+          </p>
+        </div>
+
+        {/* دائیں طرف — عربی نام */}
+        <h2 className="text-2xl font-bold font-naskh text-white drop-shadow text-right">{surahData?.info.name}</h2>
       </div>
 
-      {hasBismillah && (
-        <div className="text-center text-lg font-amiri font-bold py-2 bg-emerald-50/50 border-y border-emerald-100 text-emerald-900 leading-normal">
-          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-        </div>
-      )}
-
       {/* Verses */}
-      <div className="p-4 space-y-3 pt-0">
+      <div className="p-4 space-y-3 pt-4">
         {surahData?.arrAr.map((ayah, i) => {
-          let cleanAr = ayah.text;
-          if (surahNum !== 1 && ayah.numberInSurah === 1 && cleanAr.startsWith("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ")) {
-            cleanAr = cleanAr.slice("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ".length).trim();
-          }
+          const cleanAr = ayah.text;
 
           const urText = surahData?.arrUr[i] ? surahData.arrUr[i].text : '';
           const isPlaying = playingAyah === ayah.numberInSurah;
