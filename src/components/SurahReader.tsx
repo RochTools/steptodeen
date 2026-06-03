@@ -150,7 +150,10 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
   return (
     <div className="pb-20 animate-fadeIn">
       {/* Header card */}
-      <div className="bg-gradient-to-b from-emerald-900 to-emerald-600 text-white px-4 py-4 shadow-lg w-full rounded-b-3xl flex items-center justify-between">
+      <div className="bg-gradient-to-b from-emerald-900 to-emerald-600 text-white px-4 py-4 shadow-lg w-full rounded-b-3xl flex flex-row-reverse items-center justify-between">
+        {/* دائیں طرف — عربی نام */}
+        <h2 className="text-2xl font-bold font-naskh text-white drop-shadow text-right">{surahData?.info.name}</h2>
+
         {/* بائیں طرف — تفصیل */}
         <div className="text-left space-y-1">
           <div className="text-[9px] text-emerald-200 font-mono font-bold tracking-widest uppercase opacity-80">سورت نمبر {surahNum}</div>
@@ -158,9 +161,6 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
             {surahData?.info.numberOfAyahs} آیات • {surahData?.info.revelationType === 'Meccan' ? 'مکی' : 'مدنی'}
           </p>
         </div>
-
-        {/* دائیں طرف — عربی نام */}
-        <h2 className="text-2xl font-bold font-naskh text-white drop-shadow text-right">{surahData?.info.name}</h2>
       </div>
 
       {/* بسم اللہ سیکشن */}
@@ -177,15 +177,17 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
         {surahData?.arrAr.map((ayah, i) => {
           let cleanAr = ayah.text;
           if (surahNum !== 9 && ayah.numberInSurah === 1) {
-            const bismillahs = [
-              "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
-              "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-              "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ",
-            ];
-            for (const b of bismillahs) {
-              if (cleanAr.startsWith(b)) {
-                cleanAr = cleanAr.slice(b.length).trim();
-                break;
+            // بسم اللہ کا بنیادی حصہ تلاش کریں اور ہٹائیں
+            const bismIndex = cleanAr.indexOf('بِسْمِ');
+            if (bismIndex !== -1) {
+              // رحیم تک سب ہٹائیں
+              const rahimPatterns = ['الرَّحِيمِ', 'الرَّحِيمۡ', 'ٱلرَّحِيمِ'];
+              for (const r of rahimPatterns) {
+                const endIndex = cleanAr.indexOf(r);
+                if (endIndex !== -1) {
+                  cleanAr = cleanAr.slice(endIndex + r.length).trim();
+                  break;
+                }
               }
             }
           }
@@ -206,7 +208,7 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
               </div>
 
               {/* عربی متن */}
-              <p className="text-base leading-[3rem] tracking-wide text-blue-900 text-right pr-6 font-amiri font-bold" dir="rtl">
+              <p className="text-base leading-[3rem] tracking-wide text-blue-900 text-right pr-2 pl-8 font-amiri font-bold" dir="rtl">
                 {cleanAr}
               </p>
 
