@@ -539,12 +539,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
         )}
       </div>
 
-      {/* Main Grid Card Sections */}
+    
+      {/* Main Grid Card Sections — سورہ کارڈ جیسا style */}
       <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
         {/* Quran */}
         <div
           onClick={() => onNavigate('quran')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="bg-[#ffffff] rounded-md shadow-md p-4 flex flex-col items-center justify-center text-center cursor-pointer"
         >
           <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
             <BookOpen size={20} />
@@ -556,7 +557,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* Hadith */}
         <div
           onClick={() => onNavigate('hadith')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="bg-[#ffffff] rounded-md shadow-md p-4 flex flex-col items-center justify-center text-center cursor-pointer"
         >
           <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2">
             <Scroll size={20} />
@@ -565,10 +566,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح بخاری و مسلم مجموعہ</span>
         </div>
 
-        {/* Namaz Method */}
+        {/* Namaz */}
         <div
           onClick={() => onNavigate('namaz')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="bg-[#ffffff] rounded-md shadow-md p-4 flex flex-col items-center justify-center text-center cursor-pointer"
         >
           <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
             <CheckCircle size={20} />
@@ -580,7 +581,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* Duas */}
         <div
           onClick={() => onNavigate('duas')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="bg-[#ffffff] rounded-md shadow-md p-4 flex flex-col items-center justify-center text-center cursor-pointer"
         >
           <div className="w-10 h-10 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center mb-2">
             <Heart size={20} />
@@ -589,37 +590,36 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <span className="text-[10px] text-slate-400 font-urdu mt-0.5">روزمرہ کلمات و اذکار</span>
         </div>
 
-        {/* Tasbih Counter */}
+        {/* Tasbih */}
         <div
           onClick={() => onNavigate('tasbih')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="bg-[#ffffff] rounded-md shadow-md p-4 flex flex-col items-center justify-center text-center cursor-pointer"
         >
           <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center mb-2">
-            <RotateCcw size={20} className="group-hover:rotate-45 transition-transform" />
+            <RotateCcw size={20} />
           </div>
           <span className="text-xs font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
           <span className="text-[10px] text-slate-400 font-urdu mt-0.5">کلک کر کے تسبیح پڑھیں</span>
         </div>
 
-        {/* Qibla Direction */}
+        {/* Qibla */}
         <div
           onClick={() => onNavigate('qibla')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="bg-[#ffffff] rounded-md shadow-md p-4 flex flex-col items-center justify-center text-center cursor-pointer"
         >
           <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
-            <Compass size={20} className="group-hover:animate-spin" style={{ animationDuration: '3s' }} />
+            <Compass size={20} />
           </div>
           <span className="text-xs font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
           <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح قبلہ سمت معلوم کریں</span>
         </div>
       </div>
-
-
+            
 
       {/* Daily Quran Ayat */}
       <div className="mx-4">
         <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Verse of the Day ✦</div>
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center space-y-2.5">
+        <div className="bg-[#ffffff] rounded-md shadow-md p-4 text-center space-y-2.5">
           {loadingAyah ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
@@ -629,7 +629,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <p className="text-base leading-loose font-amiri text-slate-800" dir="rtl">
                 {dailyAyah?.ar}
               </p>
-              <p className="text-xs text-emerald-800 font-urdu leading-relaxed border-t border-slate-100 pt-2" dir="rtl">
+              <p className="text-xs text-emerald-700 font-semibold font-urdu leading-relaxed border-t border-slate-100 pt-2" dir="rtl">
                 {dailyAyah?.ur}
               </p>
               <div className="text-[9px] text-slate-400 font-mono text-left tracking-tight">{dailyAyah?.ref}</div>
@@ -641,7 +641,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* Daily Hadith */}
       <div className="mx-4">
         <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Hadith of the Day ✦</div>
-        <div className="bg-white rounded-2xl border border-slate-250 shadow-sm p-4 text-center space-y-2.5 border-r-4 border-r-emerald-600">
+        <div className="bg-[#ffffff] rounded-md shadow-md p-4 text-center space-y-2.5">
           {loadingHadith ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
@@ -651,7 +651,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-medium" dir="rtl">
                 {dailyHadith?.ar}
               </p>
-              <p className="text-xs text-slate-650 text-slate-600 font-urdu leading-relaxed border-t border-slate-100 pt-2 text-right" dir="rtl">
+              <p className="text-xs text-emerald-700 font-semibold font-urdu leading-relaxed border-t border-slate-100 pt-2 text-right" dir="rtl">
                 {dailyHadith?.ur}
               </p>
               <div className="text-[9px] text-slate-400 font-mono text-left tracking-tight">{dailyHadith?.ref}</div>
@@ -659,7 +659,4 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
       </div>
-    </div>
-  );
-};
 
