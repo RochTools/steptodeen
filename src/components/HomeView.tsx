@@ -637,7 +637,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
       </div>
-
       {/* Daily Hadith */}
       <div className="mx-4">
         <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Hadith of the Day ✦</div>
@@ -659,5 +658,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
       </div>
+    </div>
   );
-      };
+};
