@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AlertCircle, RefreshCw, Play, Pause } from 'lucide-react';
 import { Surah } from '../types';
 
 interface SurahReaderProps {
@@ -31,6 +31,69 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
     arrAr: any[];
     arrUr: any[];
   } | null>(null);
+
+  const [playingAyah, setPlayingAyah] = useState<number | null>(null);
+  const [loadingAyah, setLoadingAyah] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const getAudioUrl = (surah: number, ayah: number) => {
+    const s = String(surah).padStart(3, '0');
+    const a = String(ayah).padStart(3, '0');
+    return `https://everyayah.com/data/Abdul_Basit_Murattal_64kbps/${s}${a}.mp3`;
+  };
+
+  const togglePlay = (ayahNum: number) => {
+    // اگر یہی آیت چل رہی ہے تو pause کریں
+    if (playingAyah === ayahNum) {
+      audioRef.current?.pause();
+      setPlayingAyah(null);
+      setLoadingAyah(null);
+      return;
+    }
+
+    // پرانا آڈیو بند کریں
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+
+    // نیا آڈیو چلائیں
+    setLoadingAyah(ayahNum);
+    const audio = new Audio(getAudioUrl(surahNum, ayahNum));
+    audioRef.current = audio;
+
+    audio.oncanplay = () => {
+      setLoadingAyah(null);
+      setPlayingAyah(ayahNum);
+      audio.play();
+    };
+
+    audio.onended = () => {
+      setPlayingAyah(null);
+      setLoadingAyah(null);
+    };
+
+    audio.onerror = () => {
+      setLoadingAyah(null);
+      setPlayingAyah(null);
+    };
+
+    audio.load();
+  };
+
+  // کمپوننٹ بند ہونے پر آڈیو بند کریں
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, []);
+
+  // سورت بدلنے پر آڈیو بند کریں
+  useEffect(() => {
+    audioRef.current?.pause();
+    setPlayingAyah(null);
+    setLoadingAyah(null);
+  }, [surahNum]);
 
   const fetchSurah = () => {
     setLoading(true);
@@ -88,7 +151,7 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
 
   return (
     <div className="space-y-4 pb-20 animate-fadeIn">
-      {/* Header card with name details */}
+      {/* Header card */}
       <div className="bg-emerald-50 text-emerald-950 p-3.5 text-center space-y-1 border border-emerald-100 rounded-2xl shadow-sm m-4">
         <div className="text-[9px] text-emerald-600 font-mono font-bold tracking-wider uppercase">سورت نمبر {surahNum}</div>
         <h2 className="text-lg font-bold font-amiri text-emerald-900 leading-normal">{surahData?.info.name}</h2>
@@ -104,33 +167,69 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
         </div>
       )}
 
-      {/* Verses Container */}
+      {/* Verses */}
       <div className="p-4 space-y-3 pt-0">
         {surahData?.arrAr.map((ayah, i) => {
-          // Remove Bismillah from intermediate text if is not Surah 1 and is first Ayah (api often appends it)
           let cleanAr = ayah.text;
-          if (surahNum !== 1 && ayah.numberInSurah === 1 && cleanAr.startsWith("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ")) {
-            cleanAr = cleanAr.slice("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ".length).trim();
+          if (surahNum !== 1 && ayah.numberInSurah === 1 && cleanAr.startsWith("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ")) {
+            cleanAr = cleanAr.slice("بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ".length).trim();
           }
 
           const urText = surahData?.arrUr[i] ? surahData.arrUr[i].text : '';
+          const isPlaying = playingAyah === ayah.numberInSurah;
+          const isLoading = loadingAyah === ayah.numberInSurah;
 
           return (
-            <div key={ayah.number} className="relative bg-white rounded-2xl border border-slate-200 p-3 py-3.5 shadow-sm space-y-2.5">
-              {/* Ayah number badge on top-left */}
+            <div
+              key={ayah.number}
+              className={`relative bg-white rounded-2xl border p-3 py-3.5 shadow-sm space-y-2.5 transition-all
+                ${isPlaying ? 'border-emerald-400 bg-emerald-50/40' : 'border-slate-200'}`}
+            >
+              {/* آیت نمبر */}
               <div className="absolute top-2 left-2 w-6 h-6 rounded bg-emerald-50 text-emerald-800 border border-emerald-150 flex items-center justify-center text-[9px] font-bold font-mono">
                 {ayah.numberInSurah}
               </div>
 
-              {/* Arabic text with beautiful ligatures */}
-              <p className="text-base leading-loose text-slate-900 text-right pr-6 font-amiri font-medium" dir="rtl">
+              {/* عربی متن */}
+              <p className="text-base leading-loose text-slate-900 text-right pr-6 font-amiri font-bold" dir="rtl">
                 {cleanAr}
               </p>
 
-              {/* Urdu Translation */}
-              <p className="text-xs text-slate-750 text-slate-700 leading-relaxed text-right font-urdu border-t border-slate-100 pt-2" dir="rtl">
+              {/* اردو ترجمہ */}
+              <p className="text-xs text-emerald-700 font-semibold leading-relaxed text-right font-urdu border-t border-slate-100 pt-2" dir="rtl">
                 {urText}
               </p>
+
+              {/* پلے بٹن */}
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={() => togglePlay(ayah.numberInSurah)}
+                  className={`flex items-center gap-1.5 text-[10px] font-urdu px-3 py-1.5 rounded-full border transition-all
+                    ${isPlaying
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : isLoading
+                      ? 'bg-emerald-50 text-emerald-400 border-emerald-200 cursor-wait'
+                      : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-400'
+                    }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-3 h-3 border border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                      لوڈ ہو رہا ہے...
+                    </>
+                  ) : isPlaying ? (
+                    <>
+                      <Pause size={10} />
+                      رکیں
+                    </>
+                  ) : (
+                    <>
+                      <Play size={10} />
+                      تلاوت سنیں
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           );
         })}
