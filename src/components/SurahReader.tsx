@@ -150,13 +150,14 @@ export const SurahReader: React.FC<SurahReaderProps> = ({ surahNum }) => {
   const hasBismillah = surahNum !== 9 && surahNum !== 1;
 
   return (
-    <div className="space-y-4 pb-20 animate-fadeIn">
+    <div className="pb-20 animate-fadeIn">
       {/* Header card */}
-      <div className="bg-emerald-50 text-emerald-950 p-3.5 text-center space-y-1 border border-emerald-100 rounded-2xl shadow-sm m-4">
-        <div className="text-[9px] text-emerald-600 font-mono font-bold tracking-wider uppercase">سورت نمبر {surahNum}</div>
-        <h2 className="text-lg font-bold font-amiri text-emerald-900 leading-normal">{surahData?.info.name}</h2>
-        <h3 className="text-xs font-bold font-urdu text-emerald-800">{SURAH_NAMES_UR[surahNum - 1]}</h3>
-        <p className="text-[10px] text-slate-500 font-urdu mt-0.5">
+      <div className="bg-gradient-to-b from-emerald-900 to-emerald-600 text-white pt-6 pb-5 px-4 text-center space-y-2 shadow-lg w-full rounded-b-3xl">
+        <div className="text-[9px] text-emerald-200 font-mono font-bold tracking-widest uppercase opacity-80">سورت نمبر {surahNum}</div>
+        <h2 className="text-2xl font-bold font-amiri text-white leading-normal drop-shadow">{surahData?.info.name}</h2>
+        <div className="w-16 h-px bg-emerald-300 opacity-50 mx-auto" />
+        <h3 className="text-sm font-bold font-urdu text-emerald-100">{SURAH_NAMES_UR[surahNum - 1]}</h3>
+        <p className="text-[10px] text-emerald-200 font-urdu opacity-80">
           {surahData?.info.numberOfAyahs} آیات • {surahData?.info.revelationType === 'Meccan' ? 'مکی' : 'مدنی'}
         </p>
       </div>
