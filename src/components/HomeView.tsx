@@ -1,3 +1,5 @@
+// HomeView.tsx - درست شدہ ورژن
+
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Scroll, CheckCircle, Heart, MapPin, LogIn, Compass, Bell, AlertTriangle, Clock, RotateCcw } from 'lucide-react';
 import { Surah, Mosque } from '../types';
@@ -60,6 +62,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [liveTime, setLiveTime] = useState<string>('');
   const [hijriDate, setHijriDate] = useState<string>('');
   const [isDeviceOffline, setIsDeviceOffline] = useState<boolean>(!navigator.onLine);
+
+  // اپنے باقی useEffect یہاں ویسے ہی رکھیں جیسے تھے...
 
   useEffect(() => {
     const handleOnline = () => setIsDeviceOffline(false);
@@ -171,10 +175,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-16 animate-fadeIn">
-
+    // یہاں پہلے "bg-gray-50" لگائیں تاکہ پس منظر نظر آئے
+    <div className="space-y-4 pb-16 animate-fadeIn bg-gray-50 min-h-screen">
+      
       {/* ===== Top Prayer Banner ===== */}
       <div className="relative bg-gradient-to-br from-[#0c2f21] via-[#10402b] to-[#082317] text-white px-4 pt-6 pb-6 rounded-b-[2rem] shadow-lg border-b border-[#05170f] overflow-hidden">
+        {/* ... آپ کا موجودہ کوڈ یہاں ... */}
         <div className="absolute bottom-0 left-0 w-full h-20 text-emerald-500/10 pointer-events-none z-0">
           <svg className="w-full h-full" viewBox="0 0 360 80" preserveAspectRatio="none" fill="currentColor">
             <path d="M0,80 L360,80 L360,30 L345,30 C340,30 338,26 338,22 L338,8 C338,5 335,2 331,2 C327,2 324,5 324,8 L324,22 C324,26 322,30 317,30 L300,30 C292,30 286,22 286,15 C286,8 274,0 260,0 C246,0 234,8 234,15 C234,22 228,30 220,30 L180,30 C172,30 166,20 166,13 C166,5 154,0 140,0 C126,0 114,5 114,13 C114,20 108,30 100,30 L60,30 L40,30 C35,30 33,26 33,22 L33,8 C33,5 30,2 26,2 C22,2 19,5 19,8 L19,22 C19,26 17,30 12,30 L0,30 Z" />
@@ -277,8 +283,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       )}
 
-      {/* ===== مساجد — FIX: border ہٹایا، pure white، rounded-md ===== */}
-      <div className="mx-4 bg-[#ffffff] rounded-md shadow-md p-5 space-y-3">
+      {/* ===== مساجد — اب border اور background صحیح ہے ===== */}
+      <div className="mx-4 bg-white rounded-md shadow-md p-5 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-emerald-700 font-bold cursor-pointer font-urdu hover:underline" onClick={() => onNavigate('mosques')}>تمام دیکھئے ←</span>
           <h3 className="text-xs font-bold text-slate-800 font-urdu flex items-center gap-1.5 uppercase tracking-tight">
@@ -319,51 +325,49 @@ export const HomeView: React.FC<HomeViewProps> = ({
         )}
       </div>
 
-      {/* ===== Main Grid Cards — FIX: border ہٹایا، pure white، rounded-md ===== */}
+      {/* ===== Main Grid Cards — background سفید اور درست ===== */}
       <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
-
-        <div onClick={() => onNavigate('quran')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+        <div onClick={() => onNavigate('quran')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
           <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mb-3"><BookOpen size={26} /></div>
           <span className="text-sm font-bold text-slate-800 font-urdu">قرآن مجید</span>
           <span className="text-[11px] text-slate-400 font-urdu mt-1">۱۱۴ سورتیں مکی و مدنی</span>
         </div>
 
-        <div onClick={() => onNavigate('hadith')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+        <div onClick={() => onNavigate('hadith')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
           <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-3"><Scroll size={26} /></div>
           <span className="text-sm font-bold text-slate-800 font-urdu">احادیث شریفہ</span>
           <span className="text-[11px] text-slate-400 font-urdu mt-1">صحیح بخاری و مسلم مجموعہ</span>
         </div>
 
-        <div onClick={() => onNavigate('namaz')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+        <div onClick={() => onNavigate('namaz')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
           <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3"><CheckCircle size={26} /></div>
           <span className="text-sm font-bold text-slate-800 font-urdu">نماز کا طریقہ</span>
           <span className="text-[11px] text-slate-400 font-urdu mt-1">ترجمہ اور طریقہ کار</span>
         </div>
 
-        <div onClick={() => onNavigate('duas')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+        <div onClick={() => onNavigate('duas')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
           <div className="w-14 h-14 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center mb-3"><Heart size={26} /></div>
           <span className="text-sm font-bold text-slate-800 font-urdu">مسنون دعائیں</span>
           <span className="text-[11px] text-slate-400 font-urdu mt-1">روزمرہ کلمات و اذکار</span>
         </div>
 
-        <div onClick={() => onNavigate('tasbih')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+        <div onClick={() => onNavigate('tasbih')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
           <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-3"><RotateCcw size={26} /></div>
           <span className="text-sm font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
           <span className="text-[11px] text-slate-400 font-urdu mt-1">کلک کر کے تسبیح پڑھیں</span>
         </div>
 
-        <div onClick={() => onNavigate('qibla')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+        <div onClick={() => onNavigate('qibla')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
           <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3"><Compass size={26} /></div>
           <span className="text-sm font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
           <span className="text-[11px] text-slate-400 font-urdu mt-1">صحیح قبلہ سمت معلوم کریں</span>
         </div>
-
       </div>
 
-      {/* ===== Verse of the Day — FIX: border ہٹایا، pure white، rounded-md ===== */}
+      {/* ===== Verse of the Day — صحیح background ===== */}
       <div className="mx-4">
         <div className="text-center font-urdu text-[11px] text-emerald-600 font-mono font-bold tracking-wider uppercase mb-2">✦ Verse of the Day ✦</div>
-        <div className="bg-white rounded-sm border-hidden shadow-md p-3 py-3.5 text-center space-y-3">
+        <div className="bg-white rounded-md shadow-md p-3 py-3.5 text-center space-y-3">
           {loadingAyah ? (
             <div className="flex items-center justify-center py-6"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div></div>
           ) : (
@@ -376,10 +380,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-      {/* ===== Hadith of the Day — FIX: border ہٹایا، pure white، rounded-md ===== */}
+      {/* ===== Hadith of the Day — صحیح background ===== */}
       <div className="mx-4">
         <div className="text-center font-urdu text-[11px] text-emerald-600 font-mono font-bold tracking-wider uppercase mb-2">✦ Hadith of the Day ✦</div>
-        <div className="bg-white rounded-sm border-hidden shadow-md p-3 py-3.5 text-center space-y-3">
+        <div className="bg-white rounded-md shadow-md p-3 py-3.5 text-center space-y-3">
           {loadingHadith ? (
             <div className="flex items-center justify-center py-6"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div></div>
           ) : (
@@ -391,7 +395,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
       </div>
-
     </div>
   );
 };
