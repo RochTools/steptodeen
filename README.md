@@ -22,18 +22,7 @@
 ---
 
 ## 🎯 Mojooda Tarjeehaat (Current Focus)
-
-Filhaal hamari poori tawajjah **buniyadi mazbooti** aur **tez raftaar** par hai:
-
-- ⚡ **Tez Raftaar (Speed):** App ko har mumkin had tak tez aur hamwar banaya ja raha hai
-- 🧩 **Component Architecture:** Saaf, mazboot aur dobara istemal ke qabil (Reusable) code dhancha
-- 🏗️ **Functionality Pehle:** Tamam features (Quran, Hadith, Namaz, Tasbeeh, Qibla) mukammal tor par kam kar rahe hain
-- 🎨 **Design Baad Mein:** UI/UX ko mazeed khoobsurat aur jadeed banane par **baad mein** kaam kiya jayega
-
-> **Note:** Pehle app ke tamam components aur karguzari (performance) ko mukammal kiya ja raha hai. Design par abhi khaas kaam nahi hua hai.
-
----
-
+**style per kam shuru ho chuka hai**
 ## 🚀 Live Demo
 
 Apni app abhi aazmaayein:
