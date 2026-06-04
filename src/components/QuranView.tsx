@@ -28,7 +28,7 @@ const IA_SURAHS: Surah[] = [
   {n:37,ar:"الصَّافَّات",ur:"الصافات",v:182,t:"مکی"},{n:38,ar:"ص",ur:"صٓ",v:88,t:"مکی"},
   {n:39,ar:"الزُّمَر",ur:"الزمر",v:75,t:"مکی"},{n:40,ar:"غَافِر",ur:"غافر",v:85,t:"مکی"},
   {n:41,ar:"فُصِّلَت",ur:"فصلت",v:54,t:"مکی"},{n:42,ar:"الشُّورَى",ur:"الشوری",v:53,t:"مکی"},
-  {n:43,ar:"الpackage-info",ur:"الزخرف",v:89,t:"مکی"},{n:44,ar:"الدُّخَان",ur:"الدخان",v:59,t:"مکی"},
+  {n:43,ar:"الزُّخْرُف",ur:"الزخرف",v:89,t:"مکی"},{n:44,ar:"الدُّخَان",ur:"الدخان",v:59,t:"مکی"},
   {n:45,ar:"الْجَاثِيَة",ur:"الجاثیہ",v:37,t:"مکی"},{n:46,ar:"الْأَحْقَاف",ur:"الاحقاف",v:35,t:"مکی"},
   {n:47,ar:"مُحَمَّد",ur:"محمد",v:38,t:"مدنی"},{n:48,ar:"الْفَتْح",ur:"الفتح",v:29,t:"مدنی"},
   {n:49,ar:"الْحُجُرَات",ur:"الحجرات",v:18,t:"مدنی"},{n:50,ar:"ق",ur:"قٓ",v:45,t:"مکی"},
@@ -48,7 +48,7 @@ const IA_SURAHS: Surah[] = [
   {n:77,ar:"الْمُرْسَلَات",ur:"المرسلات",v:50,t:"مکی"},{n:78,ar:"النَّبَأ",ur:"النبا",v:40,t:"مکی"},
   {n:79,ar:"النَّازِعَات",ur:"النازعات",v:46,t:"مکی"},{n:80,ar:"عَبَسَ",ur:"عبس",v:42,t:"مکی"},
   {n:81,ar:"التَّكْوِير",ur:"التکویر",v:29,t:"مکی"},{n:82,ar:"الْإِنفِطَار",ur:"الانفطار",v:19,t:"مکی"},
-  {n:83,ar:"الْمُؤْمِنَات",ur:"المومنون",v:118,t:"مکی"},{n:84,ar:"الْإِنشِقَاق",ur:"الانشقاق",v:25,t:"مکی"},
+  {n:83,ar:"الْمُطَفِّفِين",ur:"المطففین",v:36,t:"مکی"},{n:84,ar:"الْإِنشِقَاق",ur:"الانشقاق",v:25,t:"مکی"},
   {n:85,ar:"الْبُرُوج",ur:"البروج",v:22,t:"مکی"},{n:86,ar:"الطَّارِق",ur:"الطارق",v:17,t:"مکی"},
   {n:87,ar:"الْأَعْلَى",ur:"الاعلی",v:19,t:"مکی"},{n:88,ar:"الْغَاشِيَة",ur:"الغاشیہ",v:26,t:"مکی"},
   {n:89,ar:"الْفَجْر",ur:"الفجر",v:30,t:"مکی"},{n:90,ar:"الْبَلَد",ur:"البلد",v:20,t:"مکی"},
@@ -70,16 +70,13 @@ export const QuranView: React.FC<QuranViewProps> = ({ onSelectSurah }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredSurahs = IA_SURAHS.filter(
-    (s) =>
-      s.ur.includes(searchQuery) ||
-      s.ar.includes(searchQuery) ||
-      s.n.toString().includes(searchQuery)
+    (s) => s.ur.includes(searchQuery) || s.ar.includes(searchQuery) || s.n.toString().includes(searchQuery)
   );
 
   return (
-    <div className="space-y-4 p-4 pb-20 animate-fadeIn">
-      {/* Quran search bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-2 px-3 flex items-center gap-3.5 shadow-sm">
+    <div className="space-y-3 p-4 pb-20 animate-fadeIn">
+      {/* Search */}
+      <div className="bg-[#ffffff] rounded-sm shadow-md p-2 px-3 flex items-center gap-3.5">
         <input
           type="text"
           placeholder="سورت تلاش کریں (نام یا نمبر)..."
@@ -97,21 +94,20 @@ export const QuranView: React.FC<QuranViewProps> = ({ onSelectSurah }) => {
           <div
             key={surah.n}
             onClick={() => onSelectSurah(surah.n)}
-            className="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-200 shadow-sm hover:bg-emerald-50 hover:border-emerald-250 transition-all cursor-pointer group"
+            className="flex items-center justify-between p-3 bg-[#ffffff] rounded-sm shadow-md cursor-pointer"
           >
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-300 group-hover:text-emerald-700 transition-colors font-mono">←</span>
-            </div>
+            {/* بائیں — تیر */}
+            <span className="text-xs text-slate-300 font-mono">←</span>
 
+            {/* درمیان — اردو نام اور تفصیل */}
             <div className="text-right flex-1 pr-3.5">
               <div className="text-xs font-bold text-slate-800 font-urdu">{surah.ur}</div>
-              <div className="text-[10px] text-slate-400 font-urdu mt-0.5">
-                {surah.v} آیات • {surah.t}
-              </div>
+              <div className="text-[10px] text-slate-400 font-urdu mt-0.5">{surah.v} آیات • {surah.t}</div>
             </div>
 
-            <div className="text-right flex items-center gap-3">
-              <span className="text-sm font-amiri text-slate-850 font-medium">{surah.ar}</span>
+            {/* دائیں — عربی نام اور نمبر */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-amiri text-slate-800 font-medium">{surah.ar}</span>
               <span className="w-7 h-7 rounded bg-emerald-50 text-emerald-800 border border-emerald-150 font-bold text-[10px] flex items-center justify-center font-mono">
                 {surah.n}
               </span>
