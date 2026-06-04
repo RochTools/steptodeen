@@ -173,7 +173,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   return (
     <div className="space-y-4 pb-16 animate-fadeIn">
 
-      {/* Top Prayer Banner */}
+      {/* ===== Top Prayer Banner ===== */}
       <div className="relative bg-gradient-to-br from-[#0c2f21] via-[#10402b] to-[#082317] text-white px-4 pt-6 pb-6 rounded-b-[2rem] shadow-lg border-b border-[#05170f] overflow-hidden">
         <div className="absolute bottom-0 left-0 w-full h-20 text-emerald-500/10 pointer-events-none z-0">
           <svg className="w-full h-full" viewBox="0 0 360 80" preserveAspectRatio="none" fill="currentColor">
@@ -269,7 +269,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-      {/* آف لائن بینر */}
+      {/* ===== آف لائن بینر ===== */}
       {isDeviceOffline && (
         <div className="mx-4 p-2.5 bg-amber-50/70 border border-amber-200 rounded-2xl flex items-center gap-2.5 text-amber-900 animate-fadeIn">
           <AlertTriangle size={15} className="shrink-0 text-amber-600" />
@@ -277,113 +277,120 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       )}
 
-{/* مساجد */}
-<div className="mx-4 bg-white rounded-md shadow-md p-5 space-y-3">
-  <div className="flex items-center justify-between">
-    <span className="text-xs text-emerald-700 font-bold cursor-pointer font-urdu hover:underline" onClick={() => onNavigate('mosques')}>تمام دیکھئے ←</span>
-    <h3 className="text-xs font-bold text-slate-800 font-urdu flex items-center gap-1.5 uppercase tracking-tight">
-      <Compass size={15} className="text-emerald-600" />قریبی مساجد کے اوقاتِ جمعہ
-    </h3>
-  </div>
-  {!userCoords ? (
-    <div className="p-4 bg-slate-50 rounded-xl text-center space-y-2.5">
-      <p className="text-[11px] text-slate-600 font-urdu leading-relaxed">اپنا جی پی ایس لوکیشن آن کریں تاکہ قریبی مساجد نظر آئیں۔</p>
-      <button onClick={requestLocation} className="py-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-urdu font-bold shadow-sm flex items-center gap-1.5 mx-auto transition-colors">
-        <MapPin size={11} />لوکیشن آن کریں
-      </button>
-    </div>
-  ) : (
-    <div className="space-y-2">
-      {nearbyMosques.length === 0 ? (
-        <p className="text-xs text-center text-gray-500 font-urdu py-2">قریبی علاقے میں کوئی مسجد رجسٹرڈ نہیں ہے۔</p>
-      ) : (
-        (() => {
-          const mosquesWithDistance = nearbyMosques.map(mosque => ({ mosque, distance: calculateDistance(userCoords.latitude, userCoords.longitude, mosque.latitude, mosque.longitude) }));
-          return mosquesWithDistance.sort((a,b)=>a.distance-b.distance).slice(0,3).map(({mosque,distance}) => (
-            <div key={mosque.id} onClick={() => onOpenMosque(mosque)} className="p-3 bg-slate-50/50 hover:bg-emerald-50/35 rounded-xl transition-all cursor-pointer flex items-center justify-between group">
-              <div className="text-center bg-emerald-600 text-white py-1.5 px-3 rounded-xl text-[9px] font-bold group-hover:bg-emerald-700 transition-colors">
-                <div className="opacity-95 text-[8px]">جمعہ وقت</div>
-                <div className="font-mono mt-0.5">{mosque.jumah}</div>
-              </div>
-              <div className="text-right flex-1 pr-3">
-                <div className="text-xs font-bold text-slate-800 font-urdu">{mosque.name}</div>
-                <div className="text-[9px] text-slate-400 font-urdu flex items-center justify-end gap-1 mt-0.5 font-mono">
-                  <span>{distance} km away</span><MapPin size={10} className="text-emerald-500" />
-                </div>
-              </div>
-            </div>
-          ));
-        })()
-      )}
-    </div>
-  )}
-</div>
+      {/* ===== مساجد — FIX: border ہٹایا، pure white، rounded-md ===== */}
+      <div className="mx-4 bg-[#ffffff] rounded-md shadow-md p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-emerald-700 font-bold cursor-pointer font-urdu hover:underline" onClick={() => onNavigate('mosques')}>تمام دیکھئے ←</span>
+          <h3 className="text-xs font-bold text-slate-800 font-urdu flex items-center gap-1.5 uppercase tracking-tight">
+            <Compass size={15} className="text-emerald-600" />قریبی مساجد کے اوقاتِ جمعہ
+          </h3>
+        </div>
+        {!userCoords ? (
+          <div className="p-4 bg-slate-50 rounded-xl text-center space-y-2.5">
+            <p className="text-[11px] text-slate-600 font-urdu leading-relaxed">اپنا جی پی ایس لوکیشن آن کریں تاکہ قریبی مساجد نظر آئیں۔</p>
+            <button onClick={requestLocation} className="py-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-urdu font-bold shadow-sm flex items-center gap-1.5 mx-auto transition-colors">
+              <MapPin size={11} />لوکیشن آن کریں
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {nearbyMosques.length === 0 ? (
+              <p className="text-xs text-center text-gray-500 font-urdu py-2">قریبی علاقے میں کوئی مسجد رجسٹرڈ نہیں ہے۔</p>
+            ) : (
+              (() => {
+                const mosquesWithDistance = nearbyMosques.map(mosque => ({ mosque, distance: calculateDistance(userCoords.latitude, userCoords.longitude, mosque.latitude, mosque.longitude) }));
+                return mosquesWithDistance.sort((a,b)=>a.distance-b.distance).slice(0,3).map(({mosque,distance}) => (
+                  <div key={mosque.id} onClick={() => onOpenMosque(mosque)} className="p-3 bg-slate-50/50 hover:bg-emerald-50/35 rounded-xl transition-all cursor-pointer flex items-center justify-between group">
+                    <div className="text-center bg-emerald-600 text-white py-1.5 px-3 rounded-xl text-[9px] font-bold group-hover:bg-emerald-700 transition-colors">
+                      <div className="opacity-95 text-[8px]">جمعہ وقت</div>
+                      <div className="font-mono mt-0.5">{mosque.jumah}</div>
+                    </div>
+                    <div className="text-right flex-1 pr-3">
+                      <div className="text-xs font-bold text-slate-800 font-urdu">{mosque.name}</div>
+                      <div className="text-[9px] text-slate-400 font-urdu flex items-center justify-end gap-1 mt-0.5 font-mono">
+                        <span>{distance} km away</span><MapPin size={10} className="text-emerald-500" />
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()
+            )}
+          </div>
+        )}
+      </div>
 
-{/* Main Grid Cards */}
-<div className="mx-4 grid grid-cols-2 gap-2 pb-1">
-  <div onClick={() => onNavigate('quran')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
-    <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mb-3"><BookOpen size={26} /></div>
-    <span className="text-sm font-bold text-slate-800 font-urdu">قرآن مجید</span>
-    <span className="text-[11px] text-slate-400 font-urdu mt-1">۱۱۴ سورتیں مکی و مدنی</span>
-  </div>
-  <div onClick={() => onNavigate('hadith')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
-    <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-3"><Scroll size={26} /></div>
-    <span className="text-sm font-bold text-slate-800 font-urdu">احادیث شریفہ</span>
-    <span className="text-[11px] text-slate-400 font-urdu mt-1">صحیح بخاری و مسلم مجموعہ</span>
-  </div>
-  <div onClick={() => onNavigate('namaz')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
-    <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3"><CheckCircle size={26} /></div>
-    <span className="text-sm font-bold text-slate-800 font-urdu">نماز کا طریقہ</span>
-    <span className="text-[11px] text-slate-400 font-urdu mt-1">ترجمہ اور طریقہ کار</span>
-  </div>
-  <div onClick={() => onNavigate('duas')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
-    <div className="w-14 h-14 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center mb-3"><Heart size={26} /></div>
-    <span className="text-sm font-bold text-slate-800 font-urdu">مسنون دعائیں</span>
-    <span className="text-[11px] text-slate-400 font-urdu mt-1">روزمرہ کلمات و اذکار</span>
-  </div>
-  <div onClick={() => onNavigate('tasbih')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
-    <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-3"><RotateCcw size={26} /></div>
-    <span className="text-sm font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
-    <span className="text-[11px] text-slate-400 font-urdu mt-1">کلک کر کے تسبیح پڑھیں</span>
-  </div>
-  <div onClick={() => onNavigate('qibla')} className="bg-white rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
-    <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3"><Compass size={26} /></div>
-    <span className="text-sm font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
-    <span className="text-[11px] text-slate-400 font-urdu mt-1">صحیح قبلہ سمت معلوم کریں</span>
-  </div>
-</div>
+      {/* ===== Main Grid Cards — FIX: border ہٹایا، pure white، rounded-md ===== */}
+      <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
 
-{/* Verse of the Day */}
-<div className="mx-4">
-  <div className="text-center font-urdu text-[11px] text-emerald-600 font-mono font-bold tracking-wider uppercase mb-2">✦ Verse of the Day ✦</div>
-  <div className="bg-white rounded-md shadow-md p-5 text-center space-y-3">
-    {loadingAyah ? (
-      <div className="flex items-center justify-center py-6"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div></div>
-    ) : (
-      <>
-        <p className="text-lg leading-loose text-slate-900 font-amiri font-medium" dir="rtl">{dailyAyah?.ar}</p>
-        <p className="text-sm text-emerald-700 font-semibold font-urdu leading-relaxed border-t border-slate-100 pt-3" dir="rtl">{dailyAyah?.ur}</p>
-        <div className="text-[10px] text-slate-400 font-mono text-left tracking-tight border-t border-slate-50 pt-2">{dailyAyah?.ref}</div>
-      </>
-    )}
-  </div>
-</div>
+        <div onClick={() => onNavigate('quran')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+          <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mb-3"><BookOpen size={26} /></div>
+          <span className="text-sm font-bold text-slate-800 font-urdu">قرآن مجید</span>
+          <span className="text-[11px] text-slate-400 font-urdu mt-1">۱۱۴ سورتیں مکی و مدنی</span>
+        </div>
 
-{/* Hadith of the Day */}
-<div className="mx-4">
-  <div className="text-center font-urdu text-[11px] text-emerald-600 font-mono font-bold tracking-wider uppercase mb-2">✦ Hadith of the Day ✦</div>
-  <div className="bg-white rounded-md shadow-md p-5 text-center space-y-3">
-    {loadingHadith ? (
-      <div className="flex items-center justify-center py-6"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div></div>
-    ) : (
-      <>
-        <p className="text-base leading-relaxed text-slate-900 text-right font-amiri font-medium" dir="rtl">{dailyHadith?.ar}</p>
-        <p className="text-sm text-emerald-700 font-semibold font-urdu leading-relaxed border-t border-slate-100 pt-3 text-right" dir="rtl">{dailyHadith?.ur}</p>
-        <div className="text-[10px] text-slate-400 font-mono text-left tracking-tight border-t border-slate-50 pt-2">{dailyHadith?.ref}</div>
-      </>
-    )}
-  </div>
-</div>
+        <div onClick={() => onNavigate('hadith')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-3"><Scroll size={26} /></div>
+          <span className="text-sm font-bold text-slate-800 font-urdu">احادیث شریفہ</span>
+          <span className="text-[11px] text-slate-400 font-urdu mt-1">صحیح بخاری و مسلم مجموعہ</span>
+        </div>
+
+        <div onClick={() => onNavigate('namaz')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3"><CheckCircle size={26} /></div>
+          <span className="text-sm font-bold text-slate-800 font-urdu">نماز کا طریقہ</span>
+          <span className="text-[11px] text-slate-400 font-urdu mt-1">ترجمہ اور طریقہ کار</span>
+        </div>
+
+        <div onClick={() => onNavigate('duas')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+          <div className="w-14 h-14 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center mb-3"><Heart size={26} /></div>
+          <span className="text-sm font-bold text-slate-800 font-urdu">مسنون دعائیں</span>
+          <span className="text-[11px] text-slate-400 font-urdu mt-1">روزمرہ کلمات و اذکار</span>
+        </div>
+
+        <div onClick={() => onNavigate('tasbih')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+          <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-3"><RotateCcw size={26} /></div>
+          <span className="text-sm font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
+          <span className="text-[11px] text-slate-400 font-urdu mt-1">کلک کر کے تسبیح پڑھیں</span>
+        </div>
+
+        <div onClick={() => onNavigate('qibla')} className="bg-[#ffffff] rounded-md shadow-md p-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3"><Compass size={26} /></div>
+          <span className="text-sm font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
+          <span className="text-[11px] text-slate-400 font-urdu mt-1">صحیح قبلہ سمت معلوم کریں</span>
+        </div>
+
+      </div>
+
+      {/* ===== Verse of the Day — FIX: border ہٹایا، pure white، rounded-md ===== */}
+      <div className="mx-4">
+        <div className="text-center font-urdu text-[11px] text-emerald-600 font-mono font-bold tracking-wider uppercase mb-2">✦ Verse of the Day ✦</div>
+        <div className="bg-[#ffffff] rounded-md shadow-md p-5 text-center space-y-3">
+          {loadingAyah ? (
+            <div className="flex items-center justify-center py-6"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div></div>
+          ) : (
+            <>
+              <p className="text-lg leading-loose text-slate-900 font-amiri font-medium" dir="rtl">{dailyAyah?.ar}</p>
+              <p className="text-sm text-emerald-700 font-semibold font-urdu leading-relaxed border-t border-slate-100 pt-3" dir="rtl">{dailyAyah?.ur}</p>
+              <div className="text-[10px] text-slate-400 font-mono text-left tracking-tight border-t border-slate-50 pt-2">{dailyAyah?.ref}</div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ===== Hadith of the Day — FIX: border ہٹایا، pure white، rounded-md ===== */}
+      <div className="mx-4">
+        <div className="text-center font-urdu text-[11px] text-emerald-600 font-mono font-bold tracking-wider uppercase mb-2">✦ Hadith of the Day ✦</div>
+        <div className="bg-[#ffffff] rounded-md shadow-md p-5 text-center space-y-3">
+          {loadingHadith ? (
+            <div className="flex items-center justify-center py-6"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div></div>
+          ) : (
+            <>
+              <p className="text-base leading-relaxed text-slate-900 text-right font-amiri font-medium" dir="rtl">{dailyHadith?.ar}</p>
+              <p className="text-sm text-emerald-700 font-semibold font-urdu leading-relaxed border-t border-slate-100 pt-3 text-right" dir="rtl">{dailyHadith?.ur}</p>
+              <div className="text-[10px] text-slate-400 font-mono text-left tracking-tight border-t border-slate-50 pt-2">{dailyHadith?.ref}</div>
+            </>
+          )}
+        </div>
+      </div>
 
     </div>
   );
