@@ -71,6 +71,110 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [hijriDate, setHijriDate] = useState<string>('');
   const [isDeviceOffline, setIsDeviceOffline] = useState<boolean>(!navigator.onLine);
 
+  // ══ سرچ state ══
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ icon: string; title: string; subtitle?: string; type: string; action: () => void }[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const SECTIONS = [
+    { icon: '📖', title: 'قرآن مجید', subtitle: '۱۱۴ سورتیں', type: 'سیکشن', nav: 'quran' },
+    { icon: '📜', title: 'احادیث شریفہ', subtitle: 'صحیح بخاری و مسلم', type: 'سیکشن', nav: 'hadith' },
+    { icon: '🤲', title: 'نماز کا طریقہ', subtitle: 'ترجمہ اور طریقہ', type: 'سیکشن', nav: 'namaz' },
+    { icon: '💚', title: 'مسنون دعائیں', subtitle: 'روزمرہ اذکار', type: 'سیکشن', nav: 'duas' },
+    { icon: '📿', title: 'تسبیح کاؤنٹر', subtitle: 'ذکر الٰہی', type: 'سیکشن', nav: 'tasbih' },
+    { icon: '🧭', title: 'قبلہ رخ', subtitle: 'سمت معلوم کریں', type: 'سیکشن', nav: 'qibla' },
+    { icon: '🕌', title: 'قریبی مساجد', subtitle: 'جمعہ کے اوقات', type: 'سیکشن', nav: 'mosques' },
+  ];
+
+  const SURAH_MAP: { [key: string]: number } = {
+    'فاتحہ': 1, 'بقرہ': 2, 'بقرة': 2, 'آل عمران': 3, 'نساء': 4, 'مائدہ': 5,
+    'انعام': 6, 'اعراف': 7, 'انفال': 8, 'توبہ': 9, 'یونس': 10,
+    'ہود': 11, 'یوسف': 12, 'رعد': 13, 'ابراہیم': 14, 'حجر': 15,
+    'نحل': 16, 'اسراء': 17, 'کہف': 18, 'مریم': 19, 'طہ': 20,
+    'انبیاء': 21, 'حج': 22, 'مومنون': 23, 'نور': 24, 'فرقان': 25,
+    'شعراء': 26, 'نمل': 27, 'قصص': 28, 'یاسین': 36, 'yaseen': 36,
+    'yasin': 36, 'يس': 36, 'رحمن': 55, 'rahman': 55, 'الرحمن': 55,
+    'واقعہ': 56, 'ملک': 67, 'قلم': 68, 'اخلاص': 112, 'فلق': 113, 'ناس': 114,
+    'فاتحة': 1, 'surah fatiha': 1, 'surah yaseen': 36, 'surah rahman': 55,
+  };
+
+  const parseSurahAyah = (q: string): { surah: number; ayah: number } | null => {
+    const text = q.toLowerCase().trim();
+    let surahNum = 0;
+    let ayahNum = 0;
+
+    // نمبر سے سورت: "36:7" یا "36 7"
+    const numMatch = text.match(/^(\d+)[:\s]+(\d+)$/);
+    if (numMatch) return { surah: parseInt(numMatch[1]), ayah: parseInt(numMatch[2]) };
+
+    // آیت نمبر نکالیں
+    const ayahMatch = text.match(/(?:آیت|ayat|ayah|verse|:)\s*(\d+)/i);
+    if (ayahMatch) ayahNum = parseInt(ayahMatch[1]);
+
+    // سورت نام ڈھونڈیں
+    for (const [key, num] of Object.entries(SURAH_MAP)) {
+      if (text.includes(key.toLowerCase())) { surahNum = num; break; }
+    }
+
+    if (surahNum && ayahNum) return { surah: surahNum, ayah: ayahNum };
+    return null;
+  };
+
+  const handleSearch = async () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+
+    // لوکل سیکشنز فلٹر
+    const localResults = SECTIONS
+      .filter(s => s.title.includes(q) || (s.subtitle || '').includes(q))
+      .map(s => ({ icon: s.icon, title: s.title, subtitle: s.subtitle, type: s.type, action: () => onNavigate(s.nav) }));
+
+    // مساجد فلٹر
+    const mosqueResults = nearbyMosques
+      .filter(m => m.name.includes(q))
+      .slice(0, 2)
+      .map(m => ({ icon: '🕌', title: m.name, subtitle: `جمعہ: ${m.jumah}`, type: 'مسجد', action: () => onOpenMosque(m) }));
+
+    setSearchResults([...localResults, ...mosqueResults]);
+
+    // آیت سرچ
+    const parsed = parseSurahAyah(q);
+    if (parsed) {
+      setIsSearching(true);
+      setSearchResults(prev => [...prev]);
+      try {
+        const res = await fetch(
+          `https://api.alquran.cloud/v1/ayah/${parsed.surah}:${parsed.ayah}/editions/quran-uthmani,ur.jalandhry`
+        );
+        const json = await res.json();
+        if (json.code === 200 && json.data?.length >= 2) {
+          const ayahResult = {
+            icon: '✨',
+            title: json.data[0].text.substring(0, 50) + '...',
+            subtitle: json.data[1].text.substring(0, 60) + '...',
+            type: 'آیت',
+            action: () => onNavigate('quran'),
+          };
+          setSearchResults(prev => [ayahResult, ...prev]);
+        }
+      } catch { }
+      setIsSearching(false);
+    }
+  };
+
+  // ٹائپ کرتے ہی لوکل نتائج
+  useEffect(() => {
+    if (!searchQuery.trim()) { setSearchResults([]); return; }
+    const local = SECTIONS
+      .filter(s => s.title.includes(searchQuery) || (s.subtitle || '').includes(searchQuery))
+      .map(s => ({ icon: s.icon, title: s.title, subtitle: s.subtitle, type: s.type, action: () => onNavigate(s.nav) }));
+    const mosques = nearbyMosques
+      .filter(m => m.name.includes(searchQuery))
+      .slice(0, 2)
+      .map(m => ({ icon: '🕌', title: m.name, subtitle: `جمعہ: ${m.jumah}`, type: 'مسجد', action: () => onOpenMosque(m) }));
+    setSearchResults([...local, ...mosques]);
+  }, [searchQuery]);
+
   useEffect(() => {
     const handleOnline = () => setIsDeviceOffline(false);
     const handleOffline = () => setIsDeviceOffline(true);
@@ -270,32 +374,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   return (
     <div className="space-y-4 pb-16 animate-fadeIn">
-      {/* ═══════════ TOP BANNER ═══════════ */}
-      <div className="relative bg-gradient-to-b from-[#0a2618] via-[#0f3522] to-[#0a2618] text-white px-4 pt-4 pb-5 shadow-2xl overflow-hidden">
+      {/* ═══════════ TOP BANNER — مسجد تصویر ═══════════ */}
+      <div
+        className="relative text-white overflow-hidden shadow-2xl"
+        style={{
+          backgroundImage: "url('/mosque-bg.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 30%',
+        }}
+      >
+        {/* گہرا gradient overlay — نیچے سے اوپر تک */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/75 pointer-events-none" />
 
-        {/* subtle radial glow in centre */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(52,211,153,0.08),transparent_70%)] pointer-events-none" />
+        {/* اوپر سونے کی باریک لکیر */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
 
-        {/* decorative top gold line */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+        {/* ══ ROW 1: auth + dates ══ */}
+        <div className="relative z-10 flex items-center justify-between px-4 pt-4 mb-2">
 
-        {/* mosque silhouette */}
-        <div className="absolute bottom-0 left-0 w-full h-16 text-emerald-400/5 pointer-events-none">
-          <svg className="w-full h-full" viewBox="0 0 360 64" preserveAspectRatio="none" fill="currentColor">
-            <path d="M0,64 L360,64 L360,24 L345,24 C340,24 338,20 338,17 L338,6 C338,3 335,0 331,0 C327,0 324,3 324,6 L324,17 C324,20 322,24 317,24 L300,24 C292,24 286,17 286,11 C286,5 274,0 260,0 C246,0 234,5 234,11 C234,17 228,24 220,24 L180,24 C172,24 166,15 166,9 C166,3 154,0 140,0 C126,0 114,3 114,9 C114,15 108,24 100,24 L40,24 C35,24 33,20 33,17 L33,6 C33,3 30,0 26,0 C22,0 19,3 19,6 L19,17 C19,20 17,24 12,24 L0,24 Z" />
-          </svg>
-        </div>
-
-        {/* ── ROW 1: login badge  +  dates ── */}
-        <div className="relative z-10 flex items-center justify-between mb-3">
-
-          {/* left: auth button */}
+          {/* بائیں: auth بٹن */}
           <div>
             {isAuthenticated ? (
               <button
                 type="button"
                 onClick={() => onNavigate('imam-login')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 border border-amber-400/40 text-amber-200 font-urdu font-bold text-[11px] rounded-full transition-all shadow-sm cursor-pointer select-none"
+                className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/25 backdrop-blur-sm border border-amber-400/50 text-amber-200 font-urdu font-bold text-[11px] rounded-full transition-all active:scale-95 cursor-pointer select-none"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
                 {authName || 'امام'}
@@ -304,7 +407,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('user-dashboard')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 text-white font-urdu font-bold text-[11px] rounded-full transition-all cursor-pointer select-none"
+                className="flex items-center gap-1.5 py-1 px-3 bg-white/15 backdrop-blur-sm border border-white/30 text-white font-urdu font-bold text-[11px] rounded-full transition-all active:scale-95 cursor-pointer select-none"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                 {userAuthName}
@@ -313,88 +416,92 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('login-splash')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-white/8 hover:bg-white/15 active:scale-95 border border-white/15 text-emerald-200 font-urdu font-bold text-[11px] rounded-full transition-all cursor-pointer select-none"
+                className="flex items-center gap-1.5 py-1 px-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[11px] rounded-full transition-all active:scale-95 cursor-pointer select-none"
               >
-                <LogIn size={10} className="text-amber-400 shrink-0" />
+                <LogIn size={10} className="text-amber-300 shrink-0" />
                 لاگ ان
               </button>
             )}
           </div>
 
-          {/* right: hijri + gregorian date */}
-          <div className="text-right space-y-0.5">
-            <div className="text-[11px] font-urdu font-bold text-amber-300 leading-none">
+          {/* دائیں: تاریخیں */}
+          <div className="text-right">
+            <div className="text-[12px] font-urdu font-bold text-amber-300 drop-shadow leading-none">
               {hijriDate || '—'}
             </div>
-            <div className="text-[10px] text-emerald-300/80 font-urdu">
+            <div className="text-[10px] text-white/70 font-urdu mt-0.5">
               {todayDate}
             </div>
           </div>
         </div>
 
-        {/* ── ROW 2: next prayer countdown ── */}
-        <div className="relative z-10 flex items-center gap-2 mb-3">
+        {/* ══ ROW 2: اگلی نماز countdown ══ */}
+        <div className="relative z-10 flex items-center gap-2 px-4 mb-4">
           <span className="relative flex h-1.5 w-1.5 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-70" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
           </span>
-          <span className="text-[11px] text-amber-100/90 font-urdu font-medium">
+          <span className="text-[11px] text-amber-100 font-urdu font-medium drop-shadow">
             {getNextPrayerCountdown()}
           </span>
         </div>
 
-        {/* ── ROW 3: prayer times card ── */}
-        <div className="relative z-10">
+        {/* ══ ROW 3: سرچ بار ══ */}
+        <div className="relative z-10 px-4 mb-4">
+          <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
+            <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              placeholder="سورۃ یٰسین آیت ۷ تلاش کریں..."
+              className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] font-urdu text-right outline-none"
+              dir="rtl"
+            />
+            {searchQuery && (
+              <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-white/50 hover:text-white transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ══ ROW 4: نماز اوقات کارڈ ══ */}
+        <div className="relative z-10 px-4 pb-5">
           {(() => {
             const p = currentPrayer;
-            const label = {
-              fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء'
-            }[p] || 'نماز';
+            const label = { fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء' }[p] || 'نماز';
             const rawTime = prayerTimes[p] || '--:--';
-
-            const parseToMins = (timeStr: string) => {
-              if (!timeStr) return 0;
-              const [h, m] = timeStr.split(':').map(Number);
-              return h * 60 + m;
-            };
-            const formatMinsTo12Hour = (mins: number) => {
-              const h24 = Math.floor((mins % 1440) / 60);
-              const m = Math.floor(mins % 60);
+            const parseToMins = (t: string) => { if (!t) return 0; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+            const fmt = (mins: number) => {
+              const h24 = Math.floor((mins % 1440) / 60), m = mins % 60;
               const ampm = h24 >= 12 ? 'PM' : 'AM';
-              let h12 = h24 % 12;
-              h12 = h12 ? h12 : 12;
+              let h12 = h24 % 12; h12 = h12 || 12;
               return `${h12 < 10 ? '0' : ''}${h12}:${m < 10 ? '0' : ''}${m} ${ampm}`;
             };
-
             const startMins = parseToMins(rawTime);
-            let jOffset = 15;
-            if (p === 'maghrib') jOffset = 10;
-            if (p === 'fajr') jOffset = 30;
-            const jamaatTime = formatMinsTo12Hour(startMins + jOffset);
-
-            let endTimeStr = '';
-            if (p === 'fajr') endTimeStr = formatMinsTo12Hour(startMins + 85);
-            else if (p === 'zuhr') endTimeStr = formatTo12Hour(prayerTimes['asr']);
-            else if (p === 'asr') endTimeStr = formatTo12Hour(prayerTimes['maghrib']);
-            else if (p === 'maghrib') endTimeStr = formatTo12Hour(prayerTimes['isha']);
-            else if (p === 'isha') endTimeStr = formatTo12Hour(prayerTimes['fajr']);
-
+            const jOffset = p === 'maghrib' ? 10 : p === 'fajr' ? 30 : 15;
+            const jamaatTime = fmt(startMins + jOffset);
+            const endTimeStr = p === 'fajr' ? fmt(startMins + 85)
+              : p === 'zuhr' ? formatTo12Hour(prayerTimes['asr'])
+              : p === 'asr' ? formatTo12Hour(prayerTimes['maghrib'])
+              : p === 'maghrib' ? formatTo12Hour(prayerTimes['isha'])
+              : formatTo12Hour(prayerTimes['fajr']);
             const formattedTime = formatTo12Hour(rawTime);
-
             return (
-              <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                {/* نماز کا نام — thin header strip */}
-                <div className="flex items-center justify-center gap-2 bg-amber-400/10 border-b border-white/10 py-1.5">
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden shadow-xl">
+                <div className="flex items-center justify-center gap-2 py-1.5 border-b border-white/10 bg-black/10">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                  <span className="text-[11px] font-urdu font-bold text-amber-200 tracking-wide">
-                    جاری نماز — {label}
-                  </span>
+                  <span className="text-[11px] font-urdu font-bold text-amber-200">جاری نماز — {label}</span>
                 </div>
-
-                {/* 3 time columns */}
                 <div className="grid grid-cols-3 divide-x divide-white/10 py-2.5 px-1">
                   <div className="text-center space-y-1">
-                    <div className="text-[9px] text-emerald-300/80 font-urdu">آغازِ وقت</div>
+                    <div className="text-[9px] text-white/60 font-urdu">آغازِ وقت</div>
                     <div className="text-[13px] font-mono font-bold text-white">{formattedTime}</div>
                   </div>
                   <div className="text-center space-y-1">
@@ -402,7 +509,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     <div className="text-[13px] font-mono font-bold text-amber-200">{jamaatTime}</div>
                   </div>
                   <div className="text-center space-y-1">
-                    <div className="text-[9px] text-emerald-300/80 font-urdu">انتہائی وقت</div>
+                    <div className="text-[9px] text-white/60 font-urdu">انتہائی وقت</div>
                     <div className="text-[13px] font-mono font-bold text-white">{endTimeStr}</div>
                   </div>
                 </div>
@@ -410,6 +517,36 @@ export const HomeView: React.FC<HomeViewProps> = ({
             );
           })()}
         </div>
+
+        {/* سرچ نتائج dropdown */}
+        {searchResults.length > 0 && (
+          <div className="absolute left-4 right-4 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden"
+            style={{ top: 'calc(100% - 60px)' }}>
+            {searchResults.map((result, i) => (
+              <div
+                key={i}
+                onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors"
+              >
+                <span className="text-lg shrink-0">{result.icon}</span>
+                <div className="flex-1 text-right">
+                  <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
+                  {result.subtitle && <div className="text-[10px] text-slate-400 font-urdu">{result.subtitle}</div>}
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shrink-0">{result.type}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* سرچ لوڈنگ */}
+        {isSearching && (
+          <div className="absolute left-4 right-4 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2"
+            style={{ top: 'calc(100% - 60px)' }}>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
+            <span className="text-[12px] text-slate-500 font-urdu">تلاش جاری ہے...</span>
+          </div>
+        )}
       </div>
 
       {/* Cloud connection status banner */}
