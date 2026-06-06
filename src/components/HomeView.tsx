@@ -81,8 +81,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
       setTimeout(() => {
         setPrayerSlot(prev => (prev + 1) % 3);
         setSlotVisible(true);
-      }, 400);
-    }, 2500);
+      }, 600);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
@@ -481,8 +481,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        {/* ══ ROW 4: نماز اوقات کارڈ ══ */}
-        <div className="relative z-10 px-4 pb-5">
+        <div className="relative z-10 px-4 pb-2 flex justify-start">
           {(() => {
             const p = currentPrayer;
             const label = { fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء' }[p] || 'نماز';
@@ -510,19 +509,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
             ];
             const current = slots[prayerSlot];
             return (
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden shadow-xl">
-                <div className="flex items-center justify-center gap-2 py-1.5 border-b border-white/10 bg-black/10">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                  <span className="text-[11px] font-urdu font-bold text-amber-200">جاری نماز — {label}</span>
+              <div className="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl overflow-hidden w-40">
+                <div className="flex items-center justify-center gap-1.5 py-1 border-b border-white/10 bg-black/5">
+                  <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping shrink-0" />
+                  <span className="text-[9px] font-urdu font-bold text-amber-200">جاری نماز — {label}</span>
                 </div>
-                <div className="flex flex-col items-center justify-center py-3 gap-1"
+                <div className="flex flex-col items-center justify-center py-2 gap-0.5"
                   style={{ opacity: slotVisible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
-                  <div className="text-[10px] text-white/60 font-urdu">{current.label}</div>
-                  <div className={`text-[22px] font-mono font-bold ${current.color} tracking-wide`}>{current.time}</div>
-                  {/* dots indicator */}
-                  <div className="flex gap-1 mt-1">
+                  <div className="text-[8px] text-white/50 font-urdu">{current.label}</div>
+                  <div className={`text-[15px] font-mono font-bold ${current.color} tracking-wide`}>{current.time}</div>
+                  <div className="flex gap-1 mt-0.5">
                     {slots.map((_, i) => (
-                      <span key={i} className={`w-1 h-1 rounded-full transition-all ${i === prayerSlot ? 'bg-amber-400 w-3' : 'bg-white/30'}`} />
+                      <span key={i} className={`h-0.5 rounded-full transition-all ${i === prayerSlot ? 'bg-amber-400 w-3' : 'bg-white/30 w-1'}`} />
                     ))}
                   </div>
                 </div>
