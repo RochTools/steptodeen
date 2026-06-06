@@ -399,36 +399,75 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* گہرا gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/70 pointer-events-none" />
 
-        {/* ══ ROW 1: auth + dates ══ */}
-        <div className="relative z-10 flex items-center justify-between px-4 pt-4 mb-2">
+        {/* ══ ROW 1: prayer card (بائیں) + dates (دائیں) ══ */}
+        <div className="relative z-10 flex items-start justify-between px-4 pt-4 mb-2">
 
-          {/* بائیں: auth بٹن */}
-          <div>
+          {/* بائیں: prayer cycling card + auth بٹن */}
+          <div className="flex flex-col gap-1.5">
+            {/* نماز cycling card */}
+            {(() => {
+              const p = currentPrayer;
+              const label = { fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء' }[p] || 'نماز';
+              const rawTime = prayerTimes[p] || '--:--';
+              const parseToMins = (t: string) => { if (!t) return 0; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+              const fmt = (mins: number) => {
+                const h24 = Math.floor((mins % 1440) / 60), m = mins % 60;
+                const ampm = h24 >= 12 ? 'PM' : 'AM';
+                let h12 = h24 % 12; h12 = h12 || 12;
+                return `${h12 < 10 ? '0' : ''}${h12}:${m < 10 ? '0' : ''}${m} ${ampm}`;
+              };
+              const startMins = parseToMins(rawTime);
+              const jOffset = p === 'maghrib' ? 10 : p === 'fajr' ? 30 : 15;
+              const jamaatTime = fmt(startMins + jOffset);
+              const endTimeStr = p === 'fajr' ? fmt(startMins + 85)
+                : p === 'zuhr' ? formatTo12Hour(prayerTimes['asr'])
+                : p === 'asr' ? formatTo12Hour(prayerTimes['maghrib'])
+                : p === 'maghrib' ? formatTo12Hour(prayerTimes['isha'])
+                : formatTo12Hour(prayerTimes['fajr']);
+              const formattedTime = formatTo12Hour(rawTime);
+              const slots = [
+                { label: 'آغازِ وقت', time: formattedTime, color: 'text-white' },
+                { label: 'جماعت', time: jamaatTime, color: 'text-amber-300' },
+                { label: 'انتہائی', time: endTimeStr, color: 'text-white' },
+              ];
+              const current = slots[prayerSlot];
+              return (
+                <div className="bg-black/20 backdrop-blur-sm border border-white/15 rounded-xl overflow-hidden w-36">
+                  <div className="flex items-center justify-center gap-1 py-1 border-b border-white/10 bg-black/10">
+                    <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping shrink-0" />
+                    <span className="text-[10px] font-urdu font-bold text-amber-300">{label}</span>
+                  </div>
+                  <div className="flex flex-col items-center py-1.5 gap-0.5"
+                    style={{ opacity: slotVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+                    <div className="text-[8px] text-white/50 font-urdu">{current.label}</div>
+                    <div className={`text-[14px] font-mono font-bold ${current.color}`}>{current.time}</div>
+                    <div className="flex gap-1 mt-0.5">
+                      {slots.map((_, i) => (
+                        <span key={i} className={`h-0.5 rounded-full transition-all duration-300 ${i === prayerSlot ? 'bg-amber-400 w-3' : 'bg-white/25 w-1'}`} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* auth بٹن */}
             {isAuthenticated ? (
-              <button
-                type="button"
-                onClick={() => onNavigate('imam-login')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/25 backdrop-blur-sm border border-amber-400/50 text-amber-200 font-urdu font-bold text-[11px] rounded-full transition-all active:scale-95 cursor-pointer select-none"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <button type="button" onClick={() => onNavigate('imam-login')}
+                className="flex items-center gap-1.5 py-0.5 px-2.5 bg-amber-500/20 backdrop-blur-sm border border-amber-400/40 text-amber-200 font-urdu font-bold text-[10px] rounded-full transition-all active:scale-95 cursor-pointer select-none w-fit">
+                <span className="w-1 h-1 rounded-full bg-amber-400 animate-pulse shrink-0" />
                 {authName || 'امام'}
               </button>
             ) : isUserAuthenticated ? (
-              <button
-                type="button"
-                onClick={() => onNavigate('user-dashboard')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-white/15 backdrop-blur-sm border border-white/30 text-white font-urdu font-bold text-[11px] rounded-full transition-all active:scale-95 cursor-pointer select-none"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <button type="button" onClick={() => onNavigate('user-dashboard')}
+                className="flex items-center gap-1.5 py-0.5 px-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[10px] rounded-full transition-all active:scale-95 cursor-pointer select-none w-fit">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                 {userAuthName}
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => onNavigate('login-splash')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[11px] rounded-full transition-all active:scale-95 cursor-pointer select-none"
-              >
-                <LogIn size={10} className="text-amber-300 shrink-0" />
+              <button type="button" onClick={() => onNavigate('login-splash')}
+                className="flex items-center gap-1.5 py-0.5 px-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[10px] rounded-full transition-all active:scale-95 cursor-pointer select-none w-fit">
+                <LogIn size={9} className="text-amber-300 shrink-0" />
                 لاگ ان
               </button>
             )}
@@ -446,7 +485,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* ══ ROW 2: اگلی نماز countdown ══ */}
-        <div className="relative z-10 flex items-center gap-2 px-4 mb-4">
+        <div className="relative z-10 flex items-center gap-2 px-4 mb-3">
           <span className="relative flex h-1.5 w-1.5 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
@@ -457,7 +496,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* ══ ROW 3: سرچ بار ══ */}
-        <div className="relative z-10 px-4 mb-4">
+        <div className="relative z-10 px-4 mb-3">
           <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
             <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -481,52 +520,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        <div className="relative z-10 px-4 pb-0 flex justify-end">
-          {(() => {
-            const p = currentPrayer;
-            const label = { fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء' }[p] || 'نماز';
-            const rawTime = prayerTimes[p] || '--:--';
-            const parseToMins = (t: string) => { if (!t) return 0; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-            const fmt = (mins: number) => {
-              const h24 = Math.floor((mins % 1440) / 60), m = mins % 60;
-              const ampm = h24 >= 12 ? 'PM' : 'AM';
-              let h12 = h24 % 12; h12 = h12 || 12;
-              return `${h12 < 10 ? '0' : ''}${h12}:${m < 10 ? '0' : ''}${m} ${ampm}`;
-            };
-            const startMins = parseToMins(rawTime);
-            const jOffset = p === 'maghrib' ? 10 : p === 'fajr' ? 30 : 15;
-            const jamaatTime = fmt(startMins + jOffset);
-            const endTimeStr = p === 'fajr' ? fmt(startMins + 85)
-              : p === 'zuhr' ? formatTo12Hour(prayerTimes['asr'])
-              : p === 'asr' ? formatTo12Hour(prayerTimes['maghrib'])
-              : p === 'maghrib' ? formatTo12Hour(prayerTimes['isha'])
-              : formatTo12Hour(prayerTimes['fajr']);
-            const formattedTime = formatTo12Hour(rawTime);
-            const slots = [
-              { label: 'آغازِ وقت', time: formattedTime, color: 'text-white' },
-              { label: 'جماعت کا وقت', time: jamaatTime, color: 'text-amber-300' },
-              { label: 'انتہائی وقت', time: endTimeStr, color: 'text-white' },
-            ];
-            const current = slots[prayerSlot];
-            return (
-              <div className="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl overflow-hidden w-40">
-                <div className="flex items-center justify-center gap-1.5 py-1 border-b border-white/10 bg-black/5">
-                  <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping shrink-0" />
-                  <span className="text-[9px] font-urdu font-bold text-amber-200">جاری نماز — {label}</span>
-                </div>
-                <div className="flex flex-col items-center justify-center py-2 gap-0.5"
-                  style={{ opacity: slotVisible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
-                  <div className="text-[8px] text-white/50 font-urdu">{current.label}</div>
-                  <div className={`text-[15px] font-mono font-bold ${current.color} tracking-wide`}>{current.time}</div>
-                  <div className="flex gap-1 mt-0.5">
-                    {slots.map((_, i) => (
-                      <span key={i} className={`h-0.5 rounded-full transition-all ${i === prayerSlot ? 'bg-amber-400 w-3' : 'bg-white/30 w-1'}`} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+        {/* ══ ROW 4: آیت ticker ══ */}
+        <div className="relative z-10 px-4 pb-5 overflow-hidden">
+          <div className="text-center py-1.5">
+            {dailyAyah ? (
+              <p className="text-[11px] text-white/75 font-amiri leading-relaxed drop-shadow"
+                dir="rtl" style={{ fontStyle: 'italic' }}>
+                {dailyAyah.ar.length > 80 ? dailyAyah.ar.substring(0, 80) + '...' : dailyAyah.ar}
+              </p>
+            ) : (
+              <p className="text-[11px] text-white/50 font-amiri" dir="rtl">
+                بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+              </p>
+            )}
+          </div>
         </div>
 
         {/* سرچ نتائج dropdown */}
