@@ -373,7 +373,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-16 animate-fadeIn">
+    <div className="pb-16 animate-fadeIn bg-slate-50">
       {/* ═══════════ TOP BANNER — مسجد تصویر ═══════════ */}
       <div
         className="relative text-white overflow-hidden shadow-2xl"
@@ -548,6 +548,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* ═══════════ نیچے کا مواد ═══════════ */}
+      <div className="space-y-4 pt-4">
 
       {/* Cloud connection status banner */}
       {isDeviceOffline && (
@@ -755,6 +758,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
       </div>
+
+      </div> {/* ═ end space-y-4 wrapper ═ */}
     </div>
   );
 };
