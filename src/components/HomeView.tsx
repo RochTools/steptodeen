@@ -376,18 +376,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
     <div className="pb-16 animate-fadeIn bg-slate-50">
       {/* ═══════════ TOP BANNER — مسجد تصویر ═══════════ */}
       <div
-        className="relative text-white overflow-hidden shadow-2xl"
+        className="relative text-white overflow-hidden"
         style={{
           backgroundImage: "url('/mosque-bg.jpg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center 30%',
         }}
       >
-        {/* گہرا gradient overlay — نیچے سے اوپر تک */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/75 pointer-events-none" />
-
-        {/* اوپر سونے کی باریک لکیر */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
+        {/* گہرا gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/70 pointer-events-none" />
 
         {/* ══ ROW 1: auth + dates ══ */}
         <div className="relative z-10 flex items-center justify-between px-4 pt-4 mb-2">
@@ -549,8 +546,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
         )}
       </div>
 
-      {/* ═══════════ نیچے کا مواد ═══════════ */}
-      <div className="space-y-4 pt-4">
+      {/* ═══════════ نیچے کا مواد — اوپر سے گول ═══════════ */}
+      <div className="relative z-10 -mt-6 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
 
       {/* Cloud connection status banner */}
       {isDeviceOffline && (
