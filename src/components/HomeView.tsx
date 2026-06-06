@@ -270,184 +270,140 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   return (
     <div className="space-y-4 pb-16 animate-fadeIn">
-      {/* Premium Unique Atmospheric Topbar & Prayer Banner */}
-      <div className="relative bg-gradient-to-br from-[#0c2f21] via-[#10402b] to-[#082317] text-white px-4 pt-6 pb-6 rounded-b-[2rem] shadow-lg border-b border-[#05170f] overflow-hidden">
-        {/* Artistic Mosque Silhouette Illustration Graphic Background */}
-        <div className="absolute bottom-0 left-0 w-full h-20 text-emerald-500/10 pointer-events-none z-0">
-          <svg className="w-full h-full" viewBox="0 0 360 80" preserveAspectRatio="none" fill="currentColor">
-            <path d="M0,80 L360,80 L360,30 L345,30 C340,30 338,26 338,22 L338,8 C338,5 335,2 331,2 C327,2 324,5 324,8 L324,22 C324,26 322,30 317,30 L300,30 C292,30 286,22 286,15 C286,8 274,0 260,0 C246,0 234,8 234,15 C234,22 228,30 220,30 L180,30 C172,30 166,20 166,13 C166,5 154,0 140,0 C126,0 114,5 114,13 C114,20 108,30 100,30 L60,30 L40,30 C35,30 33,26 33,22 L33,8 C33,5 30,2 26,2 C22,2 19,5 19,8 L19,22 C19,26 17,30 12,30 L0,30 Z" />
+      {/* ═══════════ TOP BANNER ═══════════ */}
+      <div className="relative bg-gradient-to-b from-[#0a2618] via-[#0f3522] to-[#0a2618] text-white px-4 pt-4 pb-5 shadow-2xl overflow-hidden">
+
+        {/* subtle radial glow in centre */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(52,211,153,0.08),transparent_70%)] pointer-events-none" />
+
+        {/* decorative top gold line */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+
+        {/* mosque silhouette */}
+        <div className="absolute bottom-0 left-0 w-full h-16 text-emerald-400/5 pointer-events-none">
+          <svg className="w-full h-full" viewBox="0 0 360 64" preserveAspectRatio="none" fill="currentColor">
+            <path d="M0,64 L360,64 L360,24 L345,24 C340,24 338,20 338,17 L338,6 C338,3 335,0 331,0 C327,0 324,3 324,6 L324,17 C324,20 322,24 317,24 L300,24 C292,24 286,17 286,11 C286,5 274,0 260,0 C246,0 234,5 234,11 C234,17 228,24 220,24 L180,24 C172,24 166,15 166,9 C166,3 154,0 140,0 C126,0 114,3 114,9 C114,15 108,24 100,24 L40,24 C35,24 33,20 33,17 L33,6 C33,3 30,0 26,0 C22,0 19,3 19,6 L19,17 C19,20 17,24 12,24 L0,24 Z" />
           </svg>
         </div>
 
-        {/* Live Status and Locations row */}
-        <div className="relative z-10 flex items-start justify-between">
-          {/* Left panel: Imam Authentication / Account Badge or login button & dynamic countdown info */}
-          <div className="space-y-1.5">
-            <div className="flex items-baseline gap-1.5">
-              {isAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={() => onNavigate('imam-login')}
-                  className="py-1 px-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-zinc-950 font-urdu font-black text-[10px] rounded-lg border border-amber-300 transition-all flex items-center gap-1 shadow-md cursor-pointer select-none"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-900 inline-block animate-pulse"></span>
-                  🕌 {authName || 'امام'}
-                </button>
-              ) : isUserAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={() => onNavigate('user-dashboard')}
-                  className="py-1 px-2.5 bg-white/20 hover:bg-white/30 active:scale-95 border border-white/30 text-[10px] text-white font-urdu font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer select-none"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse"></span>
-                  👤 {userAuthName}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onNavigate('login-splash')}
-                  className="py-1 px-2.5 bg-emerald-950/70 hover:bg-emerald-900 active:scale-95 border border-emerald-800/40 text-[10px] text-emerald-100 font-urdu font-bold rounded-lg transition-all flex items-center gap-1 shadow-inner cursor-pointer select-none"
-                >
-                  <LogIn size={10} className="text-amber-400 shrink-0" />
-                  لاگ ان
-                </button>
-              )}
-            </div>
-            
-            {/* Dynamic blinker next prayer helper indicator */}
-            <div className="flex items-center gap-1.5 bg-emerald-950/60 border border-emerald-800/40 px-2.5 py-1 rounded-lg w-fit max-w-[250px] sm:max-w-none shadow-sm">
-              <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
-              </span>
-              <span className="text-[10px] sm:text-xs text-amber-200 font-urdu leading-normal font-medium whitespace-nowrap pt-0.5">
-                {getNextPrayerCountdown()}
-              </span>
-            </div>
+        {/* ── ROW 1: login badge  +  dates ── */}
+        <div className="relative z-10 flex items-center justify-between mb-3">
+
+          {/* left: auth button */}
+          <div>
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => onNavigate('imam-login')}
+                className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 border border-amber-400/40 text-amber-200 font-urdu font-bold text-[11px] rounded-full transition-all shadow-sm cursor-pointer select-none"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                {authName || 'امام'}
+              </button>
+            ) : isUserAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => onNavigate('user-dashboard')}
+                className="flex items-center gap-1.5 py-1 px-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 text-white font-urdu font-bold text-[11px] rounded-full transition-all cursor-pointer select-none"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                {userAuthName}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onNavigate('login-splash')}
+                className="flex items-center gap-1.5 py-1 px-3 bg-white/8 hover:bg-white/15 active:scale-95 border border-white/15 text-emerald-200 font-urdu font-bold text-[11px] rounded-full transition-all cursor-pointer select-none"
+              >
+                <LogIn size={10} className="text-amber-400 shrink-0" />
+                لاگ ان
+              </button>
+            )}
           </div>
 
-          {/* Right panel: islamic dates info */}
-          <div className="text-right space-y-1">
-            <span className="inline-block text-[10px] bg-amber-500/10 text-amber-200 font-bold border border-amber-500/20 px-2.5 py-0.5 rounded-full font-urdu">
-              {hijriDate || '1 شعبانھ'}
-            </span>
-            <div className="text-[11px] text-emerald-250 font-urdu font-medium">
+          {/* right: hijri + gregorian date */}
+          <div className="text-right space-y-0.5">
+            <div className="text-[11px] font-urdu font-bold text-amber-300 leading-none">
+              {hijriDate || '—'}
+            </div>
+            <div className="text-[10px] text-emerald-300/80 font-urdu">
               {todayDate}
             </div>
-            {/* Soft map badge to trigger GPS */}
-            <button
-              onClick={requestLocation}
-              className="text-[9px] inline-flex items-center gap-1 text-emerald-300 hover:text-white bg-white/5 border border-white/10 hover:bg-white/10 transition-colors py-0.5 px-2 rounded-md font-urdu select-none cursor-pointer"
-            >
-              <MapPin size={9} className="text-amber-400 shrink-0" />
-              <span>{userCoords ? 'مقام: کلاؤڈ سنکڈ' : 'مقام آٹو حاصل کریں'}</span>
-            </button>
           </div>
         </div>
 
-        {/* Single Sleek Active/Upcoming Prayer Showcase Card */}
-        <div className="relative z-10 mt-5 max-w-sm mx-auto">
+        {/* ── ROW 2: next prayer countdown ── */}
+        <div className="relative z-10 flex items-center gap-2 mb-3">
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-70" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
+          </span>
+          <span className="text-[11px] text-amber-100/90 font-urdu font-medium">
+            {getNextPrayerCountdown()}
+          </span>
+        </div>
+
+        {/* ── ROW 3: prayer times card ── */}
+        <div className="relative z-10">
           {(() => {
             const p = currentPrayer;
             const label = {
-              fajr: 'نمازِ فجر',
-              zuhr: 'نمازِ ظہر',
-              asr: 'نمازِ عصر',
-              maghrib: 'نمازِ مغرب',
-              isha: 'نمازِ عشاء'
+              fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء'
             }[p] || 'نماز';
             const rawTime = prayerTimes[p] || '--:--';
-            
-            // Generate details for Active Prayer
+
             const parseToMins = (timeStr: string) => {
               if (!timeStr) return 0;
               const [h, m] = timeStr.split(':').map(Number);
               return h * 60 + m;
             };
-
             const formatMinsTo12Hour = (mins: number) => {
               const h24 = Math.floor((mins % 1440) / 60);
               const m = Math.floor(mins % 60);
               const ampm = h24 >= 12 ? 'PM' : 'AM';
               let h12 = h24 % 12;
               h12 = h12 ? h12 : 12;
-              const strHrs = h12 < 10 ? '0' : '';
-              const strMins = m < 10 ? '0' : '';
-              return `${strHrs}${h12}:${strMins}${m} ${ampm}`;
+              return `${h12 < 10 ? '0' : ''}${h12}:${m < 10 ? '0' : ''}${m} ${ampm}`;
             };
 
             const startMins = parseToMins(rawTime);
-            
-            // Standard Jamaat configuration
             let jOffset = 15;
             if (p === 'maghrib') jOffset = 10;
             if (p === 'fajr') jOffset = 30;
             const jamaatTime = formatMinsTo12Hour(startMins + jOffset);
 
-            // Intiha-e-Waqt calculation
             let endTimeStr = '';
-            if (p === 'fajr') {
-              // Sunrise is around ~1 hour 25 minutes after Fajr
-              endTimeStr = formatMinsTo12Hour(startMins + 85);
-            } else if (p === 'zuhr') {
-              endTimeStr = formatTo12Hour(prayerTimes['asr']);
-            } else if (p === 'asr') {
-              endTimeStr = formatTo12Hour(prayerTimes['maghrib']);
-            } else if (p === 'maghrib') {
-              endTimeStr = formatTo12Hour(prayerTimes['isha']);
-            } else if (p === 'isha') {
-              endTimeStr = formatTo12Hour(prayerTimes['fajr']);
-            }
+            if (p === 'fajr') endTimeStr = formatMinsTo12Hour(startMins + 85);
+            else if (p === 'zuhr') endTimeStr = formatTo12Hour(prayerTimes['asr']);
+            else if (p === 'asr') endTimeStr = formatTo12Hour(prayerTimes['maghrib']);
+            else if (p === 'maghrib') endTimeStr = formatTo12Hour(prayerTimes['isha']);
+            else if (p === 'isha') endTimeStr = formatTo12Hour(prayerTimes['fajr']);
 
             const formattedTime = formatTo12Hour(rawTime);
-            
-            return (
-              <div className="bg-gradient-to-b from-emerald-950/80 via-emerald-900/50 to-emerald-950/80 backdrop-blur-md border border-amber-400/30 rounded-2xl p-4 shadow-xl transition-all hover:scale-[1.01] text-white">
-                {/* Header row containing Active Name + Clean Lucide Clock Icon */}
-                <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-zinc-950 font-bold shadow-md border border-amber-300/40 shrink-0">
-                      <Clock size={16} className="text-zinc-950 animate-pulse" />
-                    </div>
-                    <div className="text-left font-sans">
-                      <span className="text-[9px] text-amber-300 font-mono font-bold tracking-wider uppercase block">LIVE CLOCK</span>
-                      <span className="text-xs text-white font-mono font-bold">{liveTime || '00:00'}</span>
-                    </div>
-                  </div>
 
-                  <div className="text-right">
-                    <div className="text-[10px] text-emerald-300 font-urdu leading-none">جاری نماز</div>
-                    <div className="text-lg font-bold font-urdu text-white mt-0.5 flex items-center gap-1.5 justify-end">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-450 inline-block animate-ping"></span>
-                      {label}
-                    </div>
-                  </div>
+            return (
+              <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                {/* نماز کا نام — thin header strip */}
+                <div className="flex items-center justify-center gap-2 bg-amber-400/10 border-b border-white/10 py-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                  <span className="text-[11px] font-urdu font-bold text-amber-200 tracking-wide">
+                    جاری نماز — {label}
+                  </span>
                 </div>
 
-                {/* 3 Metric Column Blocks with beautiful vertical partition borders */}
-                <div className="grid grid-cols-3 gap-1 text-center bg-emerald-950/50 rounded-xl py-2.5 border border-white/5">
-                  {/* Column 1: Azaan Start */}
-                  <div className="space-y-1">
-                    <div className="text-[9px] text-emerald-300 font-urdu">آغازِ وقت</div>
-                    <div className="text-[11px] font-mono font-bold text-white tracking-tight">
-                      {formattedTime}
-                    </div>
+                {/* 3 time columns */}
+                <div className="grid grid-cols-3 divide-x divide-white/10 py-2.5 px-1">
+                  <div className="text-center space-y-1">
+                    <div className="text-[9px] text-emerald-300/80 font-urdu">آغازِ وقت</div>
+                    <div className="text-[13px] font-mono font-bold text-white">{formattedTime}</div>
                   </div>
-
-                  {/* Column 2: Jamaat */}
-                  <div className="space-y-1 border-x border-white/10">
-                    <div className="text-[9px] text-amber-300 font-urdu font-bold">جماعت کا وقت</div>
-                    <div className="text-[11px] font-mono font-bold text-amber-200 tracking-tight">
-                      {jamaatTime}
-                    </div>
+                  <div className="text-center space-y-1">
+                    <div className="text-[9px] text-amber-300/90 font-urdu font-bold">جماعت</div>
+                    <div className="text-[13px] font-mono font-bold text-amber-200">{jamaatTime}</div>
                   </div>
-
-                  {/* Column 3: Intiha-e-Waqt */}
-                  <div className="space-y-1">
-                    <div className="text-[9px] text-emerald-300 font-urdu">انتہائی وقت</div>
-                    <div className="text-[11px] font-mono font-bold text-white tracking-tight">
-                      {endTimeStr}
-                    </div>
+                  <div className="text-center space-y-1">
+                    <div className="text-[9px] text-emerald-300/80 font-urdu">انتہائی وقت</div>
+                    <div className="text-[13px] font-mono font-bold text-white">{endTimeStr}</div>
                   </div>
                 </div>
               </div>
@@ -458,7 +414,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Cloud connection status banner */}
       {isDeviceOffline && (
-        <div className="mx-4 p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg flex items-center gap-2.5 text-amber-900 animate-fadeIn">
+        <div className="mx-4 p-2.5 bg-amber-50/70 ring-1 ring-black/15 flex items-center gap-2.5 text-amber-900 animate-fadeIn">
           <AlertTriangle size={15} className="shrink-0 text-amber-600" />
           <div className="text-[11px] font-urdu leading-relaxed text-right flex-1">
             آف لائن موڈ: آپ کا انٹرنیٹ کنکشن منقطع ہے، ایپ ابھی آف لائن موڈ میں کام کر رہی ہے۔
@@ -466,8 +422,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       )}
 
-      {/* Mosque Proximity Finder preview */}
-      <div className="mx-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          مسجد کارڈ — بغیر border، 1px ring، سفید اندر، چکور کونے
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="mx-4 bg-white rounded-none ring-1 ring-black/15 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-emerald-700 font-bold cursor-pointer font-urdu hover:underline" onClick={() => onNavigate('mosques')}>
             تمام دیکھئے ←
@@ -479,7 +437,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {!userCoords ? (
-          <div className="p-4.5 bg-slate-50 rounded-xl text-center space-y-2.5 border border-slate-150">
+          <div className="p-4.5 bg-slate-50 rounded-none text-center space-y-2.5 ring-1 ring-black/10">
             <p className="text-[11px] text-slate-600 font-urdu leading-relaxed">
               اپنا جی پی ایس لوکیشن آن کریں تاکہ آپ کو بالکل قریبی مساجد اور ان کی جماعت کے اوقات ریئل ٹائم نظر آئیں۔
             </p>
@@ -497,7 +455,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <p className="text-xs text-center text-gray-500 font-urdu py-2">قریبی علاقے میں کوئی مسجد رجسٹرڈ نہیں ہے۔</p>
             ) : (
               (() => {
-                // Calculate distance for all mosques first
                 const mosquesWithDistance = nearbyMosques.map((mosque) => {
                   const distance = calculateDistance(
                     userCoords.latitude,
@@ -508,16 +465,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   return { mosque, distance };
                 });
 
-                // Sort by distance ascending so closest is at the top
                 const sortedMosques = mosquesWithDistance.sort((a, b) => a.distance - b.distance);
 
-                // Take only the top 3 closest mosques
                 return sortedMosques.slice(0, 3).map(({ mosque, distance }) => {
                   return (
                     <div
                       key={mosque.id}
                       onClick={() => onOpenMosque(mosque)}
-                      className="p-3 bg-slate-50/50 hover:bg-emerald-50/35 rounded-xl transition-all cursor-pointer border border-slate-150 flex items-center justify-between group"
+                      className="p-3 bg-slate-50/50 hover:bg-emerald-50/35 transition-all cursor-pointer ring-1 ring-black/10 flex items-center justify-between group"
                     >
                       <div className="text-center bg-emerald-600 text-white py-1 px-2.5 rounded-lg text-[9px] font-bold border border-emerald-700 group-hover:bg-emerald-700 transition-colors">
                         <div className="opacity-95 text-[8px]">جمعہ وقت</div>
@@ -539,12 +494,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
         )}
       </div>
 
-      {/* Main Grid Card Sections */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          مین گرڈ کارڈز — چکور کونے، ring-1، سفید
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
         {/* Quran */}
         <div
           onClick={() => onNavigate('quran')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="relative bg-white p-4 rounded-none ring-1 ring-black/15 hover:ring-emerald-400/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
         >
           <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
             <BookOpen size={20} />
@@ -556,7 +513,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* Hadith */}
         <div
           onClick={() => onNavigate('hadith')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="relative bg-white p-4 rounded-none ring-1 ring-black/15 hover:ring-emerald-400/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
         >
           <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2">
             <Scroll size={20} />
@@ -568,7 +525,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* Namaz Method */}
         <div
           onClick={() => onNavigate('namaz')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="relative bg-white p-4 rounded-none ring-1 ring-black/15 hover:ring-emerald-400/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
         >
           <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
             <CheckCircle size={20} />
@@ -580,7 +537,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* Duas */}
         <div
           onClick={() => onNavigate('duas')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="relative bg-white p-4 rounded-none ring-1 ring-black/15 hover:ring-emerald-400/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
         >
           <div className="w-10 h-10 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center mb-2">
             <Heart size={20} />
@@ -592,7 +549,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* Tasbih Counter */}
         <div
           onClick={() => onNavigate('tasbih')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="relative bg-white p-4 rounded-none ring-1 ring-black/15 hover:ring-emerald-400/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
         >
           <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center mb-2">
             <RotateCcw size={20} className="group-hover:rotate-45 transition-transform" />
@@ -604,7 +561,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* Qibla Direction */}
         <div
           onClick={() => onNavigate('qibla')}
-          className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
+          className="relative bg-white p-4 rounded-none ring-1 ring-black/15 hover:ring-emerald-400/60 transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
         >
           <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
             <Compass size={20} className="group-hover:animate-spin" style={{ animationDuration: '3s' }} />
@@ -614,12 +571,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-
-
-      {/* Daily Quran Ayat */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          آیتِ روز — چکور کونے، ring-1، سفید
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="mx-4">
         <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Verse of the Day ✦</div>
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center space-y-2.5">
+        <div className="bg-white rounded-none ring-1 ring-black/15 p-4 text-center space-y-2.5">
           {loadingAyah ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
@@ -638,10 +595,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-      {/* Daily Hadith */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          حدیثِ روز — چکور کونے، ring-1، سفید، دائیں سبز border
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="mx-4">
         <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Hadith of the Day ✦</div>
-        <div className="bg-white rounded-2xl border border-slate-250 shadow-sm p-4 text-center space-y-2.5 border-r-4 border-r-emerald-600">
+        <div className="bg-white rounded-none ring-1 ring-black/15 border-r-4 border-r-emerald-600 p-4 text-center space-y-2.5">
           {loadingHadith ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
@@ -651,7 +610,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-medium" dir="rtl">
                 {dailyHadith?.ar}
               </p>
-              <p className="text-xs text-slate-650 text-slate-600 font-urdu leading-relaxed border-t border-slate-100 pt-2 text-right" dir="rtl">
+              <p className="text-xs text-slate-600 font-urdu leading-relaxed border-t border-slate-100 pt-2 text-right" dir="rtl">
                 {dailyHadith?.ur}
               </p>
               <div className="text-[9px] text-slate-400 font-mono text-left tracking-tight">{dailyHadith?.ref}</div>
