@@ -71,7 +71,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [hijriDate, setHijriDate] = useState<string>('');
   const [isDeviceOffline, setIsDeviceOffline] = useState<boolean>(!navigator.onLine);
 
-  // ══ سرچ state ══
+  // ══ نماز وقت cycling state ══
+  const [prayerSlot, setPrayerSlot] = useState(0);
+  const [slotVisible, setSlotVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSlotVisible(false);
+      setTimeout(() => {
+        setPrayerSlot(prev => (prev + 1) % 3);
+        setSlotVisible(true);
+      }, 400);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ icon: string; title: string; subtitle?: string; type: string; action: () => void }[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -490,24 +503,27 @@ export const HomeView: React.FC<HomeViewProps> = ({
               : p === 'maghrib' ? formatTo12Hour(prayerTimes['isha'])
               : formatTo12Hour(prayerTimes['fajr']);
             const formattedTime = formatTo12Hour(rawTime);
+            const slots = [
+              { label: 'آغازِ وقت', time: formattedTime, color: 'text-white' },
+              { label: 'جماعت کا وقت', time: jamaatTime, color: 'text-amber-300' },
+              { label: 'انتہائی وقت', time: endTimeStr, color: 'text-white' },
+            ];
+            const current = slots[prayerSlot];
             return (
               <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden shadow-xl">
                 <div className="flex items-center justify-center gap-2 py-1.5 border-b border-white/10 bg-black/10">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
                   <span className="text-[11px] font-urdu font-bold text-amber-200">جاری نماز — {label}</span>
                 </div>
-                <div className="grid grid-cols-3 divide-x divide-white/10 py-2.5 px-1">
-                  <div className="text-center space-y-1">
-                    <div className="text-[9px] text-white/60 font-urdu">آغازِ وقت</div>
-                    <div className="text-[13px] font-mono font-bold text-white">{formattedTime}</div>
-                  </div>
-                  <div className="text-center space-y-1">
-                    <div className="text-[9px] text-amber-300/90 font-urdu font-bold">جماعت</div>
-                    <div className="text-[13px] font-mono font-bold text-amber-200">{jamaatTime}</div>
-                  </div>
-                  <div className="text-center space-y-1">
-                    <div className="text-[9px] text-white/60 font-urdu">انتہائی وقت</div>
-                    <div className="text-[13px] font-mono font-bold text-white">{endTimeStr}</div>
+                <div className="flex flex-col items-center justify-center py-3 gap-1"
+                  style={{ opacity: slotVisible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+                  <div className="text-[10px] text-white/60 font-urdu">{current.label}</div>
+                  <div className={`text-[22px] font-mono font-bold ${current.color} tracking-wide`}>{current.time}</div>
+                  {/* dots indicator */}
+                  <div className="flex gap-1 mt-1">
+                    {slots.map((_, i) => (
+                      <span key={i} className={`w-1 h-1 rounded-full transition-all ${i === prayerSlot ? 'bg-amber-400 w-3' : 'bg-white/30'}`} />
+                    ))}
                   </div>
                 </div>
               </div>
