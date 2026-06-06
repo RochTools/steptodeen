@@ -481,7 +481,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        <div className="relative z-10 px-4 pb-2 flex justify-start">
+        <div className="relative z-10 px-4 pb-0 flex justify-end">
           {(() => {
             const p = currentPrayer;
             const label = { fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء' }[p] || 'نماز';
