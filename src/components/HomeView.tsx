@@ -399,15 +399,24 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* گہرا gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/70 pointer-events-none" />
 
-        {/* ══ ROW 1: prayer card (بائیں) + dates (دائیں) ══ */}
-        <div className="relative z-10 flex items-start justify-between px-4 pt-4 mb-2">
+        {/* ══ ROW 1: [تاریخ+نماز نام | auth] ══ */}
+        <div className="relative z-10 flex items-start justify-between px-4 pt-4 mb-1">
 
-          {/* بائیں: prayer cycling card + auth بٹن */}
-          <div className="flex flex-col gap-1.5">
-            {/* نماز cycling card */}
+          {/* بائیں: تاریخ + نماز نام */}
+          <div>
+            {/* تاریخ اور نماز نام ایک لائن میں */}
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[11px] font-urdu font-bold text-amber-300">{hijriDate || '—'}</span>
+              <span className="text-white/40 text-[10px]">•</span>
+              <span className="text-[11px] font-urdu font-bold text-white">
+                {{ fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء' }[currentPrayer] || 'نماز'}
+              </span>
+            </div>
+            <div className="text-[10px] text-white/60 font-urdu">{todayDate}</div>
+
+            {/* cycling وقت */}
             {(() => {
               const p = currentPrayer;
-              const label = { fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء' }[p] || 'نماز';
               const rawTime = prayerTimes[p] || '--:--';
               const parseToMins = (t: string) => { if (!t) return 0; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
               const fmt = (mins: number) => {
@@ -418,74 +427,52 @@ export const HomeView: React.FC<HomeViewProps> = ({
               };
               const startMins = parseToMins(rawTime);
               const jOffset = p === 'maghrib' ? 10 : p === 'fajr' ? 30 : 15;
-              const jamaatTime = fmt(startMins + jOffset);
-              const endTimeStr = p === 'fajr' ? fmt(startMins + 85)
-                : p === 'zuhr' ? formatTo12Hour(prayerTimes['asr'])
-                : p === 'asr' ? formatTo12Hour(prayerTimes['maghrib'])
-                : p === 'maghrib' ? formatTo12Hour(prayerTimes['isha'])
-                : formatTo12Hour(prayerTimes['fajr']);
-              const formattedTime = formatTo12Hour(rawTime);
               const slots = [
-                { label: 'آغازِ وقت', time: formattedTime, color: 'text-white' },
-                { label: 'جماعت', time: jamaatTime, color: 'text-amber-300' },
-                { label: 'انتہائی', time: endTimeStr, color: 'text-white' },
+                { label: 'آغازِ وقت', time: formatTo12Hour(rawTime), color: 'text-white' },
+                { label: 'جماعت', time: fmt(startMins + jOffset), color: 'text-amber-300' },
+                { label: 'انتہائی وقت', time: p === 'fajr' ? fmt(startMins + 85) : p === 'zuhr' ? formatTo12Hour(prayerTimes['asr']) : p === 'asr' ? formatTo12Hour(prayerTimes['maghrib']) : p === 'maghrib' ? formatTo12Hour(prayerTimes['isha']) : formatTo12Hour(prayerTimes['fajr']), color: 'text-white' },
               ];
               const current = slots[prayerSlot];
               return (
-                <div className="bg-black/20 backdrop-blur-sm border border-white/15 rounded-xl overflow-hidden w-36">
-                  <div className="flex items-center justify-center gap-1 py-1 border-b border-white/10 bg-black/10">
-                    <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping shrink-0" />
-                    <span className="text-[10px] font-urdu font-bold text-amber-300">{label}</span>
-                  </div>
-                  <div className="flex flex-col items-center py-1.5 gap-0.5"
-                    style={{ opacity: slotVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-                    <div className="text-[8px] text-white/50 font-urdu">{current.label}</div>
-                    <div className={`text-[14px] font-mono font-bold ${current.color}`}>{current.time}</div>
-                    <div className="flex gap-1 mt-0.5">
-                      {slots.map((_, i) => (
-                        <span key={i} className={`h-0.5 rounded-full transition-all duration-300 ${i === prayerSlot ? 'bg-amber-400 w-3' : 'bg-white/25 w-1'}`} />
-                      ))}
-                    </div>
+                <div className="mt-2" style={{ opacity: slotVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+                  <div className="text-[9px] text-white/50 font-urdu">{current.label}</div>
+                  <div className={`text-[22px] font-mono font-bold ${current.color} leading-tight`}>{current.time}</div>
+                  <div className="flex gap-1 mt-1">
+                    {slots.map((_, i) => (
+                      <span key={i} className={`h-0.5 rounded-full transition-all duration-300 ${i === prayerSlot ? 'bg-amber-400 w-4' : 'bg-white/25 w-1.5'}`} />
+                    ))}
                   </div>
                 </div>
               );
             })()}
+          </div>
 
-            {/* auth بٹن */}
+          {/* دائیں: auth بٹن */}
+          <div className="flex flex-col items-end gap-1.5">
             {isAuthenticated ? (
               <button type="button" onClick={() => onNavigate('imam-login')}
-                className="flex items-center gap-1.5 py-0.5 px-2.5 bg-amber-500/20 backdrop-blur-sm border border-amber-400/40 text-amber-200 font-urdu font-bold text-[10px] rounded-full transition-all active:scale-95 cursor-pointer select-none w-fit">
-                <span className="w-1 h-1 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/25 backdrop-blur-sm border border-amber-400/40 text-amber-200 font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
                 {authName || 'امام'}
               </button>
             ) : isUserAuthenticated ? (
               <button type="button" onClick={() => onNavigate('user-dashboard')}
-                className="flex items-center gap-1.5 py-0.5 px-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[10px] rounded-full transition-all active:scale-95 cursor-pointer select-none w-fit">
-                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                className="flex items-center gap-1.5 py-1 px-3 bg-white/15 backdrop-blur-sm border border-white/30 text-white font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                 {userAuthName}
               </button>
             ) : (
               <button type="button" onClick={() => onNavigate('login-splash')}
-                className="flex items-center gap-1.5 py-0.5 px-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[10px] rounded-full transition-all active:scale-95 cursor-pointer select-none w-fit">
-                <LogIn size={9} className="text-amber-300 shrink-0" />
+                className="flex items-center gap-1.5 py-1 px-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
+                <LogIn size={10} className="text-amber-300 shrink-0" />
                 لاگ ان
               </button>
             )}
           </div>
-
-          {/* دائیں: تاریخیں */}
-          <div className="text-right">
-            <div className="text-[12px] font-urdu font-bold text-amber-300 drop-shadow leading-none">
-              {hijriDate || '—'}
-            </div>
-            <div className="text-[10px] text-white/70 font-urdu mt-0.5">
-              {todayDate}
-            </div>
-          </div>
         </div>
 
-        {/* ══ ROW 2: اگلی نماز countdown ══ */}
-        <div className="relative z-10 flex items-center gap-2 px-4 mb-3">
+        {/* ══ ROW 2: countdown ══ */}
+        <div className="relative z-10 flex items-center gap-2 px-4 mt-3 mb-3">
           <span className="relative flex h-1.5 w-1.5 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
@@ -521,19 +508,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* ══ ROW 4: آیت ticker ══ */}
-        <div className="relative z-10 px-4 pb-5 overflow-hidden">
-          <div className="text-center py-1.5">
-            {dailyAyah ? (
-              <p className="text-[11px] text-white/75 font-amiri leading-relaxed drop-shadow"
-                dir="rtl" style={{ fontStyle: 'italic' }}>
-                {dailyAyah.ar.length > 80 ? dailyAyah.ar.substring(0, 80) + '...' : dailyAyah.ar}
-              </p>
-            ) : (
-              <p className="text-[11px] text-white/50 font-amiri" dir="rtl">
-                بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-              </p>
-            )}
-          </div>
+        <div className="relative z-10 px-4 pb-5">
+          {dailyAyah ? (
+            <p className="text-[11px] text-white/70 font-amiri leading-relaxed text-center drop-shadow" dir="rtl">
+              {dailyAyah.ar.length > 80 ? dailyAyah.ar.substring(0, 80) + '...' : dailyAyah.ar}
+            </p>
+          ) : (
+            <p className="text-[11px] text-white/50 font-amiri text-center" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+          )}
         </div>
 
         {/* سرچ نتائج dropdown */}
