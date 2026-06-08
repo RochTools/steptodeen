@@ -526,7 +526,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* ══ ROW 4: آیت ══ */}
-        <div className="relative z-10 px-4 pb-5">
+        <div className="relative z-10 px-4 pb-8">
           {dailyAyah ? (
             <p className="text-[11px] text-white/65 font-amiri leading-relaxed text-center drop-shadow" dir="rtl">
               {dailyAyah.ar.length > 80 ? dailyAyah.ar.substring(0, 80) + '...' : dailyAyah.ar}
@@ -568,7 +568,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </div>
 
       {/* ═══════════ نیچے کا مواد — اوپر سے گول ═══════════ */}
-      <div className="relative z-10 -mt-6 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
+      <div className="relative z-10 -mt-4 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
 
       {/* Cloud connection status banner */}
       {isDeviceOffline && (
