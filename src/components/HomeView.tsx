@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Scroll, CheckCircle, Heart, MapPin, LogIn, Compass, Bell, AlertTriangle, Clock, RotateCcw } from 'lucide-react';
+import { BookOpen, Scroll, CheckCircle, Heart, MapPin, LogIn, Compass, AlertTriangle, RotateCcw } from 'lucide-react';
 import { Surah, Mosque } from '../types';
 
 interface HomeViewProps {
@@ -11,7 +11,6 @@ interface HomeViewProps {
   onOpenMosque: (mosque: Mosque) => void;
   userCoords: { latitude: number; longitude: number } | null;
   requestLocation: () => void;
-  isRealFirebase: boolean;
   isAuthenticated: boolean;
   isUserAuthenticated: boolean;
   userAuthName: string;
@@ -48,6 +47,74 @@ const formatTo12Hour = (time24: string) => {
   return `${strHrs}:${strMins} ${ampm}`;
 };
 
+// ══ سیکشنز — component سے باہر، ہر render نئی نہیں بنے گی ══
+const SECTIONS = [
+  { icon: '📖', title: 'قرآن مجید', subtitle: '۱۱۴ سورتیں', type: 'سیکشن', nav: 'quran' },
+  { icon: '📜', title: 'احادیث شریفہ', subtitle: 'صحیح بخاری و مسلم', type: 'سیکشن', nav: 'hadith' },
+  { icon: '🤲', title: 'نماز کا طریقہ', subtitle: 'ترجمہ اور طریقہ', type: 'سیکشن', nav: 'namaz' },
+  { icon: '💚', title: 'مسنون دعائیں', subtitle: 'روزمرہ اذکار', type: 'سیکشن', nav: 'duas' },
+  { icon: '📿', title: 'تسبیح کاؤنٹر', subtitle: 'ذکر الٰہی', type: 'سیکشن', nav: 'tasbih' },
+  { icon: '🧭', title: 'قبلہ رخ', subtitle: 'سمت معلوم کریں', type: 'سیکشن', nav: 'qibla' },
+  { icon: '🕌', title: 'قریبی مساجد', subtitle: 'جمعہ کے اوقات', type: 'سیکشن', nav: 'mosques' },
+];
+
+const SURAH_MAP: { [key: string]: number } = {
+  // اردو نام
+  'فاتحہ': 1, 'بقرہ': 2, 'آل عمران': 3, 'نساء': 4, 'مائدہ': 5,
+  'انعام': 6, 'اعراف': 7, 'انفال': 8, 'توبہ': 9, 'یونس': 10,
+  'ہود': 11, 'یوسف': 12, 'رعد': 13, 'ابراہیم': 14, 'حجر': 15,
+  'نحل': 16, 'اسراء': 17, 'کہف': 18, 'مریم': 19, 'طہ': 20,
+  'انبیاء': 21, 'حج': 22, 'مومنون': 23, 'نور': 24, 'فرقان': 25,
+  'شعراء': 26, 'نمل': 27, 'قصص': 28, 'عنکبوت': 29, 'روم': 30,
+  'لقمان': 31, 'سجدہ': 32, 'احزاب': 33, 'سبا': 34, 'فاطر': 35,
+  'یاسین': 36, 'یٰسین': 36, 'صافات': 37, 'ص': 38, 'زمر': 39,
+  'غافر': 40, 'فصلت': 41, 'شوریٰ': 42, 'زخرف': 43, 'دخان': 44,
+  'جاثیہ': 45, 'احقاف': 46, 'محمد': 47, 'فتح': 48, 'حجرات': 49,
+  'ق': 50, 'ذاریات': 51, 'طور': 52, 'نجم': 53, 'قمر': 54,
+  'رحمن': 55, 'الرحمن': 55, 'واقعہ': 56, 'حدید': 57, 'مجادلہ': 58,
+  'حشر': 59, 'ممتحنہ': 60, 'صف': 61, 'جمعہ': 62, 'منافقون': 63,
+  'تغابن': 64, 'طلاق': 65, 'تحریم': 66, 'ملک': 67, 'قلم': 68,
+  'حاقہ': 69, 'معارج': 70, 'نوح': 71, 'جن': 72, 'مزمل': 73,
+  'مدثر': 74, 'قیامہ': 75, 'انسان': 76, 'مرسلات': 77, 'نبا': 78,
+  'نازعات': 79, 'عبس': 80, 'تکویر': 81, 'انفطار': 82, 'مطففین': 83,
+  'انشقاق': 84, 'بروج': 85, 'طارق': 86, 'اعلیٰ': 87, 'غاشیہ': 88,
+  'فجر': 89, 'بلد': 90, 'شمس': 91, 'لیل': 92, 'ضحیٰ': 93,
+  'شرح': 94, 'انشراح': 94, 'تین': 95, 'علق': 96, 'قدر': 97,
+  'بینہ': 98, 'زلزلہ': 99, 'عادیات': 100, 'قارعہ': 101, 'تکاثر': 102,
+  'عصر': 103, 'ہمزہ': 104, 'فیل': 105, 'قریش': 106, 'ماعون': 107,
+  'کوثر': 108, 'کافرون': 109, 'نصر': 110, 'مسد': 111, 'لہب': 111,
+  'اخلاص': 112, 'فلق': 113, 'ناس': 114,
+  // English names
+  'fatiha': 1, 'baqarah': 2, 'al-baqarah': 2, 'imran': 3, 'nisa': 4,
+  'maidah': 5, 'anam': 6, 'araf': 7, 'anfal': 8, 'tawbah': 9,
+  'yunus': 10, 'hud': 11, 'yusuf': 12, 'rad': 13, 'ibrahim': 14,
+  'hijr': 15, 'nahl': 16, 'isra': 17, 'kahf': 18, 'maryam': 19,
+  'taha': 20, 'anbiya': 21, 'hajj': 22, 'muminun': 23, 'nur': 24,
+  'furqan': 25, 'shuara': 26, 'naml': 27, 'qasas': 28, 'ankabut': 29,
+  'rum': 30, 'luqman': 31, 'sajdah': 32, 'ahzab': 33, 'saba': 34,
+  'fatir': 35, 'yaseen': 36, 'yasin': 36, 'saffat': 37, 'zumar': 39,
+  'ghafir': 40, 'fussilat': 41, 'shura': 42, 'zukhruf': 43, 'dukhan': 44,
+  'jathiyah': 45, 'ahqaf': 46, 'muhammad': 47, 'fath': 48, 'hujurat': 49,
+  'dhariyat': 51, 'tur': 52, 'najm': 53, 'qamar': 54,
+  'rahman': 55, 'waqiah': 56, 'hadid': 57, 'mujadila': 58,
+  'hashr': 59, 'mumtahina': 60, 'saff': 61, 'jumuah': 62, 'munafiqun': 63,
+  'taghabun': 64, 'talaq': 65, 'tahrim': 66, 'mulk': 67, 'qalam': 68,
+  'haqqah': 69, 'maarij': 70, 'nuh': 71, 'jinn': 72, 'muzzammil': 73,
+  'muddaththir': 74, 'qiyamah': 75, 'insan': 76, 'mursalat': 77,
+  'naba': 78, 'naziat': 79, 'abasa': 80, 'takwir': 81, 'infitar': 82,
+  'mutaffifin': 83, 'inshiqaq': 84, 'buruj': 85, 'tariq': 86,
+  'ala': 87, 'ghashiyah': 88, 'fajr': 89, 'balad': 90, 'shams': 91,
+  'layl': 92, 'duha': 93, 'sharh': 94, 'tin': 95, 'alaq': 96,
+  'qadr': 97, 'bayyinah': 98, 'zalzalah': 99, 'adiyat': 100,
+  'qariah': 101, 'takathur': 102, 'asr': 103, 'humazah': 104,
+  'fil': 105, 'quraysh': 106, 'maun': 107, 'kawthar': 108,
+  'kafirun': 109, 'nasr': 110, 'masad': 111, 'ikhlas': 112,
+  'falaq': 113, 'nas': 114,
+  // عربی نام
+  'الفاتحة': 1, 'البقرة': 2, 'النساء': 4, 'المائدة': 5, 'يس': 36,
+  'الرحمن': 55, 'الواقعة': 56, 'الملك': 67, 'الإخلاص': 112,
+};
+
 export const HomeView: React.FC<HomeViewProps> = ({
   onNavigate,
   prayerTimes,
@@ -57,7 +124,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenMosque,
   userCoords,
   requestLocation,
-  isRealFirebase,
   isAuthenticated,
   isUserAuthenticated,
   userAuthName,
@@ -67,7 +133,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [dailyHadith, setDailyHadith] = useState<{ ar: string; ur: string; ref: string } | null>(null);
   const [loadingAyah, setLoadingAyah] = useState(true);
   const [loadingHadith, setLoadingHadith] = useState(true);
-  const [liveTime, setLiveTime] = useState<string>('');
   const [hijriDate, setHijriDate] = useState<string>('');
   const [isDeviceOffline, setIsDeviceOffline] = useState<boolean>(!navigator.onLine);
 
@@ -76,14 +141,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [dateVisible, setDateVisible] = useState(true);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
     const interval = setInterval(() => {
       setDateVisible(false);
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         setDateSlot(prev => (prev + 1) % 2);
         setDateVisible(true);
       }, 500);
     }, 3500);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // ══ نماز وقت cycling state ══
@@ -91,40 +160,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [slotVisible, setSlotVisible] = useState(true);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
     const interval = setInterval(() => {
       setSlotVisible(false);
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         setPrayerSlot(prev => (prev + 1) % 3);
         setSlotVisible(true);
       }, 600);
     }, 4000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeoutId);
+    };
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ icon: string; title: string; subtitle?: string; type: string; action: () => void }[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
-  const SECTIONS = [
-    { icon: '📖', title: 'قرآن مجید', subtitle: '۱۱۴ سورتیں', type: 'سیکشن', nav: 'quran' },
-    { icon: '📜', title: 'احادیث شریفہ', subtitle: 'صحیح بخاری و مسلم', type: 'سیکشن', nav: 'hadith' },
-    { icon: '🤲', title: 'نماز کا طریقہ', subtitle: 'ترجمہ اور طریقہ', type: 'سیکشن', nav: 'namaz' },
-    { icon: '💚', title: 'مسنون دعائیں', subtitle: 'روزمرہ اذکار', type: 'سیکشن', nav: 'duas' },
-    { icon: '📿', title: 'تسبیح کاؤنٹر', subtitle: 'ذکر الٰہی', type: 'سیکشن', nav: 'tasbih' },
-    { icon: '🧭', title: 'قبلہ رخ', subtitle: 'سمت معلوم کریں', type: 'سیکشن', nav: 'qibla' },
-    { icon: '🕌', title: 'قریبی مساجد', subtitle: 'جمعہ کے اوقات', type: 'سیکشن', nav: 'mosques' },
-  ];
-
-  const SURAH_MAP: { [key: string]: number } = {
-    'فاتحہ': 1, 'بقرہ': 2, 'بقرة': 2, 'آل عمران': 3, 'نساء': 4, 'مائدہ': 5,
-    'انعام': 6, 'اعراف': 7, 'انفال': 8, 'توبہ': 9, 'یونس': 10,
-    'ہود': 11, 'یوسف': 12, 'رعد': 13, 'ابراہیم': 14, 'حجر': 15,
-    'نحل': 16, 'اسراء': 17, 'کہف': 18, 'مریم': 19, 'طہ': 20,
-    'انبیاء': 21, 'حج': 22, 'مومنون': 23, 'نور': 24, 'فرقان': 25,
-    'شعراء': 26, 'نمل': 27, 'قصص': 28, 'یاسین': 36, 'yaseen': 36,
-    'yasin': 36, 'يس': 36, 'رحمن': 55, 'rahman': 55, 'الرحمن': 55,
-    'واقعہ': 56, 'ملک': 67, 'قلم': 68, 'اخلاص': 112, 'فلق': 113, 'ناس': 114,
-    'فاتحة': 1, 'surah fatiha': 1, 'surah yaseen': 36, 'surah rahman': 55,
-  };
 
   const parseSurahAyah = (q: string): { surah: number; ayah: number } | null => {
     const text = q.toLowerCase().trim();
@@ -169,7 +220,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
     const parsed = parseSurahAyah(q);
     if (parsed) {
       setIsSearching(true);
-      setSearchResults(prev => [...prev]);
       try {
         const res = await fetch(
           `https://api.alquran.cloud/v1/ayah/${parsed.surah}:${parsed.ayah}/editions/quran-uthmani,ur.jalandhry`
@@ -201,7 +251,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       .slice(0, 2)
       .map(m => ({ icon: '🕌', title: m.name, subtitle: `جمعہ: ${m.jumah}`, type: 'مسجد', action: () => onOpenMosque(m) }));
     setSearchResults([...local, ...mosques]);
-  }, [searchQuery]);
+  }, [searchQuery, nearbyMosques, onNavigate, onOpenMosque]);
 
   useEffect(() => {
     const handleOnline = () => setIsDeviceOffline(false);
@@ -214,23 +264,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      let hrs = now.getHours();
-      const mins = now.getMinutes();
-      const ampm = hrs >= 12 ? 'PM' : 'AM';
-      hrs = hrs % 12;
-      hrs = hrs ? hrs : 12;
-      const strMins = mins < 10 ? '0' + mins : mins;
-      const strHrs = hrs < 10 ? '0' + hrs : hrs;
-      setLiveTime(`${strHrs}:${strMins} ${ampm}`);
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 10000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -350,8 +383,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
     // Dynamic daily Hadith
     const sectionNum = (Math.floor(dayOfYear / 10) % 97) + 1;
-    const arSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/sections/${sectionNum}.min.json`;
-    const urSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-bukhari/sections/${sectionNum}.min.json`;
+    const arSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukharisherif/sections/${sectionNum}.min.json`;
+    const urSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-bukharisherif/sections/${sectionNum}.min.json`;
 
     Promise.all([
       fetch(arSecUrl).then((r) => r.json()),
@@ -523,9 +556,35 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </button>
             )}
           </div>
-        </div>
 
-        {/* ══ ROW 4: آیت ══ */}
+          {/* سرچ نتائج dropdown — سرچ بار کے بالکل نیچے */}
+          {searchResults.length > 0 && (
+            <div className="absolute left-4 right-4 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+              {searchResults.map((result, i) => (
+                <div
+                  key={i}
+                  onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors"
+                >
+                  <span className="text-lg shrink-0">{result.icon}</span>
+                  <div className="flex-1 text-right">
+                    <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
+                    {result.subtitle && <div className="text-[10px] text-slate-400 font-urdu">{result.subtitle}</div>}
+                  </div>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shrink-0">{result.type}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* سرچ لوڈنگ */}
+          {isSearching && (
+            <div className="absolute left-4 right-4 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
+              <span className="text-[12px] text-slate-500 font-urdu">تلاش جاری ہے...</span>
+            </div>
+          )}
+        </div>
         <div className="relative z-10 px-4 pb-8">
           {dailyAyah ? (
             <p className="text-[11px] text-white/65 font-amiri leading-relaxed text-center drop-shadow" dir="rtl">
@@ -536,35 +595,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
 
-        {/* سرچ نتائج dropdown */}
-        {searchResults.length > 0 && (
-          <div className="absolute left-4 right-4 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden"
-            style={{ top: 'calc(100% - 60px)' }}>
-            {searchResults.map((result, i) => (
-              <div
-                key={i}
-                onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors"
-              >
-                <span className="text-lg shrink-0">{result.icon}</span>
-                <div className="flex-1 text-right">
-                  <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
-                  {result.subtitle && <div className="text-[10px] text-slate-400 font-urdu">{result.subtitle}</div>}
-                </div>
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shrink-0">{result.type}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* سرچ لوڈنگ */}
-        {isSearching && (
-          <div className="absolute left-4 right-4 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2"
-            style={{ top: 'calc(100% - 60px)' }}>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
-            <span className="text-[12px] text-slate-500 font-urdu">تلاش جاری ہے...</span>
-          </div>
-        )}
       </div>
 
       {/* ═══════════ نیچے کا مواد — اوپر سے گول ═══════════ */}
@@ -595,7 +625,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {!userCoords ? (
-          <div className="p-4.5 bg-slate-50 rounded-lg text-center space-y-2.5 shadow-[0_1px_6px_rgba(0,0,0,0.05)]">
+          <div className="p-4 bg-slate-50 rounded-lg text-center space-y-2.5 shadow-[0_1px_6px_rgba(0,0,0,0.05)]">
             <p className="text-[11px] text-slate-600 font-urdu leading-relaxed">
               اپنا جی پی ایس لوکیشن آن کریں تاکہ آپ کو بالکل قریبی مساجد اور ان کی جماعت کے اوقات ریئل ٹائم نظر آئیں۔
             </p>
