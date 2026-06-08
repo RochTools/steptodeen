@@ -71,6 +71,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [hijriDate, setHijriDate] = useState<string>('');
   const [isDeviceOffline, setIsDeviceOffline] = useState<boolean>(!navigator.onLine);
 
+  // ══ تاریخ cycling state ══
+  const [dateSlot, setDateSlot] = useState(0);
+  const [dateVisible, setDateVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDateVisible(false);
+      setTimeout(() => {
+        setDateSlot(prev => (prev + 1) % 2);
+        setDateVisible(true);
+      }, 500);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
   // ══ نماز وقت cycling state ══
   const [prayerSlot, setPrayerSlot] = useState(0);
   const [slotVisible, setSlotVisible] = useState(true);
@@ -402,8 +417,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* ══ ROW 1: [auth دائیں] + [تاریخ بائیں] — RTL ══ */}
         <div className="relative z-10 flex items-start justify-between px-4 pt-4 mb-3">
 
-          {/* دائیں: auth بٹن — RTL میں پہلے لکھیں تو دائیں آئے گا */}
-          <div>
+          {/* دائیں: auth بٹن + countdown */}
+          <div className="flex flex-col gap-1.5">
             {isAuthenticated ? (
               <button type="button" onClick={() => onNavigate('imam-login')}
                 className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/25 backdrop-blur-sm border border-amber-400/40 text-amber-200 font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
@@ -423,15 +438,33 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 لاگ ان
               </button>
             )}
+
+            {/* countdown — بالکل نیچے */}
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
+              </span>
+              <span className="text-[10px] text-amber-100 font-urdu font-medium drop-shadow">
+                {getNextPrayerCountdown()}
+              </span>
+            </div>
           </div>
 
-          {/* بائیں: تاریخ + cycling — RTL میں دوسرے لکھیں تو بائیں آئے گا */}
+          {/* بائیں: تاریخ cycling + cycling prayer times */}
           <div className="text-right">
-            {/* تاریخیں */}
-            <div className="text-[12px] font-urdu font-bold text-amber-300 leading-none mb-0.5">
-              {hijriDate || '—'}
+            {/* تاریخ cycling */}
+            <div className="h-7" style={{ opacity: dateVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+              {dateSlot === 0 ? (
+                <div className="text-[12px] font-urdu font-bold text-amber-300 leading-tight">
+                  {hijriDate || '—'}
+                </div>
+              ) : (
+                <div className="text-[12px] font-urdu text-white/80 leading-tight">
+                  {todayDate}
+                </div>
+              )}
             </div>
-            <div className="text-[10px] text-white/65 font-urdu mb-2">{todayDate}</div>
 
             {/* cycling prayer times */}
             {(() => {
@@ -467,18 +500,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        {/* ══ ROW 2: countdown ══ */}
-        <div className="relative z-10 flex items-center gap-2 px-4 mb-3">
-          <span className="relative flex h-1.5 w-1.5 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
-          </span>
-          <span className="text-[11px] text-amber-100 font-urdu font-medium drop-shadow">
-            {getNextPrayerCountdown()}
-          </span>
-        </div>
-
-        {/* ══ ROW 3: سرچ بار ══ */}
+        {/* ══ ROW 2: سرچ بار ══ */}
         <div className="relative z-10 px-4 mb-3">
           <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
             <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
