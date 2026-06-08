@@ -408,15 +408,15 @@ export const HadithView: React.FC = () => {
       {/* Chapters List */}
       {currentScreen === 'chapters' && selectedBook && (
         <div className="space-y-3 p-4 pb-20">
-          <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm" dir="ltr">
             <button
               onClick={() => setCurrentScreen('books')}
-              className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold font-urdu hover:underline"
+              className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold font-urdu hover:underline shrink-0"
             >
-              <ArrowLeft size={13} className="scale-x-[-1]" />
+              <ArrowLeft size={13} />
               پیچھے
             </button>
-            <span className="text-xs font-bold text-slate-800 font-urdu">{selectedBook.name} کے ابواب</span>
+            <span className="flex-1 text-xs font-bold text-slate-800 font-urdu text-center">{selectedBook.name} کے ابواب</span>
           </div>
 
           <div className="space-y-2">
@@ -459,16 +459,15 @@ export const HadithView: React.FC = () => {
       {/* Reader */}
       {currentScreen === 'reader' && selectedBook && selectedChapter && (
         <div className="space-y-3 p-4 pb-20">
-          <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
-            {/* FIX 2: پیچھے بٹن اب handleBackToChapters استعمال کرتا ہے */}
+          <div className="flex items-center bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm" dir="ltr">
             <button
               onClick={handleBackToChapters}
-              className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold font-urdu hover:underline"
+              className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold font-urdu hover:underline shrink-0"
             >
-              <ArrowLeft size={13} className="scale-x-[-1]" />
+              <ArrowLeft size={13} />
               پیچھے
             </button>
-            <span className="text-xs font-bold font-urdu text-slate-800 text-right max-w-[200px] truncate">
+            <span className="flex-1 text-xs font-bold font-urdu text-slate-800 text-center max-w-full truncate px-2">
               {selectedChapter.name}
             </span>
           </div>
