@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, AlertCircle, RefreshCw, Scroll, Book, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { HadithBook, Hadith } from '../types';
 
 const BookIcon = () => (
@@ -116,7 +116,7 @@ export const HadithView: React.FC = () => {
   const [selectedBook, setSelectedBook] = useState<HadithBook | null>(null);
   const [chapters, setChapters] = useState<{ [key: string]: any } | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<{ key: string; name: string; from: number; to: number } | null>(null);
-  
+
   const [loading, setLoading] = useState(false);
   const [errorObj, setErrorObj] = useState<string | null>(null);
   const [hadiths, setHadiths] = useState<Hadith[]>([]);
@@ -130,7 +130,11 @@ export const HadithView: React.FC = () => {
     try { return JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]'); } catch { return []; }
   });
 
-  const [lastSeen, setLastSeen] = useState<{ bookKey: string; bookName: string; chapterKey: string; chapterName: string; from: number; to: number; hadithNum: number } | null>(() => {
+  const [lastSeen, setLastSeen] = useState<{
+    bookKey: string; bookName: string;
+    chapterKey: string; chapterName: string;
+    from: number; to: number; hadithNum: number
+  } | null>(() => {
     try { return JSON.parse(localStorage.getItem('last_seen_hadith') || 'null'); } catch { return null; }
   });
 
@@ -153,6 +157,8 @@ export const HadithView: React.FC = () => {
 
   const handleOpenChapters = (book: HadithBook) => {
     setSelectedBook(book);
+    // FIX 2: chapters reset کریں تاکہ پرانی کتاب کے chapters نہ دکھیں
+    setChapters(null);
     setCurrentScreen('chapters');
     setLoading(true);
     setErrorObj(null);
@@ -168,7 +174,7 @@ export const HadithView: React.FC = () => {
     fetch(book.ur_url)
       .then((r) => r.json())
       .then((json) => {
-        const sections = json.metadata && json.metadata.sections ? json.metadata.sections : null;
+        const sections = json.metadata?.sections ?? null;
         if (sections && Object.keys(sections).length > 0) {
           setChapters(sections);
           setCacheChapters((prev) => ({ ...prev, [book.key]: sections }));
@@ -183,10 +189,23 @@ export const HadithView: React.FC = () => {
       });
   };
 
-  const handleOpenReader = (chapterKey: string, chapterName: string, from: number, to: number, bookOverride?: HadithBook) => {
+  const handleOpenReader = (
+    chapterKey: string,
+    chapterName: string,
+    from: number,
+    to: number,
+    bookOverride?: HadithBook
+  ) => {
     const book = bookOverride || selectedBook;
     if (!book) return;
-    if (bookOverride) setSelectedBook(bookOverride);
+
+    // FIX 2: bookOverride آنے پر chapters بھی اسی کتاب کے لوڈ کریں
+    if (bookOverride && bookOverride.key !== selectedBook?.key) {
+      setSelectedBook(bookOverride);
+      // cache میں ہیں تو لگائیں، ورنہ null — واپس جانے پر handleOpenChapters چلے گا
+      setChapters(cacheChapters[bookOverride.key] || null);
+    }
+
     setSelectedChapter({ key: chapterKey, name: chapterName, from, to });
     setCurrentScreen('reader');
     setPage(1);
@@ -220,10 +239,8 @@ export const HadithView: React.FC = () => {
       return;
     }
 
-    const arEdition = `ara-${book.key}`;
-    const urEdition = `urd-${book.key}`;
-    const arSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${arEdition}/sections/${chapterKey}.min.json`;
-    const urSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${urEdition}/sections/${chapterKey}.min.json`;
+    const arSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-${book.key}/sections/${chapterKey}.min.json`;
+    const urSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-${book.key}/sections/${chapterKey}.min.json`;
 
     Promise.all([
       fetch(arSecUrl).then((r) => r.json()),
@@ -237,6 +254,17 @@ export const HadithView: React.FC = () => {
         setErrorObj('حدیثِ مبارکہ لوڈ کرنے میں ناکامی ہوئی۔ برائے مہربانی انٹرنیٹ کنکشن چیک کریں۔');
         setLoading(false);
       });
+  };
+
+  // FIX 2: reader سے "پیچھے" جانے پر chapters ٹھیک سے دکھیں
+  const handleBackToChapters = () => {
+    if (!selectedBook) { setCurrentScreen('books'); return; }
+    // اگر chapters موجود نہیں (مثلاً lastSeen سے آئے) تو دوبارہ لوڈ کریں
+    if (!chapters) {
+      handleOpenChapters(selectedBook);
+    } else {
+      setCurrentScreen('chapters');
+    }
   };
 
   const handleSearchHadith = () => {
@@ -259,14 +287,9 @@ export const HadithView: React.FC = () => {
     try {
       const list = JSON.parse(localStorage.getItem('user_saved_hadiths') || '[]');
       const isSaved = list.some((h: any) => h.num === hadith.num && h.book === selectedBook.key);
-      
-      let updated;
-      if (isSaved) {
-        updated = list.filter((h: any) => !(h.num === hadith.num && h.book === selectedBook.key));
-      } else {
-        updated = [...list, { num: hadith.num, book: selectedBook.key, bookName: selectedBook.name, ar: hadith.ar, ur: hadith.ur }];
-      }
-      
+      const updated = isSaved
+        ? list.filter((h: any) => !(h.num === hadith.num && h.book === selectedBook.key))
+        : [...list, { num: hadith.num, book: selectedBook.key, bookName: selectedBook.name, ar: hadith.ar, ur: hadith.ur }];
       localStorage.setItem('user_saved_hadiths', JSON.stringify(updated));
       setSavedHadithsState(updated);
       window.dispatchEvent(new Event('storage'));
@@ -275,7 +298,11 @@ export const HadithView: React.FC = () => {
 
   const handleSaveLastSeen = (hadithNum: number) => {
     if (!selectedBook || !selectedChapter) return;
-    const data = { bookKey: selectedBook.key, bookName: selectedBook.name, chapterKey: selectedChapter.key, chapterName: selectedChapter.name, from: selectedChapter.from, to: selectedChapter.to, hadithNum };
+    const data = {
+      bookKey: selectedBook.key, bookName: selectedBook.name,
+      chapterKey: selectedChapter.key, chapterName: selectedChapter.name,
+      from: selectedChapter.from, to: selectedChapter.to, hadithNum
+    };
     setLastSeen(data);
     localStorage.setItem('last_seen_hadith', JSON.stringify(data));
   };
@@ -285,6 +312,17 @@ export const HadithView: React.FC = () => {
     const book = HADITH_BOOKS.find(b => b.key === lastSeen.bookKey);
     if (!book) return;
     handleOpenReader(lastSeen.chapterKey, lastSeen.chapterName, lastSeen.from, lastSeen.to, book);
+  };
+
+  // FIX 3: Grade detection — زیادہ precise matching
+  const getGradeInfo = (grades: any[]) => {
+    if (!grades || grades.length === 0) return null;
+    const g = grades[0].grade?.toLowerCase() || '';
+    const isSahih = g.includes('sahih') || g.includes('صحيح');
+    const isHasan = g.includes('hasan') || g.includes('حسن');
+    // FIX: 'da' کی بجائے مکمل الفاظ چیک کریں
+    const isDaif = g.includes('daif') || g.includes('da\'if') || g.includes('weak') || g.includes('ضعيف');
+    return { isSahih, isHasan, isDaif, raw: grades[0].grade };
   };
 
   const currentHadiths = hadiths.slice((page - 1) * perPage, page * perPage);
@@ -305,6 +343,7 @@ export const HadithView: React.FC = () => {
         <p className="text-xs text-red-700 font-urdu leading-relaxed max-w-xs">{errorObj}</p>
         <button
           onClick={() => {
+            setErrorObj(null);
             if (currentScreen === 'chapters' && selectedBook) handleOpenChapters(selectedBook);
             if (currentScreen === 'reader' && selectedChapter) handleOpenReader(selectedChapter.key, selectedChapter.name, selectedChapter.from, selectedChapter.to);
           }}
@@ -319,7 +358,7 @@ export const HadithView: React.FC = () => {
 
   return (
     <div className="animate-fadeIn">
-      {/* Books List screen */}
+      {/* Books List */}
       {currentScreen === 'books' && (
         <div className="space-y-4 p-4 pb-20">
           <div className="bg-emerald-50 text-emerald-950 p-3.5 text-center space-y-1.5 border border-emerald-100 rounded-2xl shadow-sm">
@@ -366,7 +405,7 @@ export const HadithView: React.FC = () => {
         </div>
       )}
 
-      {/* Chapters List screen */}
+      {/* Chapters List */}
       {currentScreen === 'chapters' && selectedBook && (
         <div className="space-y-3 p-4 pb-20">
           <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
@@ -417,12 +456,13 @@ export const HadithView: React.FC = () => {
         </div>
       )}
 
-      {/* Paginated Reader screen */}
+      {/* Reader */}
       {currentScreen === 'reader' && selectedBook && selectedChapter && (
         <div className="space-y-3 p-4 pb-20">
           <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+            {/* FIX 2: پیچھے بٹن اب handleBackToChapters استعمال کرتا ہے */}
             <button
-              onClick={() => setCurrentScreen('chapters')}
+              onClick={handleBackToChapters}
               className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold font-urdu hover:underline"
             >
               <ArrowLeft size={13} className="scale-x-[-1]" />
@@ -451,7 +491,7 @@ export const HadithView: React.FC = () => {
             />
             <SearchIcon />
           </div>
-          
+
           {searchResult === 'not-found' && (
             <p className="text-center text-red-500 font-urdu text-[11px]">یہ حدیث نمبر اس باب میں نہیں ملی</p>
           )}
@@ -463,30 +503,26 @@ export const HadithView: React.FC = () => {
             {currentHadiths.map((hadith) => {
               const isSaved = savedHadithsState.some((h: any) => h.num === hadith.num && h.book === selectedBook.key);
               const isLastSeen = lastSeen?.hadithNum === hadith.num && lastSeen?.bookKey === selectedBook.key;
+              // FIX 3: getGradeInfo استعمال کریں
+              const gradeInfo = getGradeInfo(hadith.grades);
 
               return (
-                <div key={hadith.num} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-right">
+                <div key={hadith.num} className="bg-white rounded-lg overflow-hidden text-right" style={{boxShadow: '0 4px 18px 0 rgba(0,0,0,0.10), 0 1.5px 5px 0 rgba(0,0,0,0.07)'}}>
                   <div className="bg-emerald-50 border-b border-slate-100 p-2 px-3 flex justify-between items-center text-emerald-900 text-[10px] font-bold">
                     <div className="flex items-center gap-1.5">
                       <span className="font-mono bg-white text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg">{hadith.num}</span>
-                      
-                      {hadith.grades && hadith.grades.length > 0 && (() => {
-                        const g = hadith.grades[0].grade?.toLowerCase() || '';
-                        const isSahih = g.includes('sahih') || g.includes('صحيح');
-                        const isDaif = g.includes('da') || g.includes('weak') || g.includes('ضعيف');
-                        const isHasan = g.includes('hasan') || g.includes('حسن');
-                        return (
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
-                            isSahih ? 'bg-green-50 text-green-700 border-green-200' :
-                            isHasan ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                            isDaif  ? 'bg-red-50 text-red-600 border-red-200' :
-                                      'bg-slate-50 text-slate-500 border-slate-200'
-                          }`}>
-                            {isSahih ? 'صحیح' : isHasan ? 'حسن' : isDaif ? 'ضعیف' : hadith.grades[0].grade}
-                          </span>
-                        );
-                      })()}
-                      
+
+                      {gradeInfo && (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                          gradeInfo.isSahih ? 'bg-green-50 text-green-700 border-green-200' :
+                          gradeInfo.isHasan ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          gradeInfo.isDaif  ? 'bg-red-50 text-red-600 border-red-200' :
+                                              'bg-slate-50 text-slate-500 border-slate-200'
+                        }`}>
+                          {gradeInfo.isSahih ? 'صحیح' : gradeInfo.isHasan ? 'حسن' : gradeInfo.isDaif ? 'ضعیف' : gradeInfo.raw}
+                        </span>
+                      )}
+
                       <button
                         onClick={(e) => handleSaveHadith(e, hadith)}
                         className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border transition-all ${
@@ -495,9 +531,10 @@ export const HadithView: React.FC = () => {
                             : 'bg-white border-slate-200 text-slate-400 hover:border-red-300 hover:text-red-400'
                         }`}
                       >
-                        {isSaved ? 'محفوظ' : 'محفوظ کریں'}
+                        {isSaved ? 'محفوظ ✓' : 'محفوظ کریں'}
                       </button>
-                      
+
+                      {/* FIX 4: دونوں states میں الگ الگ text */}
                       <button
                         onClick={(e) => { e.stopPropagation(); handleSaveLastSeen(hadith.num); }}
                         className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border transition-all ${
@@ -505,19 +542,19 @@ export const HadithView: React.FC = () => {
                             ? 'bg-amber-50 border-amber-300 text-amber-600'
                             : 'bg-white border-slate-200 text-slate-400 hover:border-amber-300 hover:text-amber-500'
                         }`}
-                        title="آخری سین محفوظ کریں"
+                        title="یہاں سے جاری رکھیں"
                       >
-                        {isLastSeen ? 'آخری سین' : 'آخری سین'}
+                        {isLastSeen ? 'بک مارک ✓' : 'بک مارک'}
                       </button>
                     </div>
                     <span className="font-urdu">{selectedBook.name}</span>
                   </div>
                   <div className="p-3.5 space-y-2 text-right">
-                    <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-bold" dir="rtl">
+                    <p className="text-sm leading-relaxed font-amiri text-blue-700 text-right font-extrabold" dir="rtl">
                       {hadith.ar}
                     </p>
                     {hadith.ur && (
-                      <p className="text-xs text-emerald-700 leading-relaxed font-urdu text-right border-t border-slate-100 pt-2.5 font-bold" dir="rtl">
+                      <p className="text-xs text-emerald-600 leading-relaxed font-urdu text-right border-t border-slate-100 pt-2.5 font-extrabold" dir="rtl">
                         {hadith.ur}
                       </p>
                     )}
@@ -531,26 +568,18 @@ export const HadithView: React.FC = () => {
             <div className="flex items-center justify-between bg-white border border-slate-200 p-2 rounded-2xl shadow-sm">
               <button
                 disabled={page >= totalPages}
-                onClick={() => {
-                  setPage(page + 1);
-                  window.scrollTo(0, 0);
-                }}
+                onClick={() => { setPage(page + 1); window.scrollTo(0, 0); }}
                 className="py-1 px-3 text-emerald-700 disabled:text-slate-300 font-bold font-urdu text-xs flex items-center hover:underline"
               >
                 اگلا
                 <ChevronLeft size={13} />
               </button>
-
               <span className="text-xs font-mono font-bold text-slate-700">
                 {page} / {totalPages}
               </span>
-
               <button
                 disabled={page <= 1}
-                onClick={() => {
-                  setPage(page - 1);
-                  window.scrollTo(0, 0);
-                }}
+                onClick={() => { setPage(page - 1); window.scrollTo(0, 0); }}
                 className="py-1 px-3 text-emerald-700 disabled:text-slate-300 font-bold font-urdu text-xs flex items-center hover:underline"
               >
                 <ChevronRight size={13} />
