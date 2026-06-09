@@ -551,13 +551,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <img src="/tasbeeh.jpg" alt="تسبیح کاؤنٹر" className="w-full h-full object-cover" />
             </div>
             <span className="text-xs font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
-            <span className="text-[10px] text-slate-400 font-urdu mt-0.5">کلک کر کے تسبیح پڑھیں</span>
+            <span className="text-[10px] text-slate-400 font-urdu mt-0.5">تسبیح پڑھیں</span>
           </div>
 
           {/* قبلہ رخ */}
           <div onClick={() => onNavigate('qibla')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
             <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
-              <img src="/QiblaSemt.jpg" alt="قبلہ رخ" className="w-full h-full object-cover" />
+              <img src="/Qiblasemt.jpg" alt="قبلہ رخ" className="w-full h-full object-cover" />
             </div>
             <span className="text-xs font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
             <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح قبلہ سمت معلوم کریں</span>
