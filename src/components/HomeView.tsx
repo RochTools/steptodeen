@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Scroll, CheckCircle, Heart, MapPin, LogIn, Compass, AlertTriangle, RotateCcw } from 'lucide-react';
+import { MapPin, LogIn, Compass, AlertTriangle, RotateCcw } from 'lucide-react';
 import { Surah, Mosque } from '../types';
 
 interface HomeViewProps {
@@ -47,7 +47,6 @@ const formatTo12Hour = (time24: string) => {
   return `${strHrs}:${strMins} ${ampm}`;
 };
 
-// ══ سیکشنز — component سے باہر، ہر render نئی نہیں بنے گی ══
 const SECTIONS = [
   { icon: '📖', title: 'قرآن مجید', subtitle: '۱۱۴ سورتیں', type: 'سیکشن', nav: 'quran' },
   { icon: '📜', title: 'احادیث شریفہ', subtitle: 'صحیح بخاری و مسلم', type: 'سیکشن', nav: 'hadith' },
@@ -59,7 +58,6 @@ const SECTIONS = [
 ];
 
 const SURAH_MAP: { [key: string]: number } = {
-  // اردو نام
   'فاتحہ': 1, 'بقرہ': 2, 'آل عمران': 3, 'نساء': 4, 'مائدہ': 5,
   'انعام': 6, 'اعراف': 7, 'انفال': 8, 'توبہ': 9, 'یونس': 10,
   'ہود': 11, 'یوسف': 12, 'رعد': 13, 'ابراہیم': 14, 'حجر': 15,
@@ -84,7 +82,6 @@ const SURAH_MAP: { [key: string]: number } = {
   'عصر': 103, 'ہمزہ': 104, 'فیل': 105, 'قریش': 106, 'ماعون': 107,
   'کوثر': 108, 'کافرون': 109, 'نصر': 110, 'مسد': 111, 'لہب': 111,
   'اخلاص': 112, 'فلق': 113, 'ناس': 114,
-  // English names
   'fatiha': 1, 'baqarah': 2, 'al-baqarah': 2, 'imran': 3, 'nisa': 4,
   'maidah': 5, 'anam': 6, 'araf': 7, 'anfal': 8, 'tawbah': 9,
   'yunus': 10, 'hud': 11, 'yusuf': 12, 'rad': 13, 'ibrahim': 14,
@@ -110,7 +107,6 @@ const SURAH_MAP: { [key: string]: number } = {
   'fil': 105, 'quraysh': 106, 'maun': 107, 'kawthar': 108,
   'kafirun': 109, 'nasr': 110, 'masad': 111, 'ikhlas': 112,
   'falaq': 113, 'nas': 114,
-  // عربی نام
   'الفاتحة': 1, 'البقرة': 2, 'النساء': 4, 'المائدة': 5, 'يس': 36,
   'الرحمن': 55, 'الواقعة': 56, 'الملك': 67, 'الإخلاص': 112,
 };
@@ -136,7 +132,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [hijriDate, setHijriDate] = useState<string>('');
   const [isDeviceOffline, setIsDeviceOffline] = useState<boolean>(!navigator.onLine);
 
-  // ══ تاریخ cycling state ══
   const [dateSlot, setDateSlot] = useState(0);
   const [dateVisible, setDateVisible] = useState(true);
 
@@ -149,13 +144,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
         setDateVisible(true);
       }, 500);
     }, 3500);
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeoutId);
-    };
+    return () => { clearInterval(interval); clearTimeout(timeoutId); };
   }, []);
 
-  // ══ نماز وقت cycling state ══
   const [prayerSlot, setPrayerSlot] = useState(0);
   const [slotVisible, setSlotVisible] = useState(true);
 
@@ -168,11 +159,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
         setSlotVisible(true);
       }, 600);
     }, 4000);
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeoutId);
-    };
+    return () => { clearInterval(interval); clearTimeout(timeoutId); };
   }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ icon: string; title: string; subtitle?: string; type: string; action: () => void }[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -181,20 +170,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
     const text = q.toLowerCase().trim();
     let surahNum = 0;
     let ayahNum = 0;
-
-    // نمبر سے سورت: "36:7" یا "36 7"
     const numMatch = text.match(/^(\d+)[:\s]+(\d+)$/);
     if (numMatch) return { surah: parseInt(numMatch[1]), ayah: parseInt(numMatch[2]) };
-
-    // آیت نمبر نکالیں
     const ayahMatch = text.match(/(?:آیت|ayat|ayah|verse|:)\s*(\d+)/i);
     if (ayahMatch) ayahNum = parseInt(ayahMatch[1]);
-
-    // سورت نام ڈھونڈیں
     for (const [key, num] of Object.entries(SURAH_MAP)) {
       if (text.includes(key.toLowerCase())) { surahNum = num; break; }
     }
-
     if (surahNum && ayahNum) return { surah: surahNum, ayah: ayahNum };
     return null;
   };
@@ -202,28 +184,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const handleSearch = async () => {
     const q = searchQuery.trim();
     if (!q) return;
-
-    // لوکل سیکشنز فلٹر
     const localResults = SECTIONS
       .filter(s => s.title.includes(q) || (s.subtitle || '').includes(q))
       .map(s => ({ icon: s.icon, title: s.title, subtitle: s.subtitle, type: s.type, action: () => onNavigate(s.nav) }));
-
-    // مساجد فلٹر
     const mosqueResults = nearbyMosques
       .filter(m => m.name.includes(q))
       .slice(0, 2)
       .map(m => ({ icon: '🕌', title: m.name, subtitle: `جمعہ: ${m.jumah}`, type: 'مسجد', action: () => onOpenMosque(m) }));
-
     setSearchResults([...localResults, ...mosqueResults]);
-
-    // آیت سرچ
     const parsed = parseSurahAyah(q);
     if (parsed) {
       setIsSearching(true);
       try {
-        const res = await fetch(
-          `https://api.alquran.cloud/v1/ayah/${parsed.surah}:${parsed.ayah}/editions/quran-uthmani,ur.jalandhry`
-        );
+        const res = await fetch(`https://api.alquran.cloud/v1/ayah/${parsed.surah}:${parsed.ayah}/editions/quran-uthmani,ur.jalandhry`);
         const json = await res.json();
         if (json.code === 200 && json.data?.length >= 2) {
           const ayahResult = {
@@ -240,7 +213,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
   };
 
-  // ٹائپ کرتے ہی لوکل نتائج
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults([]); return; }
     const local = SECTIONS
@@ -256,14 +228,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
   useEffect(() => {
     const handleOnline = () => setIsDeviceOffline(false);
     const handleOffline = () => setIsDeviceOffline(true);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
   }, []);
 
   useEffect(() => {
@@ -277,24 +244,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
     const m = Math.floor((24 * l3) / 709);
     const d = l3 - Math.floor((709 * m) / 24);
     const y = 30 * n + j - 30;
-    
-    const hijriMonths = [
-      'محرم', 'صفر', 'ربیع الاول', 'ربیع الثانی', 'جمادی الاول', 'جمادی الثانی',
-      'رجب', 'شعبان', 'رمضان', 'شوال', 'ذی القعدہ', 'ذی الحجہ'
-    ];
+    const hijriMonths = ['محرم','صفر','ربیع الاول','ربیع الثانی','جمادی الاول','جمادی الثانی','رجب','شعبان','رمضان','شوال','ذی القعدہ','ذی الحجہ'];
     setHijriDate(`${d} ${hijriMonths[m - 1]} ${y}ھ`);
   }, []);
 
   const getNextPrayerCountdown = () => {
     const now = new Date();
     const currentInMins = now.getHours() * 60 + now.getMinutes();
-    
-    const parseToMins = (timeStr: string) => {
-      if (!timeStr) return 0;
-      const [h, m] = timeStr.split(':').map(Number);
-      return h * 60 + m;
-    };
-
+    const parseToMins = (timeStr: string) => { if (!timeStr) return 0; const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
     const prayers = [
       { name: 'fajr', label: 'فجر', mins: parseToMins(prayerTimes.fajr) },
       { name: 'zuhr', label: 'ظہر', mins: parseToMins(prayerTimes.zuhr) },
@@ -302,93 +259,45 @@ export const HomeView: React.FC<HomeViewProps> = ({
       { name: 'maghrib', label: 'مغرب', mins: parseToMins(prayerTimes.maghrib) },
       { name: 'isha', label: 'عشاء', mins: parseToMins(prayerTimes.isha) },
     ];
-
     prayers.sort((a, b) => a.mins - b.mins);
-
     let next = prayers.find(p => p.mins > currentInMins);
     let isNextDay = false;
-    
-    if (!next) {
-      next = prayers[0];
-      isNextDay = true;
-    }
-
-    let diff = 0;
-    if (isNextDay) {
-      diff = (1440 - currentInMins) + next.mins;
-    } else {
-      diff = next.mins - currentInMins;
-    }
-
+    if (!next) { next = prayers[0]; isNextDay = true; }
+    let diff = isNextDay ? (1440 - currentInMins) + next.mins : next.mins - currentInMins;
     const hrs = Math.floor(diff / 60);
     const mins = diff % 60;
-    
-    if (hrs > 0) {
-      return `اگلی نماز ${next.label} ہے — ${hrs} گھنٹے ${mins} منٹ بعد`;
-    } else {
-      return `اگلی نماز ${next.label} ہے — ${mins} منٹ بعد`;
-    }
+    return hrs > 0 ? `اگلی نماز ${next.label} ہے — ${hrs} گھنٹے ${mins} منٹ بعد` : `اگلی نماز ${next.label} ہے — ${mins} منٹ بعد`;
   };
 
   useEffect(() => {
-    // Dynamic daily Ayah selection
     const d = new Date();
     const dayOfYear = Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000);
-
     const FAMOUS_AYAHS = [
-      { s: 2, a: 255 },  // Ayat-ul-Kursi
-      { s: 2, a: 286 },  
-      { s: 3, a: 185 },  
-      { s: 2, a: 152 },  
-      { s: 13, a: 28 },  
-      { s: 2, a: 153 },  
-      { s: 65, a: 3 },   
-      { s: 94, a: 5 },   
-      { s: 2, a: 201 },  
-      { s: 3, a: 8 },    
-      { s: 39, a: 53 },  
-      { s: 55, a: 13 },  
-      { s: 50, a: 16 }
+      { s: 2, a: 255 }, { s: 2, a: 286 }, { s: 3, a: 185 }, { s: 2, a: 152 },
+      { s: 13, a: 28 }, { s: 2, a: 153 }, { s: 65, a: 3 }, { s: 94, a: 5 },
+      { s: 2, a: 201 }, { s: 3, a: 8 }, { s: 39, a: 53 }, { s: 55, a: 13 }, { s: 50, a: 16 }
     ];
-
     const idx = dayOfYear % FAMOUS_AYAHS.length;
     const chosen = FAMOUS_AYAHS[idx];
-
     fetch(`https://api.alquran.cloud/v1/ayah/${chosen.s}:${chosen.a}/editions/quran-uthmani,ur.jalandhry`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.code === 200 && json.data && json.data.length >= 2) {
-          setDailyAyah({
-            ar: json.data[0].text,
-            ur: json.data[1].text,
-            ref: `سورۃ ${SURAH_NAMES_UR[chosen.s - 1]} : آیت ${chosen.a}`
-          });
+      .then(r => r.json())
+      .then(json => {
+        if (json.code === 200 && json.data?.length >= 2) {
+          setDailyAyah({ ar: json.data[0].text, ur: json.data[1].text, ref: `سورۃ ${SURAH_NAMES_UR[chosen.s - 1]} : آیت ${chosen.a}` });
         } else {
-          setDailyAyah({
-            ar: "وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ ۚ عَلَيْهِ تَوَكَّلْتُ وَإِلَيْهِ أُنِيبُ",
-            ur: "اور میری توفیق صرف اللہ کی طرف سے ہے، اسی پر میں نے بھروسہ کیا اور اسی کی طرف رجوع کرتا ہوں۔",
-            ref: "سورۃ ہود : آیت ۸۸"
-          });
+          setDailyAyah({ ar: "وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ ۚ عَلَيْهِ تَوَكَّلْتُ وَإِلَيْهِ أُنِيبُ", ur: "اور میری توفیق صرف اللہ کی طرف سے ہے، اسی پر میں نے بھروسہ کیا اور اسی کی طرف رجوع کرتا ہوں۔", ref: "سورۃ ہود : آیت ۸۸" });
         }
         setLoadingAyah(false);
       })
       .catch(() => {
-        setDailyAyah({
-          ar: "وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ ۚ عَلَيْهِ تَوَكَّلْتُ وَإِلَيْهِ أُنِيبُ",
-          ur: "اور میری توفیق صرف اللہ کی طرف سے ہے، اسی پر میں نے بھروسہ کیا اور اسی کی طرف رجوع کرتا ہوں۔",
-          ref: "سورۃ ہود : آیت ۸۸"
-        });
+        setDailyAyah({ ar: "وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ ۚ عَلَيْهِ تَوَكَّلْتُ وَإِلَيْهِ أُنِيبُ", ur: "اور میری توفیق صرف اللہ کی طرف سے ہے، اسی پر میں نے بھروسہ کیا اور اسی کی طرف رجوع کرتا ہوں۔", ref: "سورۃ ہود : آیت ۸۸" });
         setLoadingAyah(false);
       });
 
-    // Dynamic daily Hadith
     const sectionNum = (Math.floor(dayOfYear / 10) % 97) + 1;
-    const arSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukharisherif/sections/${sectionNum}.min.json`;
-    const urSecUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-bukharisherif/sections/${sectionNum}.min.json`;
-
     Promise.all([
-      fetch(arSecUrl).then((r) => r.json()),
-      fetch(urSecUrl).then((r) => r.json())
+      fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukharisherif/sections/${sectionNum}.min.json`).then(r => r.json()),
+      fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-bukharisherif/sections/${sectionNum}.min.json`).then(r => r.json())
     ])
       .then(([resAr, resUr]) => {
         const arHadiths = resAr.hadiths || [];
@@ -397,109 +306,68 @@ export const HomeView: React.FC<HomeViewProps> = ({
           const hadithIdx = dayOfYear % arHadiths.length;
           const chosenAr = arHadiths[hadithIdx];
           const chosenUr = urHadiths.find((h: any) => h.hadithnumber === chosenAr.hadithnumber) || {};
-          setDailyHadith({
-            ar: chosenAr.text || '',
-            ur: chosenUr.text || '',
-            ref: `صحیح بخاری - حدیث نمبر ${chosenAr.hadithnumber}`
-          });
+          setDailyHadith({ ar: chosenAr.text || '', ur: chosenUr.text || '', ref: `صحیح بخاری - حدیث نمبر ${chosenAr.hadithnumber}` });
         } else {
-          setDailyHadith({
-            ar: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
-            ur: "اعمال کا دارومدار نیتوں پر ہے اور ہر شخص کو وہی ملے گا جو اس نے نیت کی۔",
-            ref: "صحیح بخاری - حدیث نمبر ۱"
-          });
+          setDailyHadith({ ar: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى", ur: "اعمال کا دارومدار نیتوں پر ہے اور ہر شخص کو وہی ملے گا جو اس نے نیت کی۔", ref: "صحیح بخاری - حدیث نمبر ۱" });
         }
         setLoadingHadith(false);
       })
       .catch(() => {
-        setDailyHadith({
-          ar: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
-          ur: "اعمال کا دارومدار نیتوں پر ہے اور ہر شخص کو وہی ملے گا جو اس نے نیت کی۔",
-          ref: "صحیح بخاری - حدیث نمبر ۱"
-        });
+        setDailyHadith({ ar: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى", ur: "اعمال کا دارومدار نیتوں پر ہے اور ہر شخص کو وہی ملے گا جو اس نے نیت کی۔", ref: "صحیح بخاری - حدیث نمبر ۱" });
         setLoadingHadith(false);
       });
   }, []);
 
-  // Proximity finder distance helper
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // radius of Earth in km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return parseFloat((R * c).toFixed(1));
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return parseFloat((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1));
   };
 
   return (
     <div className="pb-16 animate-fadeIn bg-slate-50">
-      {/* ═══════════ TOP BANNER — مسجد تصویر ═══════════ */}
-      <div
-        className="relative text-white overflow-hidden"
-        style={{
-          backgroundImage: "url('/mosque-bg.jpg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 30%',
-        }}
-      >
-        {/* گہرا gradient overlay */}
+
+      {/* ═══════════ TOP BANNER ═══════════ */}
+      <div className="relative text-white overflow-hidden" style={{ backgroundImage: "url('/mosque-bg.jpg')", backgroundSize: 'cover', backgroundPosition: 'center 30%' }}>
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/70 pointer-events-none" />
 
-        {/* ══ ROW 1: [auth دائیں] + [تاریخ بائیں] — RTL ══ */}
         <div className="relative z-10 flex items-start justify-between px-4 pt-4 mb-3">
-
-          {/* دائیں: auth بٹن + countdown */}
           <div className="flex flex-col gap-1.5">
             {isAuthenticated ? (
-              <button type="button" onClick={() => onNavigate('imam-login')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/25 backdrop-blur-sm border border-amber-400/40 text-amber-200 font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
+              <button type="button" onClick={() => onNavigate('imam-login')} className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/25 backdrop-blur-sm border border-amber-400/40 text-amber-200 font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
                 {authName || 'امام'}
               </button>
             ) : isUserAuthenticated ? (
-              <button type="button" onClick={() => onNavigate('user-dashboard')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-white/15 backdrop-blur-sm border border-white/30 text-white font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
+              <button type="button" onClick={() => onNavigate('user-dashboard')} className="flex items-center gap-1.5 py-1 px-3 bg-white/15 backdrop-blur-sm border border-white/30 text-white font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                 {userAuthName}
               </button>
             ) : (
-              <button type="button" onClick={() => onNavigate('login-splash')}
-                className="flex items-center gap-1.5 py-1 px-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
+              <button type="button" onClick={() => onNavigate('login-splash')} className="flex items-center gap-1.5 py-1 px-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-urdu font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
                 <LogIn size={10} className="text-amber-300 shrink-0" />
                 لاگ ان
               </button>
             )}
-
-            {/* countdown — بالکل نیچے */}
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-1.5 w-1.5 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
               </span>
-              <span className="text-[10px] text-amber-100 font-urdu font-medium drop-shadow">
-                {getNextPrayerCountdown()}
-              </span>
+              <span className="text-[10px] text-amber-100 font-urdu font-medium drop-shadow">{getNextPrayerCountdown()}</span>
             </div>
           </div>
 
-          {/* بائیں: تاریخ cycling + cycling prayer times */}
           <div className="text-right">
-            {/* تاریخ cycling */}
             <div className="h-7" style={{ opacity: dateVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
               {dateSlot === 0 ? (
-                <div className="text-[12px] font-urdu font-bold text-amber-300 leading-tight">
-                  {hijriDate || '—'}
-                </div>
+                <div className="text-[12px] font-urdu font-bold text-amber-300 leading-tight">{hijriDate || '—'}</div>
               ) : (
-                <div className="text-[12px] font-urdu text-white/80 leading-tight">
-                  {todayDate}
-                </div>
+                <div className="text-[12px] font-urdu text-white/80 leading-tight">{todayDate}</div>
               )}
             </div>
-
-            {/* cycling prayer times */}
             {(() => {
               const p = currentPrayer;
               const rawTime = prayerTimes[p] || '--:--';
@@ -533,39 +401,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        {/* ══ ROW 2: سرچ بار ══ */}
+        {/* سرچ بار */}
         <div className="relative z-10 px-4 mb-3">
           <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
             <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
             </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="سورۃ یٰسین آیت ۷ تلاش کریں..."
-              className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] font-urdu text-right outline-none"
-              dir="rtl"
-            />
+            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} placeholder="سورۃ یٰسین آیت ۷ تلاش کریں..." className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] font-urdu text-right outline-none" dir="rtl" />
             {searchQuery && (
               <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-white/50 hover:text-white transition-colors">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M18 6 6 18M6 6l12 12" /></svg>
               </button>
             )}
           </div>
-
-          {/* سرچ نتائج dropdown — سرچ بار کے بالکل نیچے */}
           {searchResults.length > 0 && (
             <div className="absolute left-4 right-4 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
               {searchResults.map((result, i) => (
-                <div
-                  key={i}
-                  onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors"
-                >
+                <div key={i} onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }} className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors">
                   <span className="text-lg shrink-0">{result.icon}</span>
                   <div className="flex-1 text-right">
                     <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
@@ -576,8 +428,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
               ))}
             </div>
           )}
-
-          {/* سرچ لوڈنگ */}
           {isSearching && (
             <div className="absolute left-4 right-4 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
@@ -585,6 +435,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           )}
         </div>
+
         <div className="relative z-10 px-4 pb-8">
           {dailyAyah ? (
             <p className="text-[11px] text-white/65 font-amiri leading-relaxed text-center drop-shadow" dir="rtl">
@@ -594,74 +445,46 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <p className="text-[11px] text-white/50 font-amiri text-center" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
           )}
         </div>
-
       </div>
 
-      {/* ═══════════ نیچے کا مواد — اوپر سے گول ═══════════ */}
+      {/* ═══════════ نیچے کا مواد ═══════════ */}
       <div className="relative z-10 -mt-4 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
 
-      {/* Cloud connection status banner */}
-      {isDeviceOffline && (
-        <div className="mx-4 p-2.5 bg-amber-50/70 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] flex items-center gap-2.5 text-amber-900 animate-fadeIn">
-          <AlertTriangle size={15} className="shrink-0 text-amber-600" />
-          <div className="text-[11px] font-urdu leading-relaxed text-right flex-1">
-            آف لائن موڈ: آپ کا انٹرنیٹ کنکشن منقطع ہے، ایپ ابھی آف لائن موڈ میں کام کر رہی ہے۔
+        {isDeviceOffline && (
+          <div className="mx-4 p-2.5 bg-amber-50/70 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] flex items-center gap-2.5 text-amber-900 animate-fadeIn">
+            <AlertTriangle size={15} className="shrink-0 text-amber-600" />
+            <div className="text-[11px] font-urdu leading-relaxed text-right flex-1">
+              آف لائن موڈ: آپ کا انٹرنیٹ کنکشن منقطع ہے، ایپ ابھی آف لائن موڈ میں کام کر رہی ہے۔
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          مسجد کارڈ — بغیر border، 1px ring، سفید اندر، چکور کونے
-          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="mx-4 bg-white rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-emerald-700 font-bold cursor-pointer font-urdu hover:underline" onClick={() => onNavigate('mosques')}>
-            تمام دیکھئے ←
-          </span>
-          <h3 className="text-xs font-bold text-slate-800 font-urdu flex items-center gap-1.5 uppercase tracking-tight">
-            <Compass size={15} className="text-emerald-600" />
-            قریبی مساجد کے اوقاتِ جمعہ
-          </h3>
-        </div>
-
-        {!userCoords ? (
-          <div className="p-4 bg-slate-50 rounded-lg text-center space-y-2.5 shadow-[0_1px_6px_rgba(0,0,0,0.05)]">
-            <p className="text-[11px] text-slate-600 font-urdu leading-relaxed">
-              اپنا جی پی ایس لوکیشن آن کریں تاکہ آپ کو بالکل قریبی مساجد اور ان کی جماعت کے اوقات ریئل ٹائم نظر آئیں۔
-            </p>
-            <button
-              onClick={requestLocation}
-              className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-urdu font-bold shadow-sm flex items-center gap-1 mx-auto transition-colors"
-            >
-              <MapPin size={11} />
-              لوکیشن آن کریں
-            </button>
+        {/* مسجد کارڈ */}
+        <div className="mx-4 bg-white rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-emerald-700 font-bold cursor-pointer font-urdu hover:underline" onClick={() => onNavigate('mosques')}>تمام دیکھئے ←</span>
+            <h3 className="text-xs font-bold text-slate-800 font-urdu flex items-center gap-1.5 uppercase tracking-tight">
+              <Compass size={15} className="text-emerald-600" />
+              قریبی مساجد کے اوقاتِ جمعہ
+            </h3>
           </div>
-        ) : (
-          <div className="space-y-2">
-            {nearbyMosques.length === 0 ? (
-              <p className="text-xs text-center text-gray-500 font-urdu py-2">قریبی علاقے میں کوئی مسجد رجسٹرڈ نہیں ہے۔</p>
-            ) : (
-              (() => {
-                const mosquesWithDistance = nearbyMosques.map((mosque) => {
-                  const distance = calculateDistance(
-                    userCoords.latitude,
-                    userCoords.longitude,
-                    mosque.latitude,
-                    mosque.longitude
-                  );
-                  return { mosque, distance };
-                });
-
-                const sortedMosques = mosquesWithDistance.sort((a, b) => a.distance - b.distance);
-
-                return sortedMosques.slice(0, 3).map(({ mosque, distance }) => {
-                  return (
-                    <div
-                      key={mosque.id}
-                      onClick={() => onOpenMosque(mosque)}
-                      className="p-3 bg-slate-50/50 hover:bg-emerald-50/35 transition-all cursor-pointer shadow-[0_1px_5px_rgba(0,0,0,0.05)] flex items-center justify-between group"
-                    >
+          {!userCoords ? (
+            <div className="p-4 bg-slate-50 rounded-lg text-center space-y-2.5 shadow-[0_1px_6px_rgba(0,0,0,0.05)]">
+              <p className="text-[11px] text-slate-600 font-urdu leading-relaxed">اپنا جی پی ایس لوکیشن آن کریں تاکہ آپ کو بالکل قریبی مساجد اور ان کی جماعت کے اوقات ریئل ٹائم نظر آئیں۔</p>
+              <button onClick={requestLocation} className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-urdu font-bold shadow-sm flex items-center gap-1 mx-auto transition-colors">
+                <MapPin size={11} />
+                لوکیشن آن کریں
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {nearbyMosques.length === 0 ? (
+                <p className="text-xs text-center text-gray-500 font-urdu py-2">قریبی علاقے میں کوئی مسجد رجسٹرڈ نہیں ہے۔</p>
+              ) : (
+                (() => {
+                  const mosquesWithDistance = nearbyMosques.map(mosque => ({ mosque, distance: calculateDistance(userCoords.latitude, userCoords.longitude, mosque.latitude, mosque.longitude) }));
+                  return mosquesWithDistance.sort((a, b) => a.distance - b.distance).slice(0, 3).map(({ mosque, distance }) => (
+                    <div key={mosque.id} onClick={() => onOpenMosque(mosque)} className="p-3 bg-slate-50/50 hover:bg-emerald-50/35 transition-all cursor-pointer shadow-[0_1px_5px_rgba(0,0,0,0.05)] flex items-center justify-between group">
                       <div className="text-center bg-emerald-600 text-white py-1 px-2.5 rounded-lg text-[9px] font-bold border border-emerald-700 group-hover:bg-emerald-700 transition-colors">
                         <div className="opacity-95 text-[8px]">جمعہ وقت</div>
                         <div className="font-mono mt-0.5">{mosque.jumah}</div>
@@ -674,140 +497,107 @@ export const HomeView: React.FC<HomeViewProps> = ({
                         </div>
                       </div>
                     </div>
-                  );
-                });
-              })()
+                  ));
+                })()
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            مین گرڈ کارڈز — PNG تصاویر کے ساتھ
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
+
+          {/* قرآن مجید */}
+          <div onClick={() => onNavigate('quran')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
+              <img src="/Quran.jpeg" alt="قرآن مجید" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-xs font-bold text-slate-800 font-urdu">قرآن مجید</span>
+            <span className="text-[10px] text-slate-400 font-urdu mt-0.5">۱۱۴ سورتیں مکی و مدنی</span>
+          </div>
+
+          {/* احادیث شریفہ */}
+          <div onClick={() => onNavigate('hadith')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
+              <img src="/Hadith.jpg" alt="احادیث شریفہ" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-xs font-bold text-slate-800 font-urdu">احادیث شریفہ</span>
+            <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح بخاری و مسلم مجموعہ</span>
+          </div>
+
+          {/* نماز کا طریقہ */}
+          <div onClick={() => onNavigate('namaz')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
+              <img src="/namaz.png" alt="نماز کا طریقہ" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-xs font-bold text-slate-800 font-urdu">نماز کا طریقہ</span>
+            <span className="text-[10px] text-slate-400 font-urdu mt-0.5">ترجمہ اور طریقہ کار</span>
+          </div>
+
+          {/* مسنون دعائیں */}
+          <div onClick={() => onNavigate('duas')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
+              <img src="/dua.jpg" alt="مسنون دعائیں" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-xs font-bold text-slate-800 font-urdu">مسنون دعائیں</span>
+            <span className="text-[10px] text-slate-400 font-urdu mt-0.5">روزمرہ کلمات و اذکار</span>
+          </div>
+
+          {/* تسبیح کاؤنٹر */}
+          <div onClick={() => onNavigate('tasbih')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
+              <img src="/tasbeeh.jpg" alt="تسبیح کاؤنٹر" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-xs font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
+            <span className="text-[10px] text-slate-400 font-urdu mt-0.5">کلک کر کے تسبیح پڑھیں</span>
+          </div>
+
+          {/* قبلہ رخ */}
+          <div onClick={() => onNavigate('qibla')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
+              <img src="/QiblaSemt.jpg" alt="قبلہ رخ" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-xs font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
+            <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح قبلہ سمت معلوم کریں</span>
+          </div>
+
+        </div>
+
+        {/* آیتِ روز */}
+        <div className="mx-4">
+          <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Verse of the Day ✦</div>
+          <div className="bg-white rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] p-4 text-center space-y-2.5">
+            {loadingAyah ? (
+              <div className="flex items-center justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div></div>
+            ) : (
+              <>
+                <p className="text-base leading-loose font-amiri text-slate-800" dir="rtl">{dailyAyah?.ar}</p>
+                <p className="text-xs text-emerald-800 font-urdu leading-relaxed border-t border-slate-100 pt-2" dir="rtl">{dailyAyah?.ur}</p>
+                <div className="text-[9px] text-slate-400 font-mono text-left tracking-tight">{dailyAyah?.ref}</div>
+              </>
             )}
           </div>
-        )}
+        </div>
+
+        {/* حدیثِ روز */}
+        <div className="mx-4">
+          <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Hadith of the Day ✦</div>
+          <div className="bg-white rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] border-r-4 border-r-emerald-600 p-4 text-center space-y-2.5">
+            {loadingHadith ? (
+              <div className="flex items-center justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div></div>
+            ) : (
+              <>
+                <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-medium" dir="rtl">{dailyHadith?.ar}</p>
+                <p className="text-xs text-slate-600 font-urdu leading-relaxed border-t border-slate-100 pt-2 text-right" dir="rtl">{dailyHadith?.ur}</p>
+                <div className="text-[9px] text-slate-400 font-mono text-left tracking-tight">{dailyHadith?.ref}</div>
+              </>
+            )}
+          </div>
+        </div>
+
       </div>
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          مین گرڈ کارڈز — چکور کونے، ring-1، سفید
-          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
-        {/* Quran */}
-        <div
-          onClick={() => onNavigate('quran')}
-          className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
-            <BookOpen size={20} />
-          </div>
-          <span className="text-xs font-bold text-slate-800 font-urdu">قرآن مجید</span>
-          <span className="text-[10px] text-slate-400 font-urdu mt-0.5">۱۱۴ سورتیں مکی و مدنی</span>
-        </div>
-
-        {/* Hadith */}
-        <div
-          onClick={() => onNavigate('hadith')}
-          className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2">
-            <Scroll size={20} />
-          </div>
-          <span className="text-xs font-bold text-slate-800 font-urdu">احادیث شریفہ</span>
-          <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح بخاری و مسلم مجموعہ</span>
-        </div>
-
-        {/* Namaz Method */}
-        <div
-          onClick={() => onNavigate('namaz')}
-          className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
-            <CheckCircle size={20} />
-          </div>
-          <span className="text-xs font-bold text-slate-800 font-urdu">نماز کا طریقہ</span>
-          <span className="text-[10px] text-slate-400 font-urdu mt-0.5">ترجمہ اور طریقہ کار</span>
-        </div>
-
-        {/* Duas */}
-        <div
-          onClick={() => onNavigate('duas')}
-          className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center mb-2">
-            <Heart size={20} />
-          </div>
-          <span className="text-xs font-bold text-slate-800 font-urdu">مسنون دعائیں</span>
-          <span className="text-[10px] text-slate-400 font-urdu mt-0.5">روزمرہ کلمات و اذکار</span>
-        </div>
-
-        {/* Tasbih Counter */}
-        <div
-          onClick={() => onNavigate('tasbih')}
-          className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center mb-2">
-            <RotateCcw size={20} className="group-hover:rotate-45 transition-transform" />
-          </div>
-          <span className="text-xs font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
-          <span className="text-[10px] text-slate-400 font-urdu mt-0.5">کلک کر کے تسبیح پڑھیں</span>
-        </div>
-
-        {/* Qibla Direction */}
-        <div
-          onClick={() => onNavigate('qibla')}
-          className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
-            <Compass size={20} className="group-hover:animate-spin" style={{ animationDuration: '3s' }} />
-          </div>
-          <span className="text-xs font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
-          <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح قبلہ سمت معلوم کریں</span>
-        </div>
-      </div>
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          آیتِ روز — چکور کونے، ring-1، سفید
-          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="mx-4">
-        <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Verse of the Day ✦</div>
-        <div className="bg-white rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] p-4 text-center space-y-2.5">
-          {loadingAyah ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
-            </div>
-          ) : (
-            <>
-              <p className="text-base leading-loose font-amiri text-slate-800" dir="rtl">
-                {dailyAyah?.ar}
-              </p>
-              <p className="text-xs text-emerald-800 font-urdu leading-relaxed border-t border-slate-100 pt-2" dir="rtl">
-                {dailyAyah?.ur}
-              </p>
-              <div className="text-[9px] text-slate-400 font-mono text-left tracking-tight">{dailyAyah?.ref}</div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          حدیثِ روز — چکور کونے، ring-1، سفید، دائیں سبز border
-          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="mx-4">
-        <div className="text-center font-urdu text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Hadith of the Day ✦</div>
-        <div className="bg-white rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] border-r-4 border-r-emerald-600 p-4 text-center space-y-2.5">
-          {loadingHadith ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm leading-relaxed font-amiri text-slate-800 text-right font-medium" dir="rtl">
-                {dailyHadith?.ar}
-              </p>
-              <p className="text-xs text-slate-600 font-urdu leading-relaxed border-t border-slate-100 pt-2 text-right" dir="rtl">
-                {dailyHadith?.ur}
-              </p>
-              <div className="text-[9px] text-slate-400 font-mono text-left tracking-tight">{dailyHadith?.ref}</div>
-            </>
-          )}
-        </div>
-      </div>
-
-      </div> {/* ═ end space-y-4 wrapper ═ */}
     </div>
   );
 };
