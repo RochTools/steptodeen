@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   initializeFirebaseAtRuntime,
   getLocalMosques,
@@ -18,11 +18,10 @@ import { ImamDashboard } from './components/ImamDashboard';
 import { TasbihView } from './components/TasbihView';
 import { QiblaView } from './components/QiblaView';
 import { initFCM, listenForegroundMessages } from './utils/fcm';
-
 import { UserDashboard } from './components/UserDashboard';
 import { LoginChoiceView } from './components/LoginChoiceView';
 import { Mosque } from './types';
-import { BookOpen, Scroll, Heart, Compass, Bell, X, Info, MapPin } from 'lucide-react';
+import { BookOpen, Scroll, Heart, Compass, Bell, X, MapPin } from 'lucide-react';
 
 const formatTo12Hour = (timeStr?: string, defaultVal = '') => {
   const target = timeStr || defaultVal;
@@ -42,15 +41,48 @@ const formatTo12Hour = (timeStr?: string, defaultVal = '') => {
 };
 
 export default function App() {
+  // ============ INITIAL VIEW ============
   const getInitialView = () => {
     const imamAuth = localStorage.getItem('imam_authenticated') === 'true';
     const userAuth = localStorage.getItem('user_authenticated') === 'true';
     if (imamAuth || userAuth) return 'home';
     return 'login-splash';
   };
-  const [currentView, setCurrentView] = useState<string>(getInitialView);
-  const [selectedSurahNum, setSelectedSurahNum] = useState<number | null>(null);
   
+  // ============ NAVIGATION HISTORY STACK ============
+  const [navigationHistory, setNavigationHistory] = useState<string[]>(() => [getInitialView()]);
+  const [currentView, setCurrentView] = useState<string>(getInitialView);
+  
+  // Navigate to new view with history
+  const navigateTo = useCallback((newView: string) => {
+    setNavigationHistory(prev => [...prev, newView]);
+    setCurrentView(newView);
+  }, []);
+  
+  // Go back one step in history
+  const goBack = useCallback(() => {
+    if (navigationHistory.length <= 1) {
+      setCurrentView('home');
+      setNavigationHistory(['home']);
+      setSelectedSurahNum(null);
+      setSelectedMosque(null);
+      return;
+    }
+    
+    const newHistory = [...navigationHistory];
+    newHistory.pop(); // Remove current view
+    const previousView = newHistory[newHistory.length - 1];
+    
+    setNavigationHistory(newHistory);
+    setCurrentView(previousView);
+    
+    // Cleanup if going back from surah
+    if (previousView !== 'surah') {
+      setSelectedSurahNum(null);
+    }
+  }, [navigationHistory]);
+  
+  // ============ AUTH STATES ============
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('imam_authenticated') === 'true';
   });
@@ -90,6 +122,7 @@ export default function App() {
     }
   }, [isUserAuthenticated, isAuthenticated]);
 
+  // ============ MOSQUES & LOCATION STATES ============
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
@@ -108,7 +141,10 @@ export default function App() {
     fajr: '05:15', zuhr: '13:30', asr: '16:30', maghrib: '19:05', isha: '20:45'
   });
   const [currentPrayer, setCurrentPrayer] = useState<string>('zuhr');
+  const [selectedSurahNum, setSelectedSurahNum] = useState<number | null>(null);
+  const isMounted = useRef(true);
 
+  // ============ LOCATION FUNCTIONS ============
   const requestLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -118,7 +154,9 @@ export default function App() {
         },
         (err) => {
           console.log("StepToDeen: Location permission denied or unavailable.", err);
-          setUserCoords({ latitude: 33.6844, longitude: 73.0479 });
+          const fallbackCoords = { latitude: 33.6844, longitude: 73.0479 };
+          setUserCoords(fallbackCoords);
+          calculateLocalPrayerTimes(fallbackCoords.latitude, fallbackCoords.longitude);
         }
       );
     }
@@ -141,6 +179,7 @@ export default function App() {
     });
   };
 
+  // ============ PRAYER TIMER ============
   useEffect(() => {
     const updateActivePrayer = () => {
       const now = new Date();
@@ -161,12 +200,15 @@ export default function App() {
     return () => clearInterval(interval);
   }, [prayerTimes]);
 
+  // ============ FIREBASE SETUP ============
   useEffect(() => {
     let unsubMosques: any = null;
     let unsubAuth: (() => void) | null = null;
+    
     const runSetup = async () => {
       const { db: loadedDb, auth: loadedAuth, isRealFirebase: loadedIsReal } = await initializeFirebaseAtRuntime();
       setRealtimeDb(loadedDb); setRealtimeAuth(loadedAuth); setRealFirebaseActive(loadedIsReal);
+      
       if (loadedIsReal && loadedDb && loadedAuth) {
         unsubAuth = subscribeToAuthState(loadedAuth, async (user) => {
           if (user) {
@@ -181,6 +223,7 @@ export default function App() {
             setIsAuthenticated(false); setIsUserAuthenticated(false); setAuthEmail(''); setAuthName(''); setAuthUid('');
           }
         });
+        
         unsubMosques = onSnapshot(collection(loadedDb, 'mosques'), (snapshot) => {
           const list: Mosque[] = [];
           snapshot.forEach((docSnap) => { list.push({ id: docSnap.id, ...docSnap.data() } as Mosque); });
@@ -188,10 +231,12 @@ export default function App() {
         }, (error) => { console.error('StepToDeen: Firestore load failed.', error); setMosques(getLocalMosques()); });
       } else { setMosques(getLocalMosques()); }
     };
+    
     runSetup();
     return () => { if (unsubMosques) unsubMosques(); if (unsubAuth) unsubAuth(); };
   }, []);
 
+  // ============ MOSQUE CRUD ============
   const handleAddOrUpdateMosque = async (data: Omit<Mosque, 'id' | 'updatedAt'> & { id?: string }) => {
     const freshMosque = { ...data, updatedAt: new Date().toISOString() };
     if (realFirebaseActive && realtimeDb) {
@@ -219,217 +264,362 @@ export default function App() {
 
   const handleSelectSurah = (surahNum: number) => {
     setSelectedSurahNum(surahNum);
-    setCurrentView('surah');
+    navigateTo('surah');
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // ============ RENDER ============
   return (
     <div className={`w-full max-w-md mx-auto min-h-screen relative flex flex-col shadow-xl overflow-hidden pb-14 ${currentView === 'tasbih' ? 'bg-[#fef2c7]' : 'bg-slate-50'}`}>
 
+      {/* LOGIN SPLASH SCREEN */}
       {currentView === 'login-splash' && (
         <LoginChoiceView
-          onImamLoginSuccess={() => setCurrentView('home')}
-          onUserLogin={(name, phone) => { setIsUserAuthenticated(true); setUserAuthName(name); setUserAuthPhone(phone); setCurrentView('home'); }}
-          isRealFirebase={realFirebaseActive} realtimeAuth={realtimeAuth}
-          setIsAuthenticated={setIsAuthenticated} setAuthEmail={setAuthEmail} setAuthName={setAuthName} setAuthUid={setAuthUid}
+          onImamLoginSuccess={() => {
+            setNavigationHistory(['home']);
+            setCurrentView('home');
+          }}
+          onUserLogin={(name, phone) => { 
+            setIsUserAuthenticated(true); 
+            setUserAuthName(name); 
+            setUserAuthPhone(phone);
+            setNavigationHistory(['home']);
+            setCurrentView('home');
+          }}
+          isRealFirebase={realFirebaseActive} 
+          realtimeAuth={realtimeAuth}
+          setIsAuthenticated={setIsAuthenticated} 
+          setAuthEmail={setAuthEmail} 
+          setAuthName={setAuthName} 
+          setAuthUid={setAuthUid}
         />
       )}
 
-      {currentView !== 'login-splash' && (<>
-
-      {/* چھوٹا back بٹن — top right */}
-      {currentView !== 'home' && currentView !== 'surah' && currentView !== 'login-splash' && (
-        <div className="absolute top-3 right-3 z-50">
-          <button
-            onClick={() => {
-              if (currentView === 'imam-login' || currentView === 'user-dashboard') setCurrentView('home');
-              else if (currentView === 'user-login') setCurrentView('login-choice');
-              else setCurrentView('home');
-            }}
-            className="py-1 px-2.5 text-xs text-slate-500 font-urdu font-bold flex items-center gap-1"
-          >
-            ← پیچھے
-          </button>
-        </div>
-      )}
-
-      <div className={`flex-1 min-h-[500px] flex flex-col ${currentView === 'tasbih' ? 'bg-[#fef2c7]' : 'bg-slate-50'}`}>
-        {currentView === 'home' && (
-          <HomeView
-            onNavigate={(view) => { if (view === 'imam-login') setCurrentView('imam-login'); else setCurrentView(view); }}
-            prayerTimes={prayerTimes} currentPrayer={currentPrayer} todayDate={getHijriDateString()}
-            nearbyMosques={mosques} onOpenMosque={(m) => setSelectedMosque(m)} userCoords={userCoords}
-            requestLocation={requestLocation} isRealFirebase={realFirebaseActive} isAuthenticated={isAuthenticated}
-            isUserAuthenticated={isUserAuthenticated} userAuthName={userAuthName} authName={authName}
-          />
-        )}
-
-        {currentView === 'quran' && <QuranView onSelectSurah={handleSelectSurah} />}
-
-        {/* ── onBack لگا دیا ── */}
-        {currentView === 'surah' && selectedSurahNum !== null && (
-          <SurahReader surahNum={selectedSurahNum} onBack={() => setCurrentView('quran')} />
-        )}
-
-        {currentView === 'hadith' && <HadithView />}
-        {currentView === 'namaz' && <NamazView />}
-        {currentView === 'duas' && <DuasView />}
-
-        {currentView === 'tasbih' && (
-          <div className="flex flex-col justify-center animate-fadeIn flex-1 bg-[#fef2c7]"><TasbihView /></div>
-        )}
-
-        {currentView === 'qibla' && <QiblaView userCoords={userCoords} requestLocation={requestLocation} />}
-
-        {currentView === 'mosques' && (
-          <MosqueFinderView nearbyMosques={mosques} userCoords={userCoords} requestLocation={requestLocation} onOpenMosque={(m) => setSelectedMosque(m)} />
-        )}
-
-        {currentView === 'login-choice' && (
-          <LoginChoiceView
-            onImamLoginSuccess={() => setCurrentView('home')}
-            onUserLogin={(name, phone) => { setIsUserAuthenticated(true); setUserAuthName(name); setUserAuthPhone(phone); setCurrentView('home'); }}
-            isRealFirebase={realFirebaseActive} realtimeAuth={realtimeAuth}
-            setIsAuthenticated={setIsAuthenticated} setAuthEmail={setAuthEmail} setAuthName={setAuthName} setAuthUid={setAuthUid}
-          />
-        )}
-
-        {currentView === 'user-dashboard' && (
-          <UserDashboard userName={userAuthName} userPhone={userAuthPhone}
-            onClose={() => setCurrentView('home')}
-            onOpenMosque={(mosque) => { setSelectedMosque(mosque); setCurrentView('home'); }}
-            onLogout={() => {
-              setIsUserAuthenticated(false); setUserAuthName(''); setUserAuthPhone('');
-              localStorage.removeItem('user_authenticated'); localStorage.removeItem('user_name'); localStorage.removeItem('user_phone');
-              setCurrentView('login-splash');
-            }}
-          />
-        )}
-
-        {currentView === 'imam-login' && (
-          <ImamDashboard
-            onAddOrUpdateMosque={handleAddOrUpdateMosque} onDeleteMosque={handleDeleteMosque}
-            mosques={mosques} userCoords={userCoords} requestLocation={requestLocation}
-            isRealFirebase={realFirebaseActive} isAuthenticated={isAuthenticated}
-            setIsAuthenticated={(val) => { setIsAuthenticated(val); if (val) setCurrentView('home'); }}
-            authEmail={authEmail} setAuthEmail={setAuthEmail} authName={authName} setAuthName={setAuthName}
-            authUid={authUid} setAuthUid={setAuthUid} realtimeAuth={realtimeAuth}
-            onLoggedOut={() => setCurrentView('login-splash')}
-          />
-        )}
-      </div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-200 flex justify-around p-2 z-40 shadow-xl">
-        <button onClick={() => setCurrentView('hadith')} className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'hadith' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}>
-          <Scroll size={17} /><span className="text-[10px] font-urdu mt-0.5">حدیث</span>
-        </button>
-        <button onClick={() => setCurrentView('quran')} className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'quran' || currentView === 'surah' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}>
-          <BookOpen size={17} /><span className="text-[10px] font-urdu mt-0.5">قرآن</span>
-        </button>
-        <button onClick={() => setCurrentView('home')} className="relative -top-3.5 w-11 h-11 bg-emerald-600 rounded-xl flex items-center justify-center border border-emerald-500 shadow-lg text-white group transition-transform hover:scale-105">
-          <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 21h18" /><path d="M12 2v3M12 5C8.5 5 6 7.5 6 11v10h12V11c0-3.5-2.5-6-6-6z" /><path d="M9 14h6v7H9z" />
-          </svg>
-        </button>
-        <button onClick={() => setCurrentView('mosques')} className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'mosques' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}>
-          <Compass size={17} /><span className="text-[10px] font-urdu mt-0.5">مساجد</span>
-        </button>
-        <button onClick={() => setCurrentView('duas')} className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'duas' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}>
-          <Heart size={17} /><span className="text-[10px] font-urdu mt-0.5">دعائیں</span>
-        </button>
-      </div>
-
-      {/* Mosque Detail Modal */}
-      {selectedMosque && (
-        <div className="fixed inset-0 bg-slate-900/42 bg-black/50 z-50 flex items-end justify-center p-3 animate-fadeIn">
-          <div className="bg-white w-full max-w-sm rounded-2xl p-4 space-y-3.5 shadow-2xl pb-6 border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2" dir="rtl">
-              <h3 className="text-sm font-bold font-urdu text-slate-800">{selectedMosque.name}</h3>
-              <div className="flex items-center gap-1">
-                <button onClick={() => {
-                  try {
-                    const list: any[] = JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
-                    const exists = list.find(m => m.id === selectedMosque.id);
-                    const newList = exists ? list.filter(m => m.id !== selectedMosque.id) : [...list, selectedMosque];
-                    localStorage.setItem('user_saved_mosques', JSON.stringify(newList));
-                    setSavedPopupMosques(newList.map((m: any) => m.id));
-                  } catch {}
-                }} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${savedPopupMosques.includes(selectedMosque.id) ? 'bg-red-50 border-red-200 text-red-500' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-red-300 hover:text-red-400'}`}>
-                  {savedPopupMosques.includes(selectedMosque.id) ? '✓ Saved' : 'Save'}
-                </button>
-                <button onClick={() => setSelectedMosque(null)} className="p-1 hover:bg-slate-100 rounded-full transition-colors text-slate-400"><X size={16} /></button>
-              </div>
-            </div>
-            <div className="text-right space-y-0.5">
-              <span className="text-[9px] text-slate-400 uppercase font-bold font-mono tracking-tight block">Address</span>
-              <p className="text-xs text-slate-600 font-urdu">{selectedMosque.address}</p>
-            </div>
-            {selectedMosque.imamName && (
-              <div className="text-right space-y-0.5">
-                <span className="text-[9px] text-slate-400 uppercase font-bold font-mono tracking-tight block">Imam</span>
-                <p className="text-xs text-emerald-700 font-bold font-urdu">{selectedMosque.imamName}</p>
-              </div>
-            )}
-            {selectedMosque.announcement && (
-              <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-right text-xs text-amber-800 leading-normal font-urdu flex items-start gap-2 justify-end">
-                <span>{selectedMosque.announcement}</span><Bell size={13} className="text-amber-600 shrink-0 mt-0.5" />
-              </div>
-            )}
-            <div className="border-t border-slate-100 pt-3 space-y-2">
-              <div className="text-right text-[9px] text-slate-400 uppercase font-bold tracking-tight">Prayer Timings</div>
-              <div className="grid grid-cols-3 gap-1.5 text-center">
-                {[['فجر جماعت', selectedMosque.fajr], ['ظہر جماعت', selectedMosque.zuhr], ['عصر جماعت', selectedMosque.asr]].map(([label, time]) => (
-                  <div key={label} className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
-                    <div className="text-[9px] text-slate-500 font-urdu">{label}</div>
-                    <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(time as string)}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 text-center mt-1.5">
-                <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
-                  <div className="text-[9px] text-slate-500 font-urdu">مغرب جماعت</div>
-                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.maghrib)}</div>
-                </div>
-                <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
-                  <div className="text-[9px] text-slate-500 font-urdu">عشاء جماعت</div>
-                  <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.isha)}</div>
-                </div>
-                <div className="p-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
-                  <div className="text-[9px] text-emerald-800 font-bold font-urdu">جمعہ مبارک</div>
-                  <div className="text-xs font-mono font-bold text-emerald-700 mt-0.5">{formatTo12Hour(selectedMosque.jumah)}</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 text-center mt-1.5 pt-1.5 border-t border-slate-100 border-dashed animate-fadeIn">
-                <div className="p-1.5 bg-purple-50 rounded-lg border border-purple-100">
-                  <div className="text-[9px] text-purple-800 font-bold font-urdu">عید الفطر جماعت</div>
-                  <div className="text-xs font-mono font-bold text-purple-700 mt-0.5">{formatTo12Hour(selectedMosque.eidFitr, '07:00')}</div>
-                </div>
-                <div className="p-1.5 bg-purple-50 rounded-lg border border-purple-100">
-                  <div className="text-[9px] text-purple-800 font-bold font-urdu">عید الاضحی جماعت</div>
-                  <div className="text-xs font-mono font-bold text-purple-700 mt-0.5">{formatTo12Hour(selectedMosque.eidAdha, '07:15')}</div>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-between items-center text-[9px] text-slate-400 border-t border-slate-100 pt-2.5">
-              <div className="font-mono text-[8px]">{selectedMosque.latitude.toFixed(4)}N, {selectedMosque.longitude.toFixed(4)}E</div>
-              <div className="font-urdu text-slate-500 font-bold">
-                آخری اپڈیٹ: {new Date(selectedMosque.updatedAt).toLocaleDateString('ur-PK', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(selectedMosque.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-2 w-full">
-              <button onClick={() => { alert(`StepToDeen الرٹ:\n\nآپ کو ${selectedMosque.name} کی نماز کے بدلتے ہوئے اوقات کی ریئل ٹائم اپڈیٹس کا نوٹیفیکیشن آن کر دیا گیا ہے۔`); setSelectedMosque(null); }}
-                className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10.5px] font-urdu font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] flex-row-reverse">
-                <Bell size={12} /><span>الرٹس آن کریں</span>
+      {/* MAIN APP CONTENT */}
+      {currentView !== 'login-splash' && (
+        <>
+          {/* BACK BUTTON - Shows on all views except home */}
+          {currentView !== 'home' && (
+            <div className="absolute top-3 right-3 z-50">
+              <button
+                onClick={goBack}
+                className="py-1 px-2.5 text-xs text-slate-500 font-urdu font-bold flex items-center gap-1 bg-white/80 rounded-lg shadow-sm hover:bg-white"
+              >
+                ← پیچھے
               </button>
-              <a href={`https://www.google.com/maps/search/?api=1&query=${selectedMosque.latitude},${selectedMosque.longitude}`} target="_blank" rel="noreferrer"
-                className="py-2.5 bg-[#4285F4] hover:bg-[#357ae8] text-white text-[10.5px] font-urdu font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] text-center flex-row-reverse">
-                <MapPin size={12} /><span>گوگل میپ پر راستہ</span>
-              </a>
             </div>
+          )}
+
+          {/* VIEW RENDERER */}
+          <div className={`flex-1 min-h-[500px] flex flex-col ${currentView === 'tasbih' ? 'bg-[#fef2c7]' : 'bg-slate-50'}`}>
+            
+            {/* HOME VIEW */}
+            {currentView === 'home' && (
+              <HomeView
+                onNavigate={(view) => { 
+                  if (view === 'imam-login') navigateTo('imam-login'); 
+                  else navigateTo(view); 
+                }}
+                prayerTimes={prayerTimes} 
+                currentPrayer={currentPrayer} 
+                todayDate={getHijriDateString()}
+                nearbyMosques={mosques} 
+                onOpenMosque={(m) => setSelectedMosque(m)} 
+                userCoords={userCoords}
+                requestLocation={requestLocation} 
+                isRealFirebase={realFirebaseActive} 
+                isAuthenticated={isAuthenticated}
+                isUserAuthenticated={isUserAuthenticated} 
+                userAuthName={userAuthName} 
+                authName={authName}
+              />
+            )}
+
+            {/* QURAN VIEW */}
+            {currentView === 'quran' && (
+              <QuranView onSelectSurah={handleSelectSurah} />
+            )}
+
+            {/* SURAH READER */}
+            {currentView === 'surah' && selectedSurahNum !== null && (
+              <SurahReader 
+                surahNum={selectedSurahNum} 
+                onBack={() => {
+                  setSelectedSurahNum(null);
+                  goBack();
+                }} 
+              />
+            )}
+
+            {/* HADITH VIEW */}
+            {currentView === 'hadith' && <HadithView />}
+            
+            {/* NAMAZ VIEW */}
+            {currentView === 'namaz' && <NamazView />}
+            
+            {/* DUAS VIEW */}
+            {currentView === 'duas' && <DuasView />}
+
+            {/* TASBIH VIEW */}
+            {currentView === 'tasbih' && (
+              <div className="flex flex-col justify-center animate-fadeIn flex-1 bg-[#fef2c7]">
+                <TasbihView />
+              </div>
+            )}
+
+            {/* QIBLA VIEW */}
+            {currentView === 'qibla' && (
+              <QiblaView userCoords={userCoords} requestLocation={requestLocation} />
+            )}
+
+            {/* MOSQUES VIEW */}
+            {currentView === 'mosques' && (
+              <MosqueFinderView 
+                nearbyMosques={mosques} 
+                userCoords={userCoords} 
+                requestLocation={requestLocation} 
+                onOpenMosque={(m) => setSelectedMosque(m)} 
+              />
+            )}
+
+            {/* USER DASHBOARD */}
+            {currentView === 'user-dashboard' && (
+              <UserDashboard 
+                userName={userAuthName} 
+                userPhone={userAuthPhone}
+                onClose={() => goBack()}
+                onOpenMosque={(mosque) => { 
+                  setSelectedMosque(mosque); 
+                  navigateTo('home');
+                }}
+                onLogout={() => {
+                  setIsUserAuthenticated(false); 
+                  setUserAuthName(''); 
+                  setUserAuthPhone('');
+                  localStorage.removeItem('user_authenticated'); 
+                  localStorage.removeItem('user_name'); 
+                  localStorage.removeItem('user_phone');
+                  setNavigationHistory(['login-splash']);
+                  setCurrentView('login-splash');
+                }}
+              />
+            )}
+
+            {/* IMAM DASHBOARD */}
+            {currentView === 'imam-login' && (
+              <ImamDashboard
+                onAddOrUpdateMosque={handleAddOrUpdateMosque} 
+                onDeleteMosque={handleDeleteMosque}
+                mosques={mosques} 
+                userCoords={userCoords} 
+                requestLocation={requestLocation}
+                isRealFirebase={realFirebaseActive} 
+                isAuthenticated={isAuthenticated}
+                setIsAuthenticated={(val) => { 
+                  setIsAuthenticated(val); 
+                  if (val) {
+                    setNavigationHistory(['home']);
+                    setCurrentView('home');
+                  }
+                }}
+                authEmail={authEmail} 
+                setAuthEmail={setAuthEmail} 
+                authName={authName} 
+                setAuthName={setAuthName}
+                authUid={authUid} 
+                setAuthUid={setAuthUid} 
+                realtimeAuth={realtimeAuth}
+                onLoggedOut={() => {
+                  setNavigationHistory(['login-splash']);
+                  setCurrentView('login-splash');
+                }}
+              />
+            )}
           </div>
-        </div>
+
+          {/* BOTTOM NAVIGATION */}
+          <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-200 flex justify-around p-2 z-40 shadow-xl">
+            <button 
+              onClick={() => {
+                if (currentView !== 'hadith') navigateTo('hadith');
+              }} 
+              className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'hadith' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
+            >
+              <Scroll size={17} />
+              <span className="text-[10px] font-urdu mt-0.5">حدیث</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                if (currentView !== 'quran' && currentView !== 'surah') navigateTo('quran');
+              }} 
+              className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'quran' || currentView === 'surah' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
+            >
+              <BookOpen size={17} />
+              <span className="text-[10px] font-urdu mt-0.5">قرآن</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                setNavigationHistory(['home']);
+                setCurrentView('home');
+                setSelectedSurahNum(null);
+                setSelectedMosque(null);
+              }} 
+              className="relative -top-3.5 w-11 h-11 bg-emerald-600 rounded-xl flex items-center justify-center border border-emerald-500 shadow-lg text-white group transition-transform hover:scale-105"
+            >
+              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 21h18" />
+                <path d="M12 2v3M12 5C8.5 5 6 7.5 6 11v10h12V11c0-3.5-2.5-6-6-6z" />
+                <path d="M9 14h6v7H9z" />
+              </svg>
+            </button>
+            
+            <button 
+              onClick={() => {
+                if (currentView !== 'mosques') navigateTo('mosques');
+              }} 
+              className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'mosques' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
+            >
+              <Compass size={17} />
+              <span className="text-[10px] font-urdu mt-0.5">مساجد</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                if (currentView !== 'duas') navigateTo('duas');
+              }} 
+              className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'duas' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
+            >
+              <Heart size={17} />
+              <span className="text-[10px] font-urdu mt-0.5">دعائیں</span>
+            </button>
+          </div>
+
+          {/* MOSQUE DETAIL MODAL */}
+          {selectedMosque && (
+            <div className="fixed inset-0 bg-slate-900/42 bg-black/50 z-50 flex items-end justify-center p-3 animate-fadeIn">
+              <div className="bg-white w-full max-w-sm rounded-2xl p-4 space-y-3.5 shadow-2xl pb-6 border border-slate-200">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2" dir="rtl">
+                  <h3 className="text-sm font-bold font-urdu text-slate-800">{selectedMosque.name}</h3>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => {
+                        try {
+                          const list: any[] = JSON.parse(localStorage.getItem('user_saved_mosques') || '[]');
+                          const exists = list.find(m => m.id === selectedMosque.id);
+                          const newList = exists ? list.filter(m => m.id !== selectedMosque.id) : [...list, selectedMosque];
+                          localStorage.setItem('user_saved_mosques', JSON.stringify(newList));
+                          setSavedPopupMosques(newList.map((m: any) => m.id));
+                        } catch {}
+                      }} 
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${savedPopupMosques.includes(selectedMosque.id) ? 'bg-red-50 border-red-200 text-red-500' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-red-300 hover:text-red-400'}`}
+                    >
+                      {savedPopupMosques.includes(selectedMosque.id) ? '✓ Saved' : 'Save'}
+                    </button>
+                    <button 
+                      onClick={() => setSelectedMosque(null)} 
+                      className="p-1 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="text-right space-y-0.5">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold font-mono tracking-tight block">Address</span>
+                  <p className="text-xs text-slate-600 font-urdu">{selectedMosque.address}</p>
+                </div>
+                
+                {selectedMosque.imamName && (
+                  <div className="text-right space-y-0.5">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold font-mono tracking-tight block">Imam</span>
+                    <p className="text-xs text-emerald-700 font-bold font-urdu">{selectedMosque.imamName}</p>
+                  </div>
+                )}
+                
+                {selectedMosque.announcement && (
+                  <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-right text-xs text-amber-800 leading-normal font-urdu flex items-start gap-2 justify-end">
+                    <span>{selectedMosque.announcement}</span>
+                    <Bell size={13} className="text-amber-600 shrink-0 mt-0.5" />
+                  </div>
+                )}
+                
+                <div className="border-t border-slate-100 pt-3 space-y-2">
+                  <div className="text-right text-[9px] text-slate-400 uppercase font-bold tracking-tight">Prayer Timings</div>
+                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                    {[['فجر جماعت', selectedMosque.fajr], ['ظہر جماعت', selectedMosque.zuhr], ['عصر جماعت', selectedMosque.asr]].map(([label, time]) => (
+                      <div key={label} className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
+                        <div className="text-[9px] text-slate-500 font-urdu">{label}</div>
+                        <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(time as string)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 text-center mt-1.5">
+                    <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
+                      <div className="text-[9px] text-slate-500 font-urdu">مغرب جماعت</div>
+                      <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.maghrib)}</div>
+                    </div>
+                    <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-150">
+                      <div className="text-[9px] text-slate-500 font-urdu">عشاء جماعت</div>
+                      <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">{formatTo12Hour(selectedMosque.isha)}</div>
+                    </div>
+                    <div className="p-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
+                      <div className="text-[9px] text-emerald-800 font-bold font-urdu">جمعہ مبارک</div>
+                      <div className="text-xs font-mono font-bold text-emerald-700 mt-0.5">{formatTo12Hour(selectedMosque.jumah)}</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 text-center mt-1.5 pt-1.5 border-t border-slate-100 border-dashed animate-fadeIn">
+                    <div className="p-1.5 bg-purple-50 rounded-lg border border-purple-100">
+                      <div className="text-[9px] text-purple-800 font-bold font-urdu">عید الفطر جماعت</div>
+                      <div className="text-xs font-mono font-bold text-purple-700 mt-0.5">{formatTo12Hour(selectedMosque.eidFitr, '07:00')}</div>
+                    </div>
+                    <div className="p-1.5 bg-purple-50 rounded-lg border border-purple-100">
+                      <div className="text-[9px] text-purple-800 font-bold font-urdu">عید الاضحی جماعت</div>
+                      <div className="text-xs font-mono font-bold text-purple-700 mt-0.5">{formatTo12Hour(selectedMosque.eidAdha, '07:15')}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center text-[9px] text-slate-400 border-t border-slate-100 pt-2.5">
+                  <div className="font-mono text-[8px]">{selectedMosque.latitude.toFixed(4)}N, {selectedMosque.longitude.toFixed(4)}E</div>
+                  <div className="font-urdu text-slate-500 font-bold">
+                    آخری اپڈیٹ: {new Date(selectedMosque.updatedAt).toLocaleDateString('ur-PK', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(selectedMosque.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 mt-2 w-full">
+                  <button 
+                    onClick={() => { 
+                      alert(`StepToDeen الرٹ:\n\nآپ کو ${selectedMosque.name} کی نماز کے بدلتے ہوئے اوقات کی ریئل ٹائم اپڈیٹس کا نوٹیفیکیشن آن کر دیا گیا ہے۔`); 
+                      setSelectedMosque(null);
+                    }}
+                    className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10.5px] font-urdu font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] flex-row-reverse"
+                  >
+                    <Bell size={12} />
+                    <span>الرٹس آن کریں</span>
+                  </button>
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${selectedMosque.latitude},${selectedMosque.longitude}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="py-2.5 bg-[#4285F4] hover:bg-[#357ae8] text-white text-[10.5px] font-urdu font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] text-center flex-row-reverse"
+                  >
+                    <MapPin size={12} />
+                    <span>گوگل میپ پر راستہ</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
-    </>)}
     </div>
   );
 }
