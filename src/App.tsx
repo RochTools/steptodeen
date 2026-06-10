@@ -331,10 +331,9 @@ export default function App() {
     let unsubscribe: (() => void) | undefined;
 
     if (isUserAuthenticated || isAuthenticated) {
-      initFCM()
-        .then(token => {
-          if (isMountedLocal && token) console.log('FCM ready ✅');
-        })
+    initFCM(authUid || undefined).then(token => {
+  if (isMountedLocal && token) console.log('FCM ready ✅');
+})
         .catch(err => {
           console.warn('FCM initialization failed:', err);
         });
@@ -345,8 +344,8 @@ export default function App() {
     return () => {
       isMountedLocal = false;
       if (unsubscribe) unsubscribe();
-    };
-  }, [isUserAuthenticated, isAuthenticated]);
+    }; 
+  }, [isUserAuthenticated, isAuthenticated, authUid]);
 
   // ============ FIREBASE SETUP ============
   useEffect(() => {
