@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAlivb1p_ptLEfxxitQTUZ0jtBz9HDvHk8",
@@ -14,21 +15,31 @@ const VAPID_KEY = "BEV0ZYHrs3B70HGoupXn-JlJ8C4RY2P6FD-lnlGX_gGp4P0C7lmN8lrlZc6q_
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export async function initFCM(): Promise<string | null> {
+export async function initFCM(uid?: string): Promise<string | null> {
   try {
     if (!('Notification' in window)) return null;
 
-    // Permission مانگیں
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return null;
 
     const messaging = getMessaging(app);
-
-    // FCM Token لیں
     const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    
     if (token) {
       console.log('FCM Token:', token);
       localStorage.setItem('fcm_token', token);
+
+      // ── Firestore میں save کریں ──
+      if (uid) {
+        const db = getFirestore(app);
+        await setDoc(doc(db, 'users', uid), {
+          fcmToken: token,
+          tokenUpdatedAt: new Date().toISOString(),
+          platform: 'web'
+        }, { merge: true }); // merge تاکہ باقی data نہ مٹے
+        console.log('FCM token Firestore میں save ✅');
+      }
+
       return token;
     }
     return null;
@@ -38,7 +49,6 @@ export async function initFCM(): Promise<string | null> {
   }
 }
 
-// Foreground notifications (ایپ کھلی ہو تو)
 export function listenForegroundMessages() {
   try {
     const messaging = getMessaging(app);
