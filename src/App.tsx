@@ -93,18 +93,16 @@ const parseSavedMosques = (savedData: string | null): string[] => {
     const parsed = JSON.parse(savedData);
     if (!Array.isArray(parsed)) return [];
     if (parsed.length === 0) return [];
-    // Check if it's array of objects with id property
     if (typeof parsed[0] === 'object' && parsed[0] !== null) {
       return parsed.filter((m: any) => m && validateMosqueId(m.id)).map((m: any) => m.id);
     }
-    // If it's array of strings, validate each
     return parsed.filter(validateMosqueId);
   } catch {
     return [];
   }
 };
 
-const DEFAULT_COORDS = { latitude: 21.4225, longitude: 39.8262 }; // Mecca
+const DEFAULT_COORDS = { latitude: 21.4225, longitude: 39.8262 };
 
 // ============ ERROR BOUNDARY ============
 
@@ -216,6 +214,17 @@ export default function App() {
     return localStorage.getItem('user_phone') || '';
   });
 
+  // OTP-based user auth
+  const [isOTPAuthenticated, setIsOTPAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('otp_authenticated') === 'true';
+  });
+  const [otpUserEmail, setOtpUserEmail] = useState<string>(() => {
+    return localStorage.getItem('otp_user_email') || '';
+  });
+  const [otpUserName, setOtpUserName] = useState<string>(() => {
+    return localStorage.getItem('otp_user_name') || '';
+  });
+
   // Sync imam auth to localStorage
   useEffect(() => {
     localStorage.setItem('imam_authenticated', String(isAuthenticated));
@@ -230,6 +239,13 @@ export default function App() {
     localStorage.setItem('user_name', userAuthName);
     localStorage.setItem('user_phone', userAuthPhone);
   }, [isUserAuthenticated, userAuthName, userAuthPhone]);
+
+  // Sync OTP auth to localStorage
+  useEffect(() => {
+    localStorage.setItem('otp_authenticated', String(isOTPAuthenticated));
+    localStorage.setItem('otp_user_email', otpUserEmail);
+    localStorage.setItem('otp_user_name', otpUserName);
+  }, [isOTPAuthenticated, otpUserEmail, otpUserName]);
 
   // ============ MOSQUES & LOCATION STATES ============
   const [mosques, setMosques] = useState<Mosque[]>([]);
@@ -251,7 +267,7 @@ export default function App() {
   
   const isMounted = useRef(true);
 
-  // ============ CALCULATE LOCAL PRAYER TIMES (DEFINED BEFORE USE) ============
+  // ============ CALCULATE LOCAL PRAYER TIMES ============
   const calculateLocalPrayerTimes = useCallback((lat: number, lng: number) => {
     if (isMounted.current) {
       setPrayerTimes({
@@ -264,7 +280,7 @@ export default function App() {
     }
   }, []);
 
-  // ============ LOCATION FUNCTIONS (NOW AFTER calculateLocalPrayerTimes) ============
+  // ============ LOCATION FUNCTIONS ============
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setUserCoords(DEFAULT_COORDS);
@@ -330,13 +346,12 @@ export default function App() {
     let isMountedLocal = true;
     let unsubscribe: (() => void) | undefined;
 
-    if (isUserAuthenticated || isAuthenticated) {
-    initFCM(authUid || undefined).then(token => {
-  if (isMountedLocal && token) console.log('FCM ready ✅');
-})
-        .catch(err => {
-          console.warn('FCM initialization failed:', err);
-        });
+    if (isUserAuthenticated || isAuthenticated || isOTPAuthenticated) {
+      initFCM(authUid || undefined).then(token => {
+        if (isMountedLocal && token) console.log('FCM ready ✅');
+      }).catch(err => {
+        console.warn('FCM initialization failed:', err);
+      });
 
       unsubscribe = listenForegroundMessages();
     }
@@ -345,7 +360,7 @@ export default function App() {
       isMountedLocal = false;
       if (unsubscribe) unsubscribe();
     }; 
-  }, [isUserAuthenticated, isAuthenticated, authUid]);
+  }, [isUserAuthenticated, isAuthenticated, isOTPAuthenticated, authUid]);
 
   // ============ FIREBASE SETUP ============
   useEffect(() => {
@@ -379,6 +394,7 @@ export default function App() {
                   if (role === 'imam') {
                     setIsAuthenticated(true);
                     setIsUserAuthenticated(false);
+                    setIsOTPAuthenticated(false);
                   } else {
                     setIsAuthenticated(false);
                     setIsUserAuthenticated(true);
@@ -554,6 +570,42 @@ export default function App() {
     }
   }, []);
 
+  // ============ OTP USER LOGIN HANDLER ============
+  const handleOTPUserLogin = useCallback((name: string, email: string) => {
+    setIsOTPAuthenticated(true);
+    setOtpUserEmail(email);
+    setOtpUserName(name);
+    setIsUserAuthenticated(false);
+    setNavigationHistory(['home']);
+  }, []);
+
+  // ============ LOGOUT HANDLERS ============
+  const handleLogoutAll = useCallback(() => {
+    setIsAuthenticated(false);
+    setIsUserAuthenticated(false);
+    setIsOTPAuthenticated(false);
+    setAuthEmail('');
+    setAuthName('');
+    setAuthUid('');
+    setUserAuthName('');
+    setUserAuthPhone('');
+    setOtpUserEmail('');
+    setOtpUserName('');
+    localStorage.removeItem('imam_authenticated');
+    localStorage.removeItem('imam_email');
+    localStorage.removeItem('imam_name');
+    localStorage.removeItem('imam_uid');
+    localStorage.removeItem('user_authenticated');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_phone');
+    localStorage.removeItem('otp_authenticated');
+    localStorage.removeItem('otp_user_email');
+    localStorage.removeItem('otp_user_name');
+    localStorage.removeItem('user_saved_mosques');
+    setSavedPopupMosques([]);
+    setNavigationHistory(['login-splash']);
+  }, []);
+
   // ============ RENDER ============
   return (
     <ErrorBoundary>
@@ -563,12 +615,20 @@ export default function App() {
         {currentView === 'login-splash' && (
           <LoginChoiceView
             onImamLoginSuccess={() => {
+              setIsAuthenticated(true);
               setNavigationHistory(['home']);
             }}
             onUserLogin={(name, phone) => {
-              setIsUserAuthenticated(true);
-              setUserAuthName(name);
-              setUserAuthPhone(phone);
+              // OTP-based user login
+              if (phone) {
+                // Legacy Firebase Auth user login
+                setIsUserAuthenticated(true);
+                setUserAuthName(name);
+                setUserAuthPhone(phone);
+              } else {
+                // OTP-based user login
+                handleOTPUserLogin(name, '');
+              }
               setNavigationHistory(['home']);
             }}
             isRealFirebase={realFirebaseActive}
@@ -614,8 +674,8 @@ export default function App() {
                   requestLocation={requestLocation}
                   isRealFirebase={realFirebaseActive}
                   isAuthenticated={isAuthenticated}
-                  isUserAuthenticated={isUserAuthenticated}
-                  userAuthName={userAuthName}
+                  isUserAuthenticated={isUserAuthenticated || isOTPAuthenticated}
+                  userAuthName={userAuthName || otpUserName}
                   authName={authName}
                 />
               )}
@@ -667,24 +727,14 @@ export default function App() {
               {/* USER DASHBOARD */}
               {currentView === 'user-dashboard' && (
                 <UserDashboard
-                  userName={userAuthName}
+                  userName={userAuthName || otpUserName}
                   userPhone={userAuthPhone}
                   onClose={() => goBack()}
                   onOpenMosque={(mosque) => {
                     setSelectedMosque(mosque);
                     goHome();
                   }}
-                  onLogout={() => {
-                    setIsUserAuthenticated(false);
-                    setUserAuthName('');
-                    setUserAuthPhone('');
-                    localStorage.removeItem('user_authenticated');
-                    localStorage.removeItem('user_name');
-                    localStorage.removeItem('user_phone');
-                    localStorage.removeItem('user_saved_mosques');
-                    setSavedPopupMosques([]);
-                    setNavigationHistory(['login-splash']);
-                  }}
+                  onLogout={handleLogoutAll}
                 />
               )}
 
