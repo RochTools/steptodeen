@@ -67,3 +67,29 @@ export interface Dua {
   ar: string;
   ur: string;
 }
+
+// ============ OTP SYSTEM TYPES ============
+
+export interface OTPRequest {
+  email: string;
+  otp: string;
+  createdAt: number;
+  expiresAt: number;
+  verified: boolean;
+}
+
+export interface AppUser {
+  uid: string;
+  email: string;
+  name: string;
+  password?: string; // Firestore میں save ہوگا (hashed recommended)
+  role: 'user' | 'imam';
+  createdAt: string;
+  emailVerified: boolean;
+}
+
+export type LoginFlowStep = 
+  | 'email-input'       // Gmail ڈالنے کا مرحلہ
+  | 'otp-verify'        // OTP verify کرنے کا مرحلہ
+  | 'create-password'   // پاسورڈ بنانے کا مرحلہ
+  | 'login-password';   // پاسورڈ سے لاگ ان کا مرحلہ
