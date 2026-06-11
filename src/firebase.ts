@@ -104,102 +104,49 @@ export function subscribeToAuthState(
 const HF_SPACE_URL = 'https://zameerbaloch12458-steptodeen.hf.space';
 
 /**
- * Generate 6-digit OTP
- */
-export function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-/**
  * Send OTP to user's email via Hugging Face Space API
+ * API خود OTP جنریٹ کرتا ہے اور ای میل کرتا ہے
  */
 export async function sendOTPToEmail(email: string): Promise<{ success: boolean; message: string }> {
   try {
-    const otp = generateOTP();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    // Save OTP to Firestore (or localStorage if offline)
-    if (db && isRealFirebase) {
-      await setDoc(doc(db, 'otps', email), {
-        email,
-        otp,
-        createdAt: Date.now(),
-        expiresAt,
-        verified: false
-      });
-    } else {
-      // Offline fallback
-      localStorage.setItem(`otp_${email}`, JSON.stringify({
-        email,
-        otp,
-        createdAt: Date.now(),
-        expiresAt,
-        verified: false
-      }));
-    }
-
-    // Send OTP via HF Space API
     const response = await fetch(`${HF_SPACE_URL}/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp })
+      body: JSON.stringify({ email })
     });
 
-    if (response.ok) {
-      return { success: true, message: 'OTP آپ کے ای میل پر بھیج دی گئی ہے' };
+    const data = await response.json();
+
+    if (data.success) {
+      return { success: true, message: data.message || 'OTP آپ کے ای میل پر بھیج دی گئی ہے' };
     } else {
-      // If HF Space fails, still return success for testing (OTP stored locally)
-      console.warn('HF Space API failed, but OTP saved locally');
-      return { success: true, message: 'OTP آپ کے ای میل پر بھیج دی گئی ہے (ڈیمو موڈ)' };
+      return { success: false, message: data.message || 'OTP بھیجنے میں ناکامی' };
     }
   } catch (error: any) {
     console.error('Error sending OTP:', error);
-    // If network fails but OTP is saved locally, still return success for demo
-    return { success: true, message: 'OTP محفوظ کر لی گئی ہے۔ براہ کرم ای میل چیک کریں (ڈیمو موڈ)' };
+    return { success: false, message: 'سرور سے رابطہ نہیں ہو سکا: ' + (error.message || 'دوبارہ کوشش کریں') };
   }
 }
 
 /**
- * Verify OTP code
+ * Verify OTP code via Hugging Face Space API
+ * API خود OTP چیک کرتا ہے
  */
 export async function verifyOTP(email: string, code: string): Promise<{ success: boolean; message: string }> {
   try {
-    let otpData: any = null;
+    const response = await fetch(`${HF_SPACE_URL}/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp: code })
+    });
 
-    if (db && isRealFirebase) {
-      const docSnap = await getDoc(doc(db, 'otps', email));
-      if (docSnap.exists()) {
-        otpData = docSnap.data();
-      }
+    const data = await response.json();
+
+    if (data.success) {
+      return { success: true, message: data.message || 'OTP کامیابی سے تصدیق ہو گئی' };
     } else {
-      const stored = localStorage.getItem(`otp_${email}`);
-      if (stored) {
-        otpData = JSON.parse(stored);
-      }
+      return { success: false, message: data.message || 'OTP غلط ہے' };
     }
-
-    if (!otpData) {
-      return { success: false, message: 'OTP نہیں ملی۔ دوبارہ کوشش کریں' };
-    }
-
-    // Check expiry
-    if (Date.now() > otpData.expiresAt) {
-      return { success: false, message: 'OTP کی مدت ختم ہو گئی ہے۔ نئی OTP حاصل کریں' };
-    }
-
-    // Check code match
-    if (otpData.otp !== code) {
-      return { success: false, message: 'OTP غلط ہے۔ دوبارہ کوشش کریں' };
-    }
-
-    // Mark as verified
-    if (db && isRealFirebase) {
-      await setDoc(doc(db, 'otps', email), { ...otpData, verified: true }, { merge: true });
-    } else {
-      localStorage.setItem(`otp_${email}`, JSON.stringify({ ...otpData, verified: true }));
-    }
-
-    return { success: true, message: 'OTP کامیابی سے تصدیق ہو گئی' };
   } catch (error: any) {
     console.error('Error verifying OTP:', error);
     return { success: false, message: 'تصدیق میں خرابی: ' + (error.message || 'دوبارہ کوشش کریں') };
@@ -258,8 +205,6 @@ export async function saveUserToFirestore(
     };
 
     if (db && isRealFirebase) {
-      // Save to Firestore users collection
-      const usersRef = collection(db, 'users');
       await setDoc(doc(db, 'users', email), userData);
     } else {
       // Offline fallback
@@ -272,13 +217,6 @@ export async function saveUserToFirestore(
         users.push(userData);
       }
       localStorage.setItem('steptodeen_local_users', JSON.stringify(users));
-    }
-
-    // Clean up OTP
-    if (db && isRealFirebase) {
-      await deleteDoc(doc(db, 'otps', email)).catch(() => {});
-    } else {
-      localStorage.removeItem(`otp_${email}`);
     }
 
     return { success: true, message: 'اکاؤنٹ کامیابی سے بن گیا' };
