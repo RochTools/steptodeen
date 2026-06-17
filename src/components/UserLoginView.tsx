@@ -8,7 +8,8 @@ import {
   loginWithEmailPassword,
   firebaseGoogleSignIn
 } from '../firebase';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { db as firestoreDb } from '../firebase';
 import type { LoginFlowStep } from '../types';
 
 interface UserLoginViewProps {
@@ -51,7 +52,7 @@ export function UserLoginView({
     setUserLoading('google');
     try {
       const user = await firebaseGoogleSignIn(realtimeAuth);
-      const db = getFirestore();
+      const db = firestoreDb;
 
       const userDocSnap = await getDoc(doc(db, 'users', user.uid));
       if (userDocSnap.exists() && userDocSnap.data()?.role === 'imam') {
@@ -62,8 +63,8 @@ export function UserLoginView({
 
       await setDoc(doc(db, 'users', user.uid), {
         role: 'user',
-        email: user.email,
-        name: user.displayName || '',
+        email: user.email || '',
+        name: user.displayName || user.email?.split('@')[0] || 'User',
       }, { merge: true });
 
       onUserLogin(user.displayName || user.email?.split('@')[0] || 'User', user.email || '');
