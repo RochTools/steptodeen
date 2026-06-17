@@ -158,25 +158,16 @@ export async function verifyOTP(email: string, code: string): Promise<{ success:
  */
 export async function checkEmailExists(email: string): Promise<{ exists: boolean; userData?: any }> {
   try {
-    if (db && isRealFirebase) {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', email));
-      const querySnapshot = await getDocs(q);
+    const { db: freshDb } = await initializeFirebaseAtRuntime();
+    if (!freshDb) return { exists: false };
 
-      if (!querySnapshot.empty) {
-        const userDoc = querySnapshot.docs[0];
-        return { exists: true, userData: { uid: userDoc.id, ...userDoc.data() } };
-      }
-    } else {
-      // Offline check
-      const stored = localStorage.getItem('steptodeen_local_users');
-      if (stored) {
-        const users = JSON.parse(stored);
-        const found = users.find((u: any) => u.email === email);
-        if (found) {
-          return { exists: true, userData: found };
-        }
-      }
+    const usersRef = collection(freshDb, 'users');
+    const q = query(usersRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const userDoc = querySnapshot.docs[0];
+      return { exists: true, userData: { uid: userDoc.id, ...userDoc.data() } };
     }
     return { exists: false };
   } catch (error) {
@@ -195,30 +186,24 @@ export async function saveUserToFirestore(
   role: 'user' | 'imam'
 ): Promise<{ success: boolean; message: string }> {
   try {
+    const { db: freshDb } = await initializeFirebaseAtRuntime();
+    if (!freshDb) {
+      return { success: false, message: 'ڈیٹابیس سے رابطہ نہیں ہو سکا، دوبارہ کوشش کریں' };
+    }
+
+    // email کو safe document ID بنائیں
+    const safeId = email.replace(/[^a-zA-Z0-9_\-@.]/g, '_').slice(0, 128);
+
     const userData = {
       email,
-      password, // ⚠️ Production میں hash کرنا بہتر ہے
+      password,
       name,
       role,
       createdAt: new Date().toISOString(),
       emailVerified: true
     };
 
-    if (db && isRealFirebase) {
-      await setDoc(doc(db, 'users', email), userData);
-    } else {
-      // Offline fallback
-      const stored = localStorage.getItem('steptodeen_local_users');
-      const users = stored ? JSON.parse(stored) : [];
-      const existingIndex = users.findIndex((u: any) => u.email === email);
-      if (existingIndex > -1) {
-        users[existingIndex] = userData;
-      } else {
-        users.push(userData);
-      }
-      localStorage.setItem('steptodeen_local_users', JSON.stringify(users));
-    }
-
+    await setDoc(doc(freshDb, 'users', safeId), userData);
     return { success: true, message: 'اکاؤنٹ کامیابی سے بن گیا' };
   } catch (error: any) {
     console.error('Error saving user:', error);
@@ -234,43 +219,27 @@ export async function loginWithEmailPassword(
   password: string
 ): Promise<{ success: boolean; message: string; userData?: any }> {
   try {
-    if (db && isRealFirebase) {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', email));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        return { success: false, message: 'اکاؤنٹ موجود نہیں۔ نیا اکاؤنٹ بنائیں' };
-      }
-
-      const userDoc = querySnapshot.docs[0];
-      const userData = userDoc.data();
-
-      if (userData.password !== password) {
-        return { success: false, message: 'پاسورڈ غلط ہے۔ دوبارہ کوشش کریں' };
-      }
-
-      return {
-        success: true,
-        message: 'لاگ ان کامیاب',
-        userData: { uid: userDoc.id, ...userData }
-      };
-    } else {
-      // Offline check
-      const stored = localStorage.getItem('steptodeen_local_users');
-      if (stored) {
-        const users = JSON.parse(stored);
-        const user = users.find((u: any) => u.email === email);
-        if (!user) {
-          return { success: false, message: 'اکاؤنٹ موجود نہیں۔ نیا اکاؤنٹ بنائیں' };
-        }
-        if (user.password !== password) {
-          return { success: false, message: 'پاسورڈ غلط ہے۔ دوبارہ کوشش کریں' };
-        }
-        return { success: true, message: 'لاگ ان کامیاب', userData: user };
-      }
-      return { success: false, message: 'کوئی اکاؤنٹ موجود نہیں' };
+    const { db: freshDb } = await initializeFirebaseAtRuntime();
+    if (!freshDb) {
+      return { success: false, message: 'ڈیٹابیس سے رابطہ نہیں ہو سکا، دوبارہ کوشش کریں' };
     }
+
+    const usersRef = collection(freshDb, 'users');
+    const q = query(usersRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return { success: false, message: 'اکاؤنٹ موجود نہیں۔ نیا اکاؤنٹ بنائیں' };
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data();
+
+    if (userData.password !== password) {
+      return { success: false, message: 'پاسورڈ غلط ہے۔ دوبارہ کوشش کریں' };
+    }
+
+    return { success: true, message: 'لاگ ان کامیاب', userData: { uid: userDoc.id, ...userData } };
   } catch (error: any) {
     console.error('Error logging in:', error);
     return { success: false, message: 'لاگ ان میں خرابی: ' + (error.message || 'دوبارہ کوشش کریں') };
