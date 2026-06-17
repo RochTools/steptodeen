@@ -34,15 +34,21 @@ export function LoginChoiceView({
 }: LoginChoiceViewProps) {
   const [mode, setMode] = useState<'choice' | 'imam' | 'user'>('choice');
 
-  // Imam states
+  // ── Imam states ──────────────────────────────────────
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [imamName, setImamName] = useState('');
   const [imamError, setImamError] = useState('');
+  const [imamSuccess, setImamSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // User OTP states
+  // Imam OTP states (Sign Up only)
+  const [imamOtpStep, setImamOtpStep] = useState<'form' | 'otp'>('form');
+  const [imamOtpCode, setImamOtpCode] = useState('');
+  const [imamResendTimer, setImamResendTimer] = useState(0);
+
+  // ── User OTP states ──────────────────────────────────
   const [name, setName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userPassword, setUserPassword] = useState('');
@@ -56,6 +62,133 @@ export function LoginChoiceView({
   const [resendTimer, setResendTimer] = useState(0);
   const [existingUserData, setExistingUserData] = useState<any>(null);
 
+  // ═══════════════════ IMAM OTP HELPERS ═══════════════════
+
+  const startImamResendTimer = () => {
+    setImamResendTimer(60);
+    const t = setInterval(() => {
+      setImamResendTimer(prev => {
+        if (prev <= 1) { clearInterval(t); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Step 1: Validate form → Send OTP
+  const handleImamSubmit = async () => {
+    if (!email || !password) { setImamError('Please enter your email and password.'); return; }
+    if (isSignUp && !imamName) { setImamError('Please enter your name.'); return; }
+    if (isSignUp && password.length < 6) { setImamError('Password must be at least 6 characters.'); return; }
+    setImamError('');
+    setLoading(true);
+
+    if (!isRealFirebase || !realtimeAuth) {
+      setImamError('No Firebase connection. Please check your internet.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (isSignUp) {
+        // Sign Up: send OTP first
+        const result = await sendOTPToEmail(email);
+        if (result.success) {
+          setImamOtpStep('otp');
+          startImamResendTimer();
+        } else {
+          setImamError(result.message);
+        }
+      } else {
+        // Login: directly via Firebase
+        const user = await firebaseSignIn(realtimeAuth, email, password);
+        const db = getFirestore();
+        const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+        if (userDocSnap.exists() && userDocSnap.data()?.role === 'user') {
+          setImamError('This is a user account. Please use the User Login.');
+          setLoading(false);
+          return;
+        }
+        onImamLoginSuccess();
+      }
+    } catch (err: any) {
+      const code: string = err?.code || '';
+      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        setImamError('Incorrect email or password. Please try again.');
+      } else if (code === 'auth/email-already-in-use') {
+        setImamError('This email is already registered. Please log in.');
+      } else if (code === 'auth/weak-password') {
+        setImamError('Password must be at least 6 characters.');
+      } else if (code === 'auth/invalid-email') {
+        setImamError('Invalid email format.');
+      } else if (code === 'auth/network-request-failed') {
+        setImamError('Network error. Please check your internet connection.');
+      } else {
+        setImamError('Error: ' + (err?.message || code));
+      }
+    }
+    setLoading(false);
+  };
+
+  // Step 2: Verify OTP → Create Firebase account
+  const handleImamVerifyOTP = async () => {
+    if (!imamOtpCode || imamOtpCode.length !== 6) {
+      setImamError('Please enter the 6-digit OTP code.');
+      return;
+    }
+    setImamError('');
+    setLoading(true);
+
+    try {
+      const result = await verifyOTP(email, imamOtpCode);
+      if (result.success) {
+        // OTP verified — now create Firebase account
+        const newImam = await firebaseSignUp(realtimeAuth, email, password, imamName);
+        const db = getFirestore();
+        await setDoc(doc(db, 'users', newImam.uid), {
+          role: 'imam',
+          email: email,
+          name: imamName,
+        });
+        setImamSuccess('Congratulations! Your Imam account has been created successfully.');
+        setTimeout(() => onImamLoginSuccess(), 1200);
+      } else {
+        setImamError(result.message);
+      }
+    } catch (err: any) {
+      const code: string = err?.code || '';
+      if (code === 'auth/email-already-in-use') {
+        setImamError('This email is already registered. Please log in.');
+      } else {
+        setImamError('Error creating account: ' + (err?.message || code));
+      }
+    }
+    setLoading(false);
+  };
+
+  // Resend OTP for imam
+  const handleImamResendOTP = async () => {
+    setImamError('');
+    setLoading(true);
+    try {
+      const result = await sendOTPToEmail(email);
+      if (result.success) {
+        startImamResendTimer();
+      } else {
+        setImamError(result.message);
+      }
+    } catch {
+      setImamError('Failed to resend OTP. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  const resetImamOtpFlow = () => {
+    setImamOtpStep('form');
+    setImamOtpCode('');
+    setImamError('');
+    setImamSuccess('');
+  };
+
   // ═══════════════════ GOOGLE SIGN-IN ═══════════════════
   const handleGoogleSignIn = async () => {
     setUserError('');
@@ -63,54 +196,45 @@ export function LoginChoiceView({
     try {
       const user = await firebaseGoogleSignIn(realtimeAuth);
       const db = getFirestore();
-
       const userDocSnap = await getDoc(doc(db, 'users', user.uid));
       if (userDocSnap.exists() && userDocSnap.data()?.role === 'imam') {
-        setUserError('یہ اکاؤنٹ امام کا ہے۔ امام لاگ ان استعمال کریں۔');
+        setUserError('This is an Imam account. Please use the Imam Login.');
         setUserLoading('');
         return;
       }
-
       await setDoc(doc(db, 'users', user.uid), {
         role: 'user',
         email: user.email,
         name: user.displayName || '',
       }, { merge: true });
-
       onUserLogin(user.displayName || user.email?.split('@')[0] || 'User', '');
     } catch (err: any) {
       const code: string = err?.code || '';
       if (code === 'auth/popup-closed-by-user') {
-        setUserError('Google popup بند ہو گیا۔ دوبارہ کوشش کریں۔');
+        setUserError('Google popup was closed. Please try again.');
       } else if (code === 'auth/network-request-failed') {
-        setUserError('انٹرنیٹ کنکشن چیک کریں۔');
+        setUserError('Network error. Please check your internet connection.');
       } else {
-        setUserError('Google لاگ ان میں دشواری: ' + (err?.message || code));
+        setUserError('Google sign-in error: ' + (err?.message || code));
       }
     }
     setUserLoading('');
   };
 
-  // ═══════════════════ OTP HANDLERS ═══════════════════
+  // ═══════════════════ USER OTP HANDLERS ═══════════════════
 
-  // Step 1: Send OTP
   const handleSendOTP = async () => {
     if (!userEmail || !userEmail.includes('@')) {
-      setUserError('براہ کرم درست ای میل لکھیں');
+      setUserError('Please enter a valid email address.');
       return;
     }
     setUserError('');
     setUserLoading('otp-send');
     setOtpMessage('');
-
     try {
-      // Check if email already exists
       const { exists, userData } = await checkEmailExists(userEmail);
       setExistingUserData(userData || null);
-
-      // Send OTP via HF Space API
       const result = await sendOTPToEmail(userEmail);
-      
       if (result.success) {
         setLoginFlowStep('otp-verify');
         setOtpMessage(result.message);
@@ -125,58 +249,50 @@ export function LoginChoiceView({
         setUserError(result.message);
       }
     } catch (err: any) {
-      setUserError('OTP بھیجنے میں خرابی: ' + (err.message || 'دوبارہ کوشش کریں'));
+      setUserError('Failed to send OTP: ' + (err.message || 'Please try again.'));
     }
     setUserLoading('');
   };
 
-  // Step 2: Verify OTP
   const handleVerifyOTP = async () => {
     if (!otpCode || otpCode.length !== 6) {
-      setUserError('براہ کرم 6 ہندسوں کا OTP کوڈ لکھیں');
+      setUserError('Please enter the 6-digit OTP code.');
       return;
     }
     setUserError('');
     setUserLoading('otp-verify');
-
     try {
       const result = await verifyOTP(userEmail, otpCode);
-      
       if (result.success) {
         setOtpMessage(result.message);
-
         if (existingUserData) {
-          // Existing user - auto login
           setAuthEmail(existingUserData.email);
           setAuthName(existingUserData.name);
           setAuthUid(existingUserData.uid || '');
           onUserLogin(existingUserData.name, existingUserData.email);
         } else {
-          // New user - show create password
           setLoginFlowStep('create-password');
         }
       } else {
         setUserError(result.message);
       }
     } catch (err: any) {
-      setUserError('OTP تصدیق میں خرابی: ' + (err.message || 'دوبارہ کوشش کریں'));
+      setUserError('OTP verification failed: ' + (err.message || 'Please try again.'));
     }
     setUserLoading('');
   };
 
-  // Step 3: Create Password & Save User
   const handleCreatePassword = async () => {
     if (!userPassword || userPassword.length < 6) {
-      setUserError('پاسورڈ کم از کم 6 حروف کا ہونا چاہیے');
+      setUserError('Password must be at least 6 characters.');
       return;
     }
     if (!name.trim()) {
-      setUserError('براہ کرم اپنا نام لکھیں');
+      setUserError('Please enter your name.');
       return;
     }
     setUserError('');
     setUserLoading('create');
-
     try {
       const result = await saveUserToFirestore(userEmail, userPassword, name.trim(), 'user');
       if (result.success) {
@@ -188,20 +304,18 @@ export function LoginChoiceView({
         setUserError(result.message);
       }
     } catch (err: any) {
-      setUserError('اکاؤنٹ بنانے میں خرابی: ' + (err.message || 'دوبارہ کوشش کریں'));
+      setUserError('Error creating account: ' + (err.message || 'Please try again.'));
     }
     setUserLoading('');
   };
 
-  // Step 4: Login with Password
   const handleLoginWithPassword = async () => {
     if (!userEmail || !userPassword) {
-      setUserError('براہ کرم ای میل اور پاسورڈ لکھیں');
+      setUserError('Please enter your email and password.');
       return;
     }
     setUserError('');
     setUserLoading('login');
-
     try {
       const result = await loginWithEmailPassword(userEmail, userPassword);
       if (result.success) {
@@ -213,7 +327,7 @@ export function LoginChoiceView({
         setUserError(result.message);
       }
     } catch (err: any) {
-      setUserError('لاگ ان میں خرابی: ' + (err.message || 'دوبارہ کوشش کریں'));
+      setUserError('Login failed: ' + (err.message || 'Please try again.'));
     }
     setUserLoading('');
   };
@@ -226,59 +340,6 @@ export function LoginChoiceView({
     setUserPassword('');
     setName('');
     setExistingUserData(null);
-  };
-
-  // ═══════════════════ IMAM HANDLER ═══════════════════
-  const handleImamSubmit = async () => {
-    if (!email || !password) { setImamError('براہ کرم ای میل اور پاسورڈ لکھیں'); return; }
-    if (isSignUp && !imamName) { setImamError('براہ کرم اپنا نام لکھیں'); return; }
-    setImamError('');
-    setLoading(true);
-
-    if (isRealFirebase && realtimeAuth) {
-      try {
-        if (isSignUp) {
-          const newImam = await firebaseSignUp(realtimeAuth, email, password, imamName);
-          const db = getFirestore();
-          await setDoc(doc(db, 'users', newImam.uid), {
-            role: 'imam',
-            email: email,
-            name: imamName,
-          });
-          onImamLoginSuccess();
-        } else {
-          const user = await firebaseSignIn(realtimeAuth, email, password);
-          const db = getFirestore();
-          const userDocSnap = await getDoc(doc(db, 'users', user.uid));
-
-          if (userDocSnap.exists() && userDocSnap.data()?.role === 'user') {
-            setImamError('یہ اکاؤنٹ یوزر کا ہے۔ یوزر لاگ ان استعمال کریں۔');
-            setLoading(false);
-            return;
-          }
-
-          onImamLoginSuccess();
-        }
-      } catch (err: any) {
-        const code: string = err?.code || '';
-        if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-          setImamError('ای میل یا پاسورڈ غلط ہے۔ دوبارہ کوشش کریں۔');
-        } else if (code === 'auth/email-already-in-use') {
-          setImamError('یہ ای میل پہلے سے رجسٹر ہے۔ لاگ ان کریں۔');
-        } else if (code === 'auth/weak-password') {
-          setImamError('پاسورڈ کم از کم 6 حروف کا ہونا چاہیے۔');
-        } else if (code === 'auth/invalid-email') {
-          setImamError('ای میل کا فارمیٹ درست نہیں۔');
-        } else if (code === 'auth/network-request-failed') {
-          setImamError('انٹرنیٹ کنکشن چیک کریں۔');
-        } else {
-          setImamError('لاگ ان میں دشواری: ' + (err?.message || code));
-        }
-      }
-    } else {
-      setImamError('Firebase سے کنکشن نہیں ہے۔ انٹرنیٹ چیک کریں۔');
-    }
-    setLoading(false);
   };
 
   // ═══════════════════════════════════════════════════
@@ -295,35 +356,35 @@ export function LoginChoiceView({
               <path d="M9 14h6v7H9z" />
             </svg>
           </div>
-          <h1 className="text-black font-urdu text-3xl font-black">StepToDeen</h1>
-          <p className="text-slate-500 font-urdu text-sm text-center">اسلامی راہنمائی کا ڈیجیٹل ساتھی</p>
+          <h1 className="text-black text-3xl font-black">StepToDeen</h1>
+          <p className="text-slate-500 text-sm text-center">Your Islamic Digital Companion</p>
         </div>
 
         <div className="w-full max-w-xs">
           <div className="border-t border-slate-200 relative">
-            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white px-3 text-slate-400 text-xs font-urdu">لاگ ان کریں</span>
+            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white px-3 text-slate-400 text-xs">Sign In</span>
           </div>
         </div>
 
         <div className="w-full max-w-xs space-y-4">
           <button
             onClick={() => setMode('imam')}
-            className="w-full py-4 px-6 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-black text-base rounded-2xl flex items-center justify-between shadow-md transition-all"
+            className="w-full py-4 px-6 bg-black hover:bg-slate-800 active:scale-95 text-white font-black text-base rounded-2xl flex items-center justify-between shadow-md transition-all"
           >
             <span className="text-2xl">🕌</span>
-            <span>امام لاگ ان</span>
-            <span className="text-slate-400 text-sm">←</span>
+            <span>Imam Login</span>
+            <span className="text-slate-400 text-sm">→</span>
           </button>
           <button
             onClick={() => { setMode('user'); resetOTPFlow(); }}
-            className="w-full py-4 px-6 bg-white hover:bg-slate-50 active:scale-95 text-black font-urdu font-black text-base rounded-2xl flex items-center justify-between shadow-sm border-2 border-slate-200 transition-all"
+            className="w-full py-4 px-6 bg-white hover:bg-slate-50 active:scale-95 text-black font-black text-base rounded-2xl flex items-center justify-between shadow-sm border-2 border-slate-200 transition-all"
           >
             <UserCircle size={24} className="text-slate-600 shrink-0" />
-            <span>یوزر لاگ ان</span>
-            <span className="text-slate-400 text-sm">←</span>
+            <span>User Login</span>
+            <span className="text-slate-400 text-sm">→</span>
           </button>
         </div>
-        <p className="text-slate-400 font-urdu text-xs text-center max-w-xs">امام صرف مسجد انتظامیہ کے لیے ہے</p>
+        <p className="text-slate-400 text-xs text-center max-w-xs">Imam login is for mosque administration only.</p>
       </div>
     );
   }
@@ -338,70 +399,116 @@ export function LoginChoiceView({
           <div className="w-16 h-16 rounded-2xl bg-black flex items-center justify-center shadow-lg">
             <span className="text-3xl">🕌</span>
           </div>
-          <h2 className="text-black font-urdu text-2xl font-black">{isSignUp ? 'نیا امام اکاؤنٹ' : 'امام لاگ ان'}</h2>
-          <p className="text-slate-500 font-urdu text-xs">مسجد انتظامیہ کے لیے</p>
+          <h2 className="text-black text-2xl font-black">
+            {imamOtpStep === 'otp' ? 'Email Verification' : isSignUp ? 'New Imam Account' : 'Imam Login'}
+          </h2>
+          <p className="text-slate-500 text-xs">For mosque administration</p>
         </div>
 
         <div className="w-full max-w-xs space-y-4">
-          {isSignUp && (
-            <div className="space-y-1.5">
-              <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">نام *</label>
-              <input
-                type="text"
-                placeholder="امام کا نام"
-                value={imamName}
-                onChange={e => setImamName(e.target.value)}
-                className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 font-urdu text-right text-black placeholder:text-slate-300 outline-none transition-all text-sm"
-              />
-            </div>
+
+          {/* ── OTP Verify Step (Sign Up only) ── */}
+          {imamOtpStep === 'otp' ? (
+            <>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                <p className="text-emerald-800 text-sm font-bold">✓ OTP Sent</p>
+                <p className="text-emerald-600 text-xs mt-1">A code was sent to {email}</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs text-slate-600 font-semibold">OTP Code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="••••••"
+                  value={imamOtpCode}
+                  onChange={e => { setImamOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setImamError(''); }}
+                  className="w-full border-2 border-slate-200 focus:border-emerald-500 rounded-xl px-4 py-3.5 text-black text-center tracking-[0.5em] font-mono text-lg outline-none transition-all"
+                  dir="ltr"
+                />
+              </div>
+
+              {imamError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{imamError}</p>}
+              {imamSuccess && <p className="text-xs text-emerald-600 bg-emerald-50 p-2 rounded-lg">{imamSuccess}</p>}
+
+              <button
+                onClick={handleImamVerifyOTP}
+                disabled={loading || imamOtpCode.length !== 6}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+              >
+                {loading ? 'Verifying...' : 'Verify & Create Account'}
+              </button>
+
+              <div className="flex justify-between items-center">
+                <button onClick={resetImamOtpFlow} className="text-slate-400 text-sm hover:text-slate-600">← Go Back</button>
+                <button onClick={handleImamResendOTP} disabled={imamResendTimer > 0 || loading} className="text-emerald-700 text-sm hover:underline disabled:text-slate-300">
+                  {imamResendTimer > 0 ? `Resend in (${imamResendTimer}s)` : 'Resend OTP'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* ── Normal Form Step ── */}
+              {isSignUp && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs text-slate-600 font-semibold">Full Name *</label>
+                  <input
+                    type="text"
+                    placeholder="Imam's name"
+                    value={imamName}
+                    onChange={e => setImamName(e.target.value)}
+                    className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-xs text-slate-600 font-semibold">Email</label>
+                <input
+                  type="email"
+                  placeholder="imam@mosque.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs text-slate-600 font-semibold">Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                  dir="ltr"
+                />
+              </div>
+
+              {imamError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{imamError}</p>}
+
+              <button
+                onClick={handleImamSubmit}
+                disabled={loading || !email || !password}
+                className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+              >
+                {loading ? '...' : isSignUp ? 'Get OTP' : 'Login'}
+              </button>
+
+              <button
+                onClick={() => { setIsSignUp(!isSignUp); setImamError(''); resetImamOtpFlow(); }}
+                className="w-full text-center text-emerald-700 text-sm hover:underline"
+              >
+                {isSignUp ? 'Already have an account? Log in' : 'Create a new Imam account'}
+              </button>
+
+              <button onClick={() => { setMode('choice'); resetImamOtpFlow(); }} className="w-full text-center text-slate-400 text-sm hover:text-slate-600 transition-colors">
+                ← Go Back
+              </button>
+            </>
           )}
-
-          <div className="space-y-1.5">
-            <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">ای میل</label>
-            <input
-              type="email"
-              placeholder="imam@mosque.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
-              dir="ltr"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">پاسورڈ</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
-              dir="ltr"
-            />
-          </div>
-
-          {imamError && (
-            <p className="text-right text-xs text-red-500 font-urdu bg-red-50 p-2 rounded-lg">{imamError}</p>
-          )}
-
-          <button
-            onClick={handleImamSubmit}
-            disabled={loading || !email || !password}
-            className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
-          >
-            {loading ? '...' : isSignUp ? 'امام اکاؤنٹ بنائیں' : 'لاگ ان کریں'}
-          </button>
-
-          <button
-            onClick={() => { setIsSignUp(!isSignUp); setImamError(''); }}
-            className="w-full text-center text-emerald-700 font-urdu text-sm hover:underline"
-          >
-            {isSignUp ? 'پہلے سے اکاؤنٹ ہے؟ لاگ ان کریں' : 'نیا امام اکاؤنٹ بنانا چاہتے ہیں؟'}
-          </button>
-
-          <button onClick={() => setMode('choice')} className="w-full text-center text-slate-400 font-urdu text-sm hover:text-slate-600 transition-colors">
-            ← واپس جائیں
-          </button>
         </div>
       </div>
     );
@@ -416,13 +523,13 @@ export function LoginChoiceView({
         <div className="w-16 h-16 rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-sm">
           <UserCircle size={38} className="text-slate-700" />
         </div>
-        <h2 className="text-black font-urdu text-2xl font-black">
-          {loginFlowStep === 'email-input' && 'یوزر لاگ ان'}
-          {loginFlowStep === 'otp-verify' && 'OTP تصدیق'}
-          {loginFlowStep === 'create-password' && 'پاسورڈ بنائیں'}
-          {loginFlowStep === 'login-password' && 'پاسورڈ سے لاگ ان'}
+        <h2 className="text-black text-2xl font-black">
+          {loginFlowStep === 'email-input' && 'User Login'}
+          {loginFlowStep === 'otp-verify' && 'OTP Verification'}
+          {loginFlowStep === 'create-password' && 'Create Password'}
+          {loginFlowStep === 'login-password' && 'Login with Password'}
         </h2>
-        <p className="text-slate-500 font-urdu text-xs">عام صارفین کے لیے</p>
+        <p className="text-slate-500 text-xs">For general users</p>
       </div>
 
       <div className="w-full max-w-xs space-y-4">
@@ -431,7 +538,7 @@ export function LoginChoiceView({
         {loginFlowStep === 'email-input' && (
           <>
             <div className="space-y-1.5">
-              <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">ای میل</label>
+              <label className="block text-xs text-slate-600 font-semibold">Email</label>
               <input
                 type="email"
                 placeholder="user@email.com"
@@ -441,21 +548,21 @@ export function LoginChoiceView({
                 dir="ltr"
               />
             </div>
-            <p className="text-center text-slate-400 font-urdu text-xs">
-              اپنا Gmail لکھیں، OTP ای میل پر بھیجی جائے گی
+            <p className="text-center text-slate-400 text-xs">
+              Enter your email — an OTP will be sent to it.
             </p>
-            {userError && <p className="text-right text-xs text-red-500 font-urdu bg-red-50 p-2 rounded-lg">{userError}</p>}
+            {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
             <button
               onClick={handleSendOTP}
               disabled={userLoading === 'otp-send' || !userEmail}
-              className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+              className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
             >
-              {userLoading === 'otp-send' ? 'OTP بھیج رہے ہیں...' : 'OTP حاصل کریں'}
+              {userLoading === 'otp-send' ? 'Sending OTP...' : 'Get OTP'}
             </button>
 
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-slate-200" />
-              <span className="text-slate-400 text-xs font-urdu">یا</span>
+              <span className="text-slate-400 text-xs">or</span>
               <div className="flex-1 h-px bg-slate-200" />
             </div>
 
@@ -470,14 +577,14 @@ export function LoginChoiceView({
                 <path fill="#FBBC05" d="M10.7 28.6A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.2.7-4.6l-7-5.4A23.9 23.9 0 0 0 .1 24c0 3.8.9 7.4 2.5 10.6l8.1-6z"/>
                 <path fill="#34A853" d="M24 47c5.6 0 10.3-1.9 13.7-5.1l-7-5.4c-1.9 1.3-4.3 2-6.7 2-6.3 0-11.6-4.3-13.5-10l-8.1 6C7 41.3 14.8 47 24 47z"/>
               </svg>
-              <span className="font-urdu font-bold text-sm text-black">Google سے لاگ ان کریں</span>
+              <span className="font-bold text-sm text-black">Continue with Google</span>
             </button>
 
             <button
               onClick={() => setLoginFlowStep('login-password')}
-              className="w-full text-center text-emerald-700 font-urdu text-sm hover:underline"
+              className="w-full text-center text-emerald-700 text-sm hover:underline"
             >
-              پاسورڈ سے لاگ ان کریں
+              Login with Password
             </button>
           </>
         )}
@@ -486,12 +593,12 @@ export function LoginChoiceView({
         {loginFlowStep === 'otp-verify' && (
           <>
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-              <p className="text-emerald-800 font-urdu text-sm font-bold">✓ OTP بھیج دی گئی ہے</p>
-              <p className="text-emerald-600 font-urdu text-xs mt-1">{userEmail} پر کوڈ بھیجا گیا</p>
+              <p className="text-emerald-800 text-sm font-bold">✓ OTP Sent</p>
+              <p className="text-emerald-600 text-xs mt-1">A code was sent to {userEmail}</p>
             </div>
-            {otpMessage && <p className="text-right text-xs text-emerald-600 font-urdu bg-emerald-50 p-2 rounded-lg">{otpMessage}</p>}
+            {otpMessage && <p className="text-xs text-emerald-600 bg-emerald-50 p-2 rounded-lg">{otpMessage}</p>}
             <div className="space-y-1.5">
-              <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">OTP کوڈ</label>
+              <label className="block text-xs text-slate-600 font-semibold">OTP Code</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -503,18 +610,18 @@ export function LoginChoiceView({
                 dir="ltr"
               />
             </div>
-            {userError && <p className="text-right text-xs text-red-500 font-urdu bg-red-50 p-2 rounded-lg">{userError}</p>}
+            {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
             <button
               onClick={handleVerifyOTP}
               disabled={userLoading === 'otp-verify' || otpCode.length !== 6}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
             >
-              {userLoading === 'otp-verify' ? 'تصدیق ہو رہی ہے...' : 'تصدیق کریں'}
+              {userLoading === 'otp-verify' ? 'Verifying...' : 'Verify'}
             </button>
             <div className="flex justify-between items-center">
-              <button onClick={resetOTPFlow} className="text-slate-400 font-urdu text-sm hover:text-slate-600">← ای میل تبدیل کریں</button>
-              <button onClick={handleSendOTP} disabled={resendTimer > 0} className="text-emerald-700 font-urdu text-sm hover:underline disabled:text-slate-300">
-                {resendTimer > 0 ? `دوبارہ بھیجیں (${resendTimer}s)` : 'OTP دوبارہ بھیجیں'}
+              <button onClick={resetOTPFlow} className="text-slate-400 text-sm hover:text-slate-600">← Change Email</button>
+              <button onClick={handleSendOTP} disabled={resendTimer > 0} className="text-emerald-700 text-sm hover:underline disabled:text-slate-300">
+                {resendTimer > 0 ? `Resend in (${resendTimer}s)` : 'Resend OTP'}
               </button>
             </div>
           </>
@@ -524,25 +631,25 @@ export function LoginChoiceView({
         {loginFlowStep === 'create-password' && (
           <>
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-              <p className="text-emerald-800 font-urdu text-sm font-bold">✓ ای میل تصدیق ہو گئی</p>
-              <p className="text-emerald-600 font-urdu text-xs mt-1">اب اپنا پاسورڈ اور نام سیٹ کریں</p>
+              <p className="text-emerald-800 text-sm font-bold">✓ Email Verified</p>
+              <p className="text-emerald-600 text-xs mt-1">Now set your name and password.</p>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">نام *</label>
-              <input type="text" placeholder="آپ کا نام" value={name} onChange={e => { setName(e.target.value); setUserError(''); }}
-                className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 font-urdu text-right text-black placeholder:text-slate-300 outline-none transition-all text-sm" />
+              <label className="block text-xs text-slate-600 font-semibold">Full Name *</label>
+              <input type="text" placeholder="Your name" value={name} onChange={e => { setName(e.target.value); setUserError(''); }}
+                className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm" />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">پاسورڈ (کم از کم 6 حروف)</label>
+              <label className="block text-xs text-slate-600 font-semibold">Password (min. 6 characters)</label>
               <input type="password" placeholder="••••••••" value={userPassword} onChange={e => { setUserPassword(e.target.value); setUserError(''); }}
                 className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm" dir="ltr" />
             </div>
-            {userError && <p className="text-right text-xs text-red-500 font-urdu bg-red-50 p-2 rounded-lg">{userError}</p>}
+            {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
             <button onClick={handleCreatePassword} disabled={userLoading === 'create' || !userPassword || !name}
-              className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40">
-              {userLoading === 'create' ? 'اکاؤنٹ بن رہا ہے...' : 'اکاؤنٹ بنائیں اور لاگ ان کریں'}
+              className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40">
+              {userLoading === 'create' ? 'Creating account...' : 'Create Account & Login'}
             </button>
-            <button onClick={resetOTPFlow} className="w-full text-center text-slate-400 font-urdu text-sm hover:text-slate-600">← واپس جائیں</button>
+            <button onClick={resetOTPFlow} className="w-full text-center text-slate-400 text-sm hover:text-slate-600">← Go Back</button>
           </>
         )}
 
@@ -550,27 +657,27 @@ export function LoginChoiceView({
         {loginFlowStep === 'login-password' && (
           <>
             <div className="space-y-1.5">
-              <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">ای میل</label>
+              <label className="block text-xs text-slate-600 font-semibold">Email</label>
               <input type="email" placeholder="user@email.com" value={userEmail} onChange={e => { setUserEmail(e.target.value); setUserError(''); }}
                 className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm" dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-right text-xs font-urdu text-slate-600 font-semibold">پاسورڈ</label>
+              <label className="block text-xs text-slate-600 font-semibold">Password</label>
               <input type="password" placeholder="••••••••" value={userPassword} onChange={e => { setUserPassword(e.target.value); setUserError(''); }}
                 className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm" dir="ltr" />
             </div>
-            {userError && <p className="text-right text-xs text-red-500 font-urdu bg-red-50 p-2 rounded-lg">{userError}</p>}
+            {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
             <button onClick={handleLoginWithPassword} disabled={userLoading === 'login' || !userEmail || !userPassword}
-              className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-urdu font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40">
-              {userLoading === 'login' ? 'لاگ ان ہو رہا ہے...' : 'داخل ہوں'}
+              className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40">
+              {userLoading === 'login' ? 'Logging in...' : 'Login'}
             </button>
             <button onClick={() => { setLoginFlowStep('email-input'); setUserError(''); }}
-              className="w-full text-center text-emerald-700 font-urdu text-sm hover:underline">OTP سے لاگ ان کریں</button>
-            <button onClick={() => setMode('choice')} className="w-full text-center text-slate-400 font-urdu text-sm hover:text-slate-600">← واپس جائیں</button>
+              className="w-full text-center text-emerald-700 text-sm hover:underline">Login with OTP instead</button>
+            <button onClick={() => setMode('choice')} className="w-full text-center text-slate-400 text-sm hover:text-slate-600">← Go Back</button>
           </>
         )}
       </div>
-      <p className="text-slate-300 font-urdu text-xs text-center max-w-xs">آپ کی معلومات Firebase میں محفوظ رہے گی</p>
+      <p className="text-slate-300 text-xs text-center max-w-xs">Your information is stored securely in Firebase.</p>
     </div>
   );
 }
