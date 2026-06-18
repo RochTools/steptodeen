@@ -534,7 +534,7 @@ export function LoginChoiceView({
           <button
             onClick={() => setMode('imam')}
             className="w-full py-4 px-6 bg-black hover:bg-slate-800 active:scale-95 text-white font-black text-base rounded-2xl flex items-center justify-between shadow-md transition-all"
-          >
+              dir="ltr"          >
             <span className="text-2xl">🕌</span>
             <span>Imam Login</span>
             <span className="text-slate-400 text-sm">→</span>
@@ -542,7 +542,7 @@ export function LoginChoiceView({
           <button
             onClick={() => { setMode('user'); resetOTPFlow(); }}
             className="w-full py-4 px-6 bg-white hover:bg-slate-50 active:scale-95 text-black font-black text-base rounded-2xl flex items-center justify-between shadow-sm border-2 border-slate-200 transition-all"
-          >
+              dir="ltr"          >
             <UserCircle size={24} className="text-slate-600 shrink-0" />
             <span>User Login</span>
             <span className="text-slate-400 text-sm">→</span>
@@ -611,8 +611,8 @@ export function LoginChoiceView({
                 onClick={handleImamVerifyOTP}
                 disabled={loading || imamOtpCode.length !== 6}
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
-              >
-                {loading ? 'Verifying...' : 'Verify & Create Account'}
+              dir="ltr"              >
+                <span dir='ltr'>{loading ? 'Verifying...' : 'Verify & Create Account'}</span>
               </button>
             </>
           ) : (
@@ -662,8 +662,8 @@ export function LoginChoiceView({
                 onClick={handleImamSubmit}
                 disabled={loading || !email || !password}
                 className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
-              >
-                {loading ? '...' : isSignUp ? 'Get OTP' : 'Login'}
+              dir="ltr"              >
+                <span dir='ltr'>{loading ? '...' : isSignUp ? 'Get OTP' : 'Login'}</span>
               </button>
 
               <button
@@ -725,8 +725,8 @@ export function LoginChoiceView({
               onClick={handleSendOTP}
               disabled={userLoading === 'otp-send' || !userEmail}
               className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
-            >
-              {userLoading === 'otp-send' ? 'Sending OTP...' : 'Get OTP'}
+              dir="ltr"            >
+              <span dir='ltr'>{userLoading === 'otp-send' ? 'Sending OTP...' : 'Get OTP'}</span>
             </button>
 
             <div className="flex items-center gap-3">
@@ -801,8 +801,8 @@ export function LoginChoiceView({
               onClick={handleVerifyOTP}
               disabled={userLoading === 'otp-verify' || otpCode.length !== 6}
               className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
-            >
-              {userLoading === 'otp-verify' ? 'Verifying...' : 'Verify'}
+              dir="ltr"            >
+              <span dir='ltr'>{userLoading === 'otp-verify' ? 'Verifying...' : 'Verify'}</span>
             </button>
           </>
         )}
@@ -827,7 +827,7 @@ export function LoginChoiceView({
             {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
             <button onClick={handleCreatePassword} disabled={userLoading === 'create' || !userPassword || !name}
               className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40">
-              {userLoading === 'create' ? 'Creating account...' : 'Create Account & Login'}
+              <span dir='ltr'>{userLoading === 'create' ? 'Creating account...' : 'Create Account & Login'}</span>
             </button>
             <button onClick={resetOTPFlow} className="w-full text-center text-slate-400 text-sm hover:text-slate-600">Go Back →</button>
           </>
@@ -849,7 +849,7 @@ export function LoginChoiceView({
             {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
             <button onClick={handleLoginWithPassword} disabled={userLoading === 'login' || !userEmail || !userPassword}
               className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40">
-              {userLoading === 'login' ? 'Logging in...' : 'Login'}
+              <span dir='ltr'>{userLoading === 'login' ? 'Logging in...' : 'Login'}</span>
             </button>
             <button onClick={() => { setLoginFlowStep('email-input'); setUserError(''); }}
               className="w-full text-center text-emerald-700 text-sm hover:underline">Login with OTP instead</button>
@@ -885,8 +885,8 @@ export function LoginChoiceView({
               onClick={handleForgotSendOTP}
               disabled={userLoading === 'forgot-otp' || !forgotEmail}
               className="w-full py-4 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
-            >
-              {userLoading === 'forgot-otp' ? 'Sending OTP...' : 'Send OTP'}
+              dir="ltr"            >
+              <span dir='ltr'>{userLoading === 'forgot-otp' ? 'Sending OTP...' : 'Send OTP'}</span>
             </button>
             <button
               onClick={() => { setLoginFlowStep('login-password'); setUserError(''); }}
@@ -948,8 +948,8 @@ export function LoginChoiceView({
               onClick={handleForgotVerifyOTP}
               disabled={userLoading === 'forgot-verify' || forgotOtpCode.length !== 6}
               className="w-full py-4 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
-            >
-              {userLoading === 'forgot-verify' ? 'Verifying...' : 'Verify'}
+              dir="ltr"            >
+              <span dir='ltr'>{userLoading === 'forgot-verify' ? 'Verifying...' : 'Verify'}</span>
             </button>
           </>
         )}
@@ -988,14 +988,14 @@ export function LoginChoiceView({
               onClick={handleForgotSetNewPassword}
               disabled={userLoading === 'forgot-save' || !forgotNewPassword || !forgotConfirmPassword}
               className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
-            >
-              {userLoading === 'forgot-save' ? 'Saving...' : 'Save New Password & Login'}
+              dir="ltr"            >
+              <span dir='ltr'>{userLoading === 'forgot-save' ? 'Saving...' : 'Save New Password & Login'}</span>
             </button>
           </>
         )}
 
       </div>
-      <p className="text-slate-300 text-xs text-center max-w-xs">Your information is stored securely in Firebase.</p>
+      <p className="text-slate-300 text-xs text-center max-w-xs" dir="ltr" dir="ltr">Your information is stored securely in Firebase.</p>
     </div>
   );
 }
