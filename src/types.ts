@@ -84,4 +84,7 @@ export type LoginFlowStep =
   | 'email-input'
   | 'otp-verify'
   | 'create-password'
-  | 'login-password';
+  | 'login-password'
+  | 'forgot-email'
+  | 'forgot-otp'
+  | 'forgot-new-password';
