@@ -7,8 +7,10 @@ import {
   verifyOTP,
   checkEmailExists,
   saveUserToFirestore,
-  loginWithEmailPassword
+  loginWithEmailPassword,
+  resetPasswordInFirestore
 } from '../firebase';
+// LoginFlowStep: 'email-input' | 'otp-verify' | 'create-password' | 'login-password' | 'forgot-otp' | 'forgot-new-password'
 import type { LoginFlowStep } from '../types';
 
 interface LoginChoiceViewProps {
@@ -55,6 +57,13 @@ export function LoginChoiceView({
   const [userError, setUserError] = useState('');
   const [userLoading, setUserLoading] = useState('');
 
+  // Forgot Password states
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [forgotResendTimer, setForgotResendTimer] = useState(0);
+  const [forgotOtpCode, setForgotOtpCode] = useState('');
+
   // OTP Flow states
   const [loginFlowStep, setLoginFlowStep] = useState<LoginFlowStep>('email-input');
   const [otpCode, setOtpCode] = useState('');
@@ -74,6 +83,42 @@ export function LoginChoiceView({
     }, 1000);
   };
 
+  // ── Rate Limiting (max 4 requests per 2 hours) ──
+  const OTP_RATE_KEY = 'otp_rate_limit';
+  const MAX_REQUESTS = 4;
+  const BLOCK_DURATION_MS = 2 * 60 * 60 * 1000;
+
+  const checkRateLimit = (emailKey: string): { allowed: boolean; minutesLeft: number } => {
+    try {
+      const raw = localStorage.getItem(OTP_RATE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      const record = data[emailKey] || { count: 0, blockedAt: null };
+      if (record.blockedAt) {
+        const elapsed = Date.now() - record.blockedAt;
+        if (elapsed < BLOCK_DURATION_MS) {
+          const minutesLeft = Math.ceil((BLOCK_DURATION_MS - elapsed) / 60000);
+          return { allowed: false, minutesLeft };
+        } else {
+          data[emailKey] = { count: 0, blockedAt: null };
+          localStorage.setItem(OTP_RATE_KEY, JSON.stringify(data));
+        }
+      }
+      return { allowed: true, minutesLeft: 0 };
+    } catch { return { allowed: true, minutesLeft: 0 }; }
+  };
+
+  const recordOTPRequest = (emailKey: string) => {
+    try {
+      const raw = localStorage.getItem(OTP_RATE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      const record = data[emailKey] || { count: 0, blockedAt: null };
+      record.count = (record.count || 0) + 1;
+      if (record.count >= MAX_REQUESTS) record.blockedAt = Date.now();
+      data[emailKey] = record;
+      localStorage.setItem(OTP_RATE_KEY, JSON.stringify(data));
+    } catch {}
+  };
+
   // Step 1: Validate form → Send OTP
   const handleImamSubmit = async () => {
     if (!email || !password) { setImamError('Please enter your email and password.'); return; }
@@ -90,9 +135,16 @@ export function LoginChoiceView({
 
     try {
       if (isSignUp) {
-        // Sign Up: send OTP first
+        // Sign Up: check rate limit then send OTP
+        const rateCheck = checkRateLimit(email);
+        if (!rateCheck.allowed) {
+          setImamError(`Too many OTP requests. Please try again in ${rateCheck.minutesLeft} minute(s).`);
+          setLoading(false);
+          return;
+        }
         const result = await sendOTPToEmail(email);
         if (result.success) {
+          recordOTPRequest(email);
           setImamOtpStep('otp');
           startImamResendTimer();
         } else {
@@ -168,10 +220,16 @@ export function LoginChoiceView({
   // Resend OTP for imam
   const handleImamResendOTP = async () => {
     setImamError('');
+    const rateCheck = checkRateLimit(email);
+    if (!rateCheck.allowed) {
+      setImamError(`Too many OTP requests. Please try again in ${rateCheck.minutesLeft} minute(s).`);
+      return;
+    }
     setLoading(true);
     try {
       const result = await sendOTPToEmail(email);
       if (result.success) {
+        recordOTPRequest(email);
         startImamResendTimer();
       } else {
         setImamError(result.message);
@@ -234,8 +292,15 @@ export function LoginChoiceView({
     try {
       const { exists, userData } = await checkEmailExists(userEmail);
       setExistingUserData(userData || null);
+      const rateCheck = checkRateLimit(userEmail);
+      if (!rateCheck.allowed) {
+        setUserError(`Too many OTP requests. Please try again in ${rateCheck.minutesLeft} minute(s).`);
+        setUserLoading('');
+        return;
+      }
       const result = await sendOTPToEmail(userEmail);
       if (result.success) {
+        recordOTPRequest(userEmail);
         setLoginFlowStep('otp-verify');
         setOtpMessage(result.message);
         setResendTimer(60);
@@ -342,6 +407,105 @@ export function LoginChoiceView({
     setExistingUserData(null);
   };
 
+  // ═══════════════════ FORGOT PASSWORD HANDLERS ═══════════════════
+
+  const startForgotResendTimer = () => {
+    setForgotResendTimer(60);
+    const t = setInterval(() => {
+      setForgotResendTimer(prev => {
+        if (prev <= 1) { clearInterval(t); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleForgotSendOTP = async () => {
+    if (!forgotEmail || !forgotEmail.includes('@')) {
+      setUserError('Please enter a valid email address.');
+      return;
+    }
+    // Check if account exists
+    const { exists } = await checkEmailExists(forgotEmail);
+    if (!exists) {
+      setUserError('No account found with this email.');
+      return;
+    }
+    // Rate limit check
+    const rateCheck = checkRateLimit(forgotEmail);
+    if (!rateCheck.allowed) {
+      setUserError(`Too many requests. Please try again in ${rateCheck.minutesLeft} minute(s).`);
+      return;
+    }
+    setUserError('');
+    setUserLoading('forgot-otp');
+    try {
+      const result = await sendOTPToEmail(forgotEmail);
+      if (result.success) {
+        recordOTPRequest(forgotEmail);
+        setLoginFlowStep('forgot-otp');
+        startForgotResendTimer();
+      } else {
+        setUserError(result.message);
+      }
+    } catch (err: any) {
+      setUserError('Failed to send OTP: ' + err.message);
+    }
+    setUserLoading('');
+  };
+
+  const handleForgotVerifyOTP = async () => {
+    if (!forgotOtpCode || forgotOtpCode.length !== 6) {
+      setUserError('Please enter the 6-digit OTP code.');
+      return;
+    }
+    setUserError('');
+    setUserLoading('forgot-verify');
+    try {
+      const result = await verifyOTP(forgotEmail, forgotOtpCode);
+      if (result.success) {
+        setLoginFlowStep('forgot-new-password');
+      } else {
+        setUserError(result.message);
+      }
+    } catch (err: any) {
+      setUserError('Verification failed: ' + err.message);
+    }
+    setUserLoading('');
+  };
+
+  const handleForgotSetNewPassword = async () => {
+    if (!forgotNewPassword || forgotNewPassword.length < 6) {
+      setUserError('Password must be at least 6 characters.');
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setUserError('Passwords do not match.');
+      return;
+    }
+    setUserError('');
+    setUserLoading('forgot-save');
+    try {
+      const result = await resetPasswordInFirestore(forgotEmail, forgotNewPassword);
+      if (result.success) {
+        // Reset all forgot states and go to login
+        setForgotEmail('');
+        setForgotOtpCode('');
+        setForgotNewPassword('');
+        setForgotConfirmPassword('');
+        setUserEmail(forgotEmail);
+        setLoginFlowStep('login-password');
+        setUserError('');
+        // Show success briefly
+        setOtpMessage('Password updated! Please log in with your new password.');
+      } else {
+        setUserError(result.message);
+      }
+    } catch (err: any) {
+      setUserError('Error: ' + err.message);
+    }
+    setUserLoading('');
+  };
+
   // ═══════════════════════════════════════════════════
   // ── CHOICE SCREEN ─────────────────────────────────
   // ═══════════════════════════════════════════════════
@@ -416,7 +580,7 @@ export function LoginChoiceView({
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs text-slate-600 font-semibold">OTP Code</label>
+                <label className="block text-left text-xs text-slate-600 font-semibold">OTP Code</label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -429,6 +593,17 @@ export function LoginChoiceView({
                 />
               </div>
 
+              {/* Resend Timer — above verify button */}
+              <div className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                <button onClick={handleImamResendOTP} disabled={imamResendTimer > 0 || loading}
+                  className="text-sm font-bold text-emerald-700 hover:underline disabled:text-slate-400 disabled:cursor-not-allowed transition-all">
+                  {imamResendTimer > 0 ? `⏳ Resend in ${imamResendTimer}s` : '🔄 Resend OTP'}
+                </button>
+                <button onClick={resetImamOtpFlow} className="text-sm text-slate-500 hover:text-slate-700 font-medium">
+                  Go Back →
+                </button>
+              </div>
+
               {imamError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{imamError}</p>}
               {imamSuccess && <p className="text-xs text-emerald-600 bg-emerald-50 p-2 rounded-lg">{imamSuccess}</p>}
 
@@ -439,32 +614,26 @@ export function LoginChoiceView({
               >
                 {loading ? 'Verifying...' : 'Verify & Create Account'}
               </button>
-
-              <div className="flex justify-between items-center">
-                <button onClick={resetImamOtpFlow} className="text-slate-400 text-sm hover:text-slate-600">← Go Back</button>
-                <button onClick={handleImamResendOTP} disabled={imamResendTimer > 0 || loading} className="text-emerald-700 text-sm hover:underline disabled:text-slate-300">
-                  {imamResendTimer > 0 ? `Resend in (${imamResendTimer}s)` : 'Resend OTP'}
-                </button>
-              </div>
             </>
           ) : (
             <>
               {/* ── Normal Form Step ── */}
               {isSignUp && (
                 <div className="space-y-1.5">
-                  <label className="block text-xs text-slate-600 font-semibold">Full Name *</label>
+                  <label className="block text-left text-xs text-slate-600 font-semibold">Full Name *</label>
                   <input
                     type="text"
                     placeholder="Imam's name"
                     value={imamName}
                     onChange={e => setImamName(e.target.value)}
-                    className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                    dir="ltr"
+                    className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black text-left placeholder:text-slate-300 outline-none transition-all text-sm"
                   />
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="block text-xs text-slate-600 font-semibold">Email</label>
+                <label className="block text-left text-xs text-slate-600 font-semibold">Email</label>
                 <input
                   type="email"
                   placeholder="imam@mosque.com"
@@ -476,7 +645,7 @@ export function LoginChoiceView({
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs text-slate-600 font-semibold">Password</label>
+                <label className="block text-left text-xs text-slate-600 font-semibold">Password</label>
                 <input
                   type="password"
                   placeholder="••••••••"
@@ -505,7 +674,7 @@ export function LoginChoiceView({
               </button>
 
               <button onClick={() => { setMode('choice'); resetImamOtpFlow(); }} className="w-full text-center text-slate-400 text-sm hover:text-slate-600 transition-colors">
-                ← Go Back
+                Go Back →
               </button>
             </>
           )}
@@ -538,7 +707,7 @@ export function LoginChoiceView({
         {loginFlowStep === 'email-input' && (
           <>
             <div className="space-y-1.5">
-              <label className="block text-xs text-slate-600 font-semibold">Email</label>
+              <label className="block text-left text-xs text-slate-600 font-semibold">Email</label>
               <input
                 type="email"
                 placeholder="user@email.com"
@@ -586,6 +755,13 @@ export function LoginChoiceView({
             >
               Login with Password
             </button>
+
+            <button
+              onClick={() => setMode('choice')}
+              className="w-full text-center text-slate-400 text-sm hover:text-slate-600 transition-colors"
+            >
+              Go Back →
+            </button>
           </>
         )}
 
@@ -598,7 +774,7 @@ export function LoginChoiceView({
             </div>
             {otpMessage && <p className="text-xs text-emerald-600 bg-emerald-50 p-2 rounded-lg">{otpMessage}</p>}
             <div className="space-y-1.5">
-              <label className="block text-xs text-slate-600 font-semibold">OTP Code</label>
+              <label className="block text-left text-xs text-slate-600 font-semibold">OTP Code</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -610,6 +786,16 @@ export function LoginChoiceView({
                 dir="ltr"
               />
             </div>
+            {/* Resend Timer — above verify button */}
+            <div className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+              <button onClick={handleSendOTP} disabled={resendTimer > 0}
+                className="text-sm font-bold text-emerald-700 hover:underline disabled:text-slate-400 disabled:cursor-not-allowed transition-all">
+                {resendTimer > 0 ? `⏳ Resend in ${resendTimer}s` : '🔄 Resend OTP'}
+              </button>
+              <button onClick={resetOTPFlow} className="text-sm text-slate-500 hover:text-slate-700 font-medium">
+                Change Email
+              </button>
+            </div>
             {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
             <button
               onClick={handleVerifyOTP}
@@ -618,12 +804,6 @@ export function LoginChoiceView({
             >
               {userLoading === 'otp-verify' ? 'Verifying...' : 'Verify'}
             </button>
-            <div className="flex justify-between items-center">
-              <button onClick={resetOTPFlow} className="text-slate-400 text-sm hover:text-slate-600">← Change Email</button>
-              <button onClick={handleSendOTP} disabled={resendTimer > 0} className="text-emerald-700 text-sm hover:underline disabled:text-slate-300">
-                {resendTimer > 0 ? `Resend in (${resendTimer}s)` : 'Resend OTP'}
-              </button>
-            </div>
           </>
         )}
 
@@ -635,12 +815,12 @@ export function LoginChoiceView({
               <p className="text-emerald-600 text-xs mt-1">Now set your name and password.</p>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs text-slate-600 font-semibold">Full Name *</label>
+              <label className="block text-left text-xs text-slate-600 font-semibold">Full Name *</label>
               <input type="text" placeholder="Your name" value={name} onChange={e => { setName(e.target.value); setUserError(''); }}
-                className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm" />
+                dir="ltr" className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black text-left placeholder:text-slate-300 outline-none transition-all text-sm" />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs text-slate-600 font-semibold">Password (min. 6 characters)</label>
+              <label className="block text-left text-xs text-slate-600 font-semibold">Password (min. 6 characters)</label>
               <input type="password" placeholder="••••••••" value={userPassword} onChange={e => { setUserPassword(e.target.value); setUserError(''); }}
                 className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm" dir="ltr" />
             </div>
@@ -649,7 +829,7 @@ export function LoginChoiceView({
               className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40">
               {userLoading === 'create' ? 'Creating account...' : 'Create Account & Login'}
             </button>
-            <button onClick={resetOTPFlow} className="w-full text-center text-slate-400 text-sm hover:text-slate-600">← Go Back</button>
+            <button onClick={resetOTPFlow} className="w-full text-center text-slate-400 text-sm hover:text-slate-600">Go Back →</button>
           </>
         )}
 
@@ -657,12 +837,12 @@ export function LoginChoiceView({
         {loginFlowStep === 'login-password' && (
           <>
             <div className="space-y-1.5">
-              <label className="block text-xs text-slate-600 font-semibold">Email</label>
+              <label className="block text-left text-xs text-slate-600 font-semibold">Email</label>
               <input type="email" placeholder="user@email.com" value={userEmail} onChange={e => { setUserEmail(e.target.value); setUserError(''); }}
                 className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm" dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs text-slate-600 font-semibold">Password</label>
+              <label className="block text-left text-xs text-slate-600 font-semibold">Password</label>
               <input type="password" placeholder="••••••••" value={userPassword} onChange={e => { setUserPassword(e.target.value); setUserError(''); }}
                 className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm" dir="ltr" />
             </div>
@@ -673,9 +853,147 @@ export function LoginChoiceView({
             </button>
             <button onClick={() => { setLoginFlowStep('email-input'); setUserError(''); }}
               className="w-full text-center text-emerald-700 text-sm hover:underline">Login with OTP instead</button>
-            <button onClick={() => setMode('choice')} className="w-full text-center text-slate-400 text-sm hover:text-slate-600">← Go Back</button>
+            <button
+              onClick={() => { setForgotEmail(userEmail); setLoginFlowStep('forgot-email'); setUserError(''); }}
+              className="w-full text-center text-rose-500 text-sm hover:underline font-semibold"
+            >
+              Forgot Password?
+            </button>
+            <button onClick={() => setMode('choice')} className="w-full text-center text-slate-400 text-sm hover:text-slate-600">Go Back →</button>
           </>
         )}
+        {/* Forgot Step 1: Enter Email */}
+        {loginFlowStep === 'forgot-email' && (
+          <>
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
+              <p className="text-rose-800 text-sm font-bold">🔑 Reset Your Password</p>
+              <p className="text-rose-600 text-xs mt-1">Enter your email — we'll send an OTP to verify.</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs text-slate-600 font-semibold">Email</label>
+              <input
+                type="email"
+                placeholder="user@email.com"
+                value={forgotEmail}
+                onChange={e => { setForgotEmail(e.target.value); setUserError(''); }}
+                className="w-full border-2 border-slate-200 focus:border-rose-400 rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                dir="ltr"
+              />
+            </div>
+            {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
+            <button
+              onClick={handleForgotSendOTP}
+              disabled={userLoading === 'forgot-otp' || !forgotEmail}
+              className="w-full py-4 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+            >
+              {userLoading === 'forgot-otp' ? 'Sending OTP...' : 'Send OTP'}
+            </button>
+            <button
+              onClick={() => { setLoginFlowStep('login-password'); setUserError(''); }}
+              className="w-full text-center text-slate-400 text-sm hover:text-slate-600"
+            >
+              Go Back →
+            </button>
+          </>
+        )}
+
+        {/* Forgot Step 2: Verify OTP */}
+        {loginFlowStep === 'forgot-otp' && (
+          <>
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
+              <p className="text-rose-800 text-sm font-bold">✓ OTP Sent</p>
+              <p className="text-rose-600 text-xs mt-1">A code was sent to {forgotEmail}</p>
+            </div>
+
+            {/* Resend Timer */}
+            <div className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+              <button
+                onClick={async () => {
+                  const rateCheck = checkRateLimit(forgotEmail);
+                  if (!rateCheck.allowed) { setUserError(`Too many requests. Try again in ${rateCheck.minutesLeft} min.`); return; }
+                  setUserLoading('forgot-otp');
+                  const result = await sendOTPToEmail(forgotEmail);
+                  if (result.success) { recordOTPRequest(forgotEmail); startForgotResendTimer(); }
+                  else setUserError(result.message);
+                  setUserLoading('');
+                }}
+                disabled={forgotResendTimer > 0}
+                className="text-sm font-bold text-rose-600 hover:underline disabled:text-slate-400 disabled:cursor-not-allowed"
+              >
+                {forgotResendTimer > 0 ? `⏳ Resend in ${forgotResendTimer}s` : '🔄 Resend OTP'}
+              </button>
+              <button
+                onClick={() => { setLoginFlowStep('forgot-email'); setUserError(''); setForgotOtpCode(''); }}
+                className="text-sm text-slate-500 hover:text-slate-700 font-medium"
+              >
+                Change Email
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs text-slate-600 font-semibold">OTP Code</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="••••••"
+                value={forgotOtpCode}
+                onChange={e => { setForgotOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setUserError(''); }}
+                className="w-full border-2 border-slate-200 focus:border-rose-400 rounded-xl px-4 py-3.5 text-black text-center tracking-[0.5em] font-mono text-lg outline-none transition-all"
+                dir="ltr"
+              />
+            </div>
+            {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
+            <button
+              onClick={handleForgotVerifyOTP}
+              disabled={userLoading === 'forgot-verify' || forgotOtpCode.length !== 6}
+              className="w-full py-4 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+            >
+              {userLoading === 'forgot-verify' ? 'Verifying...' : 'Verify'}
+            </button>
+          </>
+        )}
+
+        {/* Forgot Step 3: Set New Password */}
+        {loginFlowStep === 'forgot-new-password' && (
+          <>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+              <p className="text-emerald-800 text-sm font-bold">✓ Identity Verified</p>
+              <p className="text-emerald-600 text-xs mt-1">Now set your new password.</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs text-slate-600 font-semibold">New Password (min. 6 characters)</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={forgotNewPassword}
+                onChange={e => { setForgotNewPassword(e.target.value); setUserError(''); }}
+                className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs text-slate-600 font-semibold">Confirm New Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={forgotConfirmPassword}
+                onChange={e => { setForgotConfirmPassword(e.target.value); setUserError(''); }}
+                className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                dir="ltr"
+              />
+            </div>
+            {userError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{userError}</p>}
+            <button
+              onClick={handleForgotSetNewPassword}
+              disabled={userLoading === 'forgot-save' || !forgotNewPassword || !forgotConfirmPassword}
+              className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+            >
+              {userLoading === 'forgot-save' ? 'Saving...' : 'Save New Password & Login'}
+            </button>
+          </>
+        )}
+
       </div>
       <p className="text-slate-300 text-xs text-center max-w-xs">Your information is stored securely in Firebase.</p>
     </div>
