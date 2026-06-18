@@ -329,6 +329,38 @@ export function saveLocalMosque(mosque: any) {
   return list;
 }
 
+/**
+ * Reset password after OTP verification
+ * Firestore میں password update کرتا ہے
+ */
+export async function resetPasswordInFirestore(
+  email: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { db: freshDb } = await initializeFirebaseAtRuntime();
+    if (!freshDb) {
+      return { success: false, message: 'Database connection failed. Please try again.' };
+    }
+
+    const usersRef = collection(freshDb, 'users');
+    const q = query(usersRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return { success: false, message: 'No account found with this email.' };
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    await setDoc(doc(freshDb, 'users', userDoc.id), { password: newPassword }, { merge: true });
+
+    return { success: true, message: 'Password updated successfully!' };
+  } catch (error: any) {
+    return { success: false, message: 'Error updating password: ' + (error.message || 'Please try again.') };
+  }
+}
+
+
 export function deleteLocalMosque(id: string) {
   const list = getLocalMosques();
   const filtered = list.filter((m: any) => m.id !== id);
