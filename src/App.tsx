@@ -48,14 +48,7 @@ const parseTimeToMinutes = (timeStr: string) => {
   return (h || 0) * 60 + (m || 0);
 };
 
-const calculatePrayerTimeWithOffset = (baseTime: string, lat: number, lng: number) => {
-  const offset = Math.round((lat + lng) % 15) - 7;
-  const totalMins = parseTimeToMinutes(baseTime) + offset;
-  const normalizedMins = ((totalMins % 1440) + 1440) % 1440;
-  const finalH = Math.floor(normalizedMins / 60) % 24;
-  const finalM = normalizedMins % 60;
-  return `${finalH.toString().padStart(2, '0')}:${finalM.toString().padStart(2, '0')}`;
-};
+// calculatePrayerTimeWithOffset removed - using AlAdhan API instead
 
 const getCurrentPrayer = (prayerTimes: { [key: string]: string }) => {
   const now = new Date();
@@ -76,11 +69,50 @@ const getCurrentPrayer = (prayerTimes: { [key: string]: string }) => {
   return 'fajr';
 };
 
-const getHijriDateString = () => {
+// ============ HIJRI DATE HELPERS ============
+
+const hijriMonthsUrdu = ['محرم','صفر','ربیع الاول','ربیع الثانی','جمادی الاول','جمادی الثانی','رجب','شعبان','رمضان','شوال','ذوالقعدہ','ذوالحجہ'];
+const urduDays = ['اتوار', 'پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ'];
+
+const getHijriMath = (d: Date) => {
+  const JD = Math.floor((d.getTime() / 86400000) + 2440587.5);
+  let l = JD - 1948440 + 10632;
+  const n = Math.floor((l - 1) / 10631);
+  l = l - 10631 * n + 354;
+  const j = Math.floor((10985 - l) / 5316) * Math.floor((50 * l) / 17719) +
+            Math.floor(l / 5670) * Math.floor((43 * l) / 15238);
+  l = l - Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
+      Math.floor(j / 16) * Math.floor((15238 * j) / 43) + 29;
+  const hMonth = Math.floor((24 * l) / 709);
+  const hDay = l - Math.floor((709 * hMonth) / 24);
+  const hYear = 30 * n + j - 30;
+  return { hDay, hMonth, hYear };
+};
+
+const fetchHijriDate = async (): Promise<string> => {
   const d = new Date();
-  const days = ['اتوار', 'پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ'];
-  const months = ['جنوری', 'فروری', 'مارچ', 'اپریل', 'مئی', 'جون', 'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'];
-  return `${days[d.getDay()]}، ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  const today = `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+  const cacheKey = `hijri_cache_${today}`;
+
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const res = await fetch(`https://api.aladhan.com/v1/gToH?date=${today}`);
+    const data = await res.json();
+    if (data.code === 200) {
+      const h = data.data.hijri;
+      const result = `${urduDays[d.getDay()]}، ${h.day} ${hijriMonthsUrdu[parseInt(h.month.number) - 1]} ${h.year}ھ`;
+      localStorage.setItem(cacheKey, result);
+      Object.keys(localStorage).forEach(k => { if (k.startsWith('hijri_cache_') && k !== cacheKey) localStorage.removeItem(k); });
+      return result;
+    }
+  } catch {
+    // internet نہیں — math fallback
+  }
+
+  const { hDay, hMonth, hYear } = getHijriMath(d);
+  return `${urduDays[d.getDay()]}، ${hDay} ${hijriMonthsUrdu[hMonth - 1]} ${hYear}ھ`;
 };
 
 const validateMosqueId = (id: any): id is string => {
@@ -268,19 +300,51 @@ export default function App() {
   });
   const [currentPrayer, setCurrentPrayer] = useState<string>('zuhr');
   const [selectedSurahNum, setSelectedSurahNum] = useState<number | null>(null);
+  const [todayDate, setTodayDate] = useState<string>('');
+
+  // ============ HIJRI DATE FETCH ============
+  useEffect(() => {
+    fetchHijriDate().then(date => setTodayDate(date));
+  }, []);
   
   const isMounted = useRef(true);
 
-  // ============ CALCULATE LOCAL PRAYER TIMES ============
-  const calculateLocalPrayerTimes = useCallback((lat: number, lng: number) => {
-    if (isMounted.current) {
-      setPrayerTimes({
-        fajr: calculatePrayerTimeWithOffset('05:15', lat, lng),
-        zuhr: calculatePrayerTimeWithOffset('13:30', lat, lng),
-        asr: calculatePrayerTimeWithOffset('16:30', lat, lng),
-        maghrib: calculatePrayerTimeWithOffset('19:05', lat, lng),
-        isha: calculatePrayerTimeWithOffset('20:45', lat, lng)
-      });
+  // ============ FETCH PRAYER TIMES FROM API ============
+  const fetchPrayerTimes = useCallback(async (lat: number, lng: number) => {
+    const d = new Date();
+    const today = `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+    const cacheKey = `prayer_cache_${today}_${Math.round(lat * 10)}_${Math.round(lng * 10)}`;
+
+    // پہلے cache چیک کریں
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      if (isMounted.current) setPrayerTimes(JSON.parse(cached));
+      return;
+    }
+
+    try {
+      // method=1 = University of Islamic Sciences, Karachi
+      const res = await fetch(
+        `https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lng}&method=1`
+      );
+      const data = await res.json();
+      if (data.code === 200) {
+        const t = data.data.timings;
+        const times = {
+          fajr: t.Fajr,
+          zuhr: t.Dhuhr,
+          asr: t.Asr,
+          maghrib: t.Maghrib,
+          isha: t.Isha
+        };
+        if (isMounted.current) setPrayerTimes(times);
+        localStorage.setItem(cacheKey, JSON.stringify(times));
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('prayer_cache_') && k !== cacheKey) localStorage.removeItem(k);
+        });
+      }
+    } catch {
+      console.warn('StepToDeen: Prayer API failed, using cached/default times');
     }
   }, []);
 
@@ -288,7 +352,7 @@ export default function App() {
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setUserCoords(DEFAULT_COORDS);
-      calculateLocalPrayerTimes(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude);
+      fetchPrayerTimes(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude);
       return;
     }
 
@@ -299,7 +363,7 @@ export default function App() {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude
           });
-          calculateLocalPrayerTimes(pos.coords.latitude, pos.coords.longitude);
+          fetchPrayerTimes(pos.coords.latitude, pos.coords.longitude);
         }
       },
       (err) => {
@@ -308,7 +372,7 @@ export default function App() {
           const lastCoords = localStorage.getItem('last_known_coords');
           const coords = lastCoords ? JSON.parse(lastCoords) : DEFAULT_COORDS;
           setUserCoords(coords);
-          calculateLocalPrayerTimes(coords.latitude, coords.longitude);
+          fetchPrayerTimes(coords.latitude, coords.longitude);
         }
       },
       {
@@ -317,7 +381,7 @@ export default function App() {
         maximumAge: 300000
       }
     );
-  }, [calculateLocalPrayerTimes]);
+  }, [fetchPrayerTimes]);
 
   useEffect(() => {
     if (userCoords) {
@@ -445,6 +509,22 @@ export default function App() {
   useEffect(() => {
     if (currentView !== 'surah') setSelectedSurahNum(null);
   }, [currentView]);
+
+  // ============ ANDROID BACK BUTTON (PWA) ============
+  useEffect(() => {
+    // ہر view change پر browser history میں entry ڈالیں
+    window.history.replaceState({ view: currentView }, '', `#${currentView}`);
+  }, [currentView]);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      event.preventDefault();
+      handleBack(); // Android back button دبانے پر یہ چلے گا
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handleBack]);
 
   // ============ MOSQUE CRUD ============
   const handleAddOrUpdateMosque = async (data: Omit<Mosque, 'id' | 'updatedAt'> & { id?: string }) => {
@@ -627,7 +707,7 @@ export default function App() {
                   }}
                   prayerTimes={prayerTimes}
                   currentPrayer={currentPrayer}
-                  todayDate={getHijriDateString()}
+                  todayDate={todayDate}
                   nearbyMosques={mosques}
                   onOpenMosque={(m) => setSelectedMosque(m)}
                   userCoords={userCoords}
