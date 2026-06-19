@@ -512,19 +512,28 @@ export default function App() {
 
   // ============ ANDROID BACK BUTTON (PWA) ============
   useEffect(() => {
-    // ہر view change پر browser history میں entry ڈالیں
+    // App شروع ہونے پر 2 entries ڈالیں تاکہ history کبھی خالی نہ ہو
+    window.history.replaceState({ view: 'base' }, '', '#base');
+    window.history.pushState({ view: currentView }, '', `#${currentView}`);
+  }, []);
+
+  useEffect(() => {
+    // ہر view change پر current entry replace کریں
     window.history.replaceState({ view: currentView }, '', `#${currentView}`);
+    // پھر ایک اور push تاکہ Back کے لیے entry ہمیشہ موجود ہو
+    window.history.pushState({ view: currentView }, '', `#${currentView}`);
   }, [currentView]);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      event.preventDefault();
-      handleBack(); // Android back button دبانے پر یہ چلے گا
+      // واپس ایک entry push کریں تاکہ history خالی نہ ہو
+      window.history.pushState({ view: currentView }, '', `#${currentView}`);
+      handleBack();
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [handleBack]);
+  }, [handleBack, currentView]);
 
   // ============ MOSQUE CRUD ============
   const handleAddOrUpdateMosque = async (data: Omit<Mosque, 'id' | 'updatedAt'> & { id?: string }) => {
