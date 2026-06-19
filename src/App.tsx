@@ -502,9 +502,17 @@ export default function App() {
   // ============ BACK BUTTON HANDLER ============
   const handleBack = useCallback(() => {
     if (selectedMosque) { setSelectedMosque(null); return; }
-    if (selectedSurahNum) { setSelectedSurahNum(null); return; }
+    // سورہ سے پیچھے جائیں تو quran list پر جائیں
+    if (currentView === 'surah') {
+      setSelectedSurahNum(null);
+      setNavigationHistory(prev => {
+        const without = prev.filter(v => v !== 'surah');
+        return without.length > 0 ? without : ['quran'];
+      });
+      return;
+    }
     goBack();
-  }, [selectedMosque, selectedSurahNum, goBack]);
+  }, [selectedMosque, currentView, goBack]);
 
   useEffect(() => {
     if (currentView !== 'surah') setSelectedSurahNum(null);
@@ -697,13 +705,6 @@ export default function App() {
         {currentView !== 'login-splash' && (
           <>
             {/* BACK BUTTON */}
-            {currentView !== 'home' && (
-              <div className="absolute top-3 right-3 z-50">
-                <button onClick={handleBack} className="py-1 px-2.5 text-xs text-slate-500 font-urdu font-bold flex items-center gap-1 bg-white/80 rounded-lg shadow-sm hover:bg-white">
-                  ← پیچھے
-                </button>
-              </div>
-            )}
 
             <div className={`flex-1 min-h-[500px] flex flex-col ${currentView === 'tasbih' ? 'bg-[#fef2c7]' : 'bg-slate-50'}`}>
 
@@ -731,7 +732,7 @@ export default function App() {
 
               {currentView === 'quran' && <QuranView onSelectSurah={handleSelectSurah} />}
               {currentView === 'surah' && selectedSurahNum !== null && <SurahReader surahNum={selectedSurahNum} onBack={() => goBack()} />}
-              {currentView === 'hadith' && <HadithView />}
+              {currentView === 'hadith' && <HadithView onBack={() => goBack()} />}
               {currentView === 'namaz' && <NamazView />}
               {currentView === 'duas' && <DuasView />}
               {currentView === 'tasbih' && (
