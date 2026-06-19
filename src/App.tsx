@@ -502,7 +502,8 @@ export default function App() {
   // ============ BACK BUTTON HANDLER ============
   const handleBack = useCallback(() => {
     if (selectedMosque) { setSelectedMosque(null); return; }
-    // سورہ سے پیچھے جائیں تو quran list پر جائیں
+
+    // سورہ سے پیچھے → quran list
     if (currentView === 'surah') {
       setSelectedSurahNum(null);
       setNavigationHistory(prev => {
@@ -511,6 +512,13 @@ export default function App() {
       });
       return;
     }
+
+    // حدیث view میں ہیں → HadithView کو custom event بھیجیں
+    if (currentView === 'hadith') {
+      window.dispatchEvent(new Event('hadith-back'));
+      return;
+    }
+
     goBack();
   }, [selectedMosque, currentView, goBack]);
 
@@ -520,21 +528,20 @@ export default function App() {
 
   // ============ ANDROID BACK BUTTON (PWA) ============
   useEffect(() => {
-    // App شروع ہونے پر 2 entries ڈالیں تاکہ history کبھی خالی نہ ہو
+    // App شروع پر: base + current — تاکہ history کبھی خالی نہ ہو
     window.history.replaceState({ view: 'base' }, '', '#base');
     window.history.pushState({ view: currentView }, '', `#${currentView}`);
   }, []);
 
   useEffect(() => {
-    // ہر view change پر current entry replace کریں
-    window.history.replaceState({ view: currentView }, '', `#${currentView}`);
-    // پھر ایک اور push تاکہ Back کے لیے entry ہمیشہ موجود ہو
+    // ہر view change پر نئی entry push کریں
+    // یہ Android back کے لیے ضروری ہے — ہر view کی اپنی entry
     window.history.pushState({ view: currentView }, '', `#${currentView}`);
   }, [currentView]);
 
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      // واپس ایک entry push کریں تاکہ history خالی نہ ہو
+    const handlePopState = () => {
+      // فوری نئی entry push کریں تاکہ اگلا back بھی کام کرے
       window.history.pushState({ view: currentView }, '', `#${currentView}`);
       handleBack();
     };
