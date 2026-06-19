@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, RefreshCw, BookOpen } from 'lucide-react';
 import { HadithBook, Hadith } from '../types';
 
 const BookIcon = () => (
@@ -111,7 +111,11 @@ const HADITH_BOOKS: HadithBook[] = [
   }
 ];
 
-export const HadithView: React.FC = () => {
+interface HadithViewProps {
+  onBack?: () => void;
+}
+
+export const HadithView: React.FC<HadithViewProps> = ({ onBack }) => {
   const [currentScreen, setCurrentScreen] = useState<'books' | 'chapters' | 'reader'>('books');
   const [selectedBook, setSelectedBook] = useState<HadithBook | null>(null);
   const [chapters, setChapters] = useState<{ [key: string]: any } | null>(null);
@@ -140,6 +144,23 @@ export const HadithView: React.FC = () => {
 
   const [cacheChapters, setCacheChapters] = useState<{ [key: string]: any }>({});
   const [cachePages, setCachePages] = useState<{ [key: string]: any }>({});
+
+  // Android back button — currentScreen کے حساب سے
+  useEffect(() => {
+    const handleHadithBack = () => {
+      if (currentScreen === 'reader') {
+        handleBackToChapters();
+      } else if (currentScreen === 'chapters') {
+        setCurrentScreen('books');
+      } else {
+        // books screen پر ہیں — App کو بتائیں
+        onBack?.();
+      }
+    };
+
+    window.addEventListener('hadith-back', handleHadithBack);
+    return () => window.removeEventListener('hadith-back', handleHadithBack);
+  }, [currentScreen, onBack]);
 
   useEffect(() => {
     setTotalPages(Math.ceil(hadiths.length / perPage));
@@ -382,22 +403,20 @@ export const HadithView: React.FC = () => {
             </button>
           )}
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             {HADITH_BOOKS.map((b) => (
               <div
                 key={b.key}
                 onClick={() => handleOpenChapters(b)}
-                className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:bg-emerald-50 hover:border-emerald-200 transition-all cursor-pointer group"
+                className="flex flex-col items-center justify-center bg-white rounded-2xl cursor-pointer active:scale-95 transition-all"
+                style={{boxShadow: '0 4px 16px 0 rgba(0,0,0,0.13)', minHeight: '110px', padding: '18px 10px'}}
               >
-                <span className="text-xs text-slate-300 group-hover:text-emerald-700 transition-colors"></span>
-                <div className="text-right flex-1 pr-3">
-                  <div className="text-xs font-bold text-slate-800 font-urdu">{b.name}</div>
-                  <div className="text-[10px] text-slate-400 font-urdu mt-0.5">
-                    {b.ar} | کل {b.total} احادیث مبارکہ
-                  </div>
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mb-3">
+                  <BookOpen size={22} className="text-emerald-700" />
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-inner">
-                  <BookIcon />
+                <div className="text-center">
+                  <div className="text-sm font-bold text-slate-800 font-urdu leading-snug">{b.name}</div>
+                  <div className="text-[10px] text-slate-400 font-urdu mt-1">{b.total} احادیث</div>
                 </div>
               </div>
             ))}
@@ -408,15 +427,8 @@ export const HadithView: React.FC = () => {
       {/* Chapters List */}
       {currentScreen === 'chapters' && selectedBook && (
         <div className="space-y-3 p-4 pb-20">
-          <div className="flex items-center bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm" dir="ltr">
-            <button
-              onClick={() => setCurrentScreen('books')}
-              className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold font-urdu hover:underline shrink-0"
-            >
-              <ArrowLeft size={13} />
-              پیچھے
-            </button>
-            <span className="flex-1 text-xs font-bold text-slate-800 font-urdu text-center">{selectedBook.name} کے ابواب</span>
+          <div className="flex items-center justify-center bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+            <span className="text-xs font-bold text-slate-800 font-urdu text-center">{selectedBook.name} کے ابواب</span>
           </div>
 
           <div className="space-y-2">
@@ -459,15 +471,8 @@ export const HadithView: React.FC = () => {
       {/* Reader */}
       {currentScreen === 'reader' && selectedBook && selectedChapter && (
         <div className="space-y-3 p-4 pb-20">
-          <div className="flex items-center bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm" dir="ltr">
-            <button
-              onClick={handleBackToChapters}
-              className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold font-urdu hover:underline shrink-0"
-            >
-              <ArrowLeft size={13} />
-              پیچھے
-            </button>
-            <span className="flex-1 text-xs font-bold font-urdu text-slate-800 text-center max-w-full truncate px-2">
+          <div className="flex items-center justify-center bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+            <span className="text-xs font-bold font-urdu text-slate-800 text-center max-w-full truncate px-2">
               {selectedChapter.name}
             </span>
           </div>
