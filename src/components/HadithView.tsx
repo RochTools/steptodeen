@@ -149,23 +149,18 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack }) => {
   useEffect(() => {
     const handleHadithBack = () => {
       if (currentScreen === 'reader') {
-        // reader سے chapters پر — handleBackToChapters کا logic یہاں
-        if (!selectedBook) { setCurrentScreen('books'); return; }
-        if (!chapters) {
-          handleOpenChapters(selectedBook);
-        } else {
-          setCurrentScreen('chapters');
-        }
+        handleBackToChapters();
       } else if (currentScreen === 'chapters') {
         setCurrentScreen('books');
       } else {
+        // books screen پر ہیں — App کو بتائیں
         onBack?.();
       }
     };
 
     window.addEventListener('hadith-back', handleHadithBack);
     return () => window.removeEventListener('hadith-back', handleHadithBack);
-  }, [currentScreen, onBack, selectedBook, chapters, handleOpenChapters]);
+  }, [currentScreen, onBack]);
 
   useEffect(() => {
     setTotalPages(Math.ceil(hadiths.length / perPage));
