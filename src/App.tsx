@@ -736,7 +736,7 @@ export default function App() {
 
               {currentView === 'quran' && <QuranView onSelectSurah={handleSelectSurah} />}
               {currentView === 'surah' && selectedSurahNum !== null && <SurahReader surahNum={selectedSurahNum} onBack={() => goBack()} />}
-              {currentView === 'hadith' && <HadithView onBack={() => goBack()} />}
+              {currentView === 'hadith' && <HadithView onBack={() => setNavigationHistory(prev => prev.length <= 1 ? ['home'] : prev.slice(0, -1))} />}
               {currentView === 'namaz' && <NamazView />}
               {currentView === 'duas' && <DuasView />}
               {currentView === 'tasbih' && (
