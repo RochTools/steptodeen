@@ -501,51 +501,51 @@ export default function App() {
     };
   }, []);
 
-  // ============ BACK BUTTON HANDLER ============
-  const handleBack = useCallback(() => {
-    if (selectedMosque) { setSelectedMosque(null); return; }
-
-    // سورہ سے پیچھے → quran list
-    if (navRef.current[navRef.current.length - 1] === 'surah') {
-      setSelectedSurahNum(null);
-      goBack();
-      return;
-    }
-
-    // حدیث view میں ہیں → HadithView کو custom event بھیجیں
-    if (navRef.current[navRef.current.length - 1] === 'hadith') {
-      window.dispatchEvent(new Event('hadith-back'));
-      return;
-    }
-
-    // goBack — navRef اور navigationHistory دونوں ایک ساتھ update
-    goBack();
-  }, [selectedMosque, goBack]);
-
   useEffect(() => {
     if (currentView !== 'surah') setSelectedSurahNum(null);
   }, [currentView]);
 
   // ============ ANDROID BACK BUTTON (PWA) ============
   useEffect(() => {
-    // شروع میں 20 entries — بہت زیادہ buffer
-    for (let i = 0; i < 20; i++) {
-      window.history.pushState({ view: 'app', i }, '', '#app');
-    }
-  }, []);
+    window.history.pushState({ view: 'app-initial' }, '', window.location.href);
 
-  useEffect(() => {
     const handlePopState = () => {
-      // فوری 20 entries واپس push کریں — دوسرا back آنے سے پہلے
-      for (let i = 0; i < 20; i++) {
-        window.history.pushState({ view: 'app', i }, '', '#app');
+      // ہمیشہ state واپس push کریں — app کبھی بند نہ ہو
+      window.history.pushState({ view: 'app' }, '', window.location.href);
+
+      // mosque modal کھلا ہے
+      if (selectedMosque) { setSelectedMosque(null); return; }
+
+      // سورہ کھلی ہے
+      if (navRef.current[navRef.current.length - 1] === 'surah') {
+        setSelectedSurahNum(null);
+        goBack();
+        return;
       }
-      handleBack();
+
+      // حدیث view میں ہیں
+      if (navRef.current[navRef.current.length - 1] === 'hadith') {
+        window.dispatchEvent(new Event('hadith-back'));
+        return;
+      }
+
+      // کوئی اور view کھلا ہے
+      if (navRef.current.length > 1) {
+        goBack();
+        return;
+      }
+
+      // home پر ہیں — toast دکھائیں
+      const toast = document.createElement('div');
+      toast.textContent = 'باہر نکلنے کے لیے دوبارہ دبائیں';
+      toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-urdu z-50';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [handleBack]);
+  }, [selectedMosque, goBack]);
 
   // ============ MOSQUE CRUD ============
   const handleAddOrUpdateMosque = async (data: Omit<Mosque, 'id' | 'updatedAt'> & { id?: string }) => {
