@@ -528,16 +528,16 @@ export default function App() {
 
   // ============ ANDROID BACK BUTTON (PWA) ============
   useEffect(() => {
-    // 5 entries ڈالیں — زیادہ buffer تاکہ history کبھی خالی نہ ہو
-    for (let i = 0; i < 5; i++) {
+    // شروع میں 20 entries — بہت زیادہ buffer
+    for (let i = 0; i < 20; i++) {
       window.history.pushState({ view: 'app', i }, '', '#app');
     }
   }, []);
 
   useEffect(() => {
     const handlePopState = () => {
-      // فوری 5 entries واپس push کریں
-      for (let i = 0; i < 5; i++) {
+      // فوری 20 entries واپس push کریں — دوسرا back آنے سے پہلے
+      for (let i = 0; i < 20; i++) {
         window.history.pushState({ view: 'app', i }, '', '#app');
       }
       handleBack();
