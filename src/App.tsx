@@ -200,21 +200,23 @@ export default function App() {
   }, []);
 
   // ============ NAVIGATION HISTORY STACK ============
+  const navRef = useRef<string[]>([getInitialView()]);
   const [navigationHistory, setNavigationHistory] = useState<string[]>(() => [getInitialView()]);
   const currentView = navigationHistory[navigationHistory.length - 1];
 
   const navigateTo = useCallback((newView: string) => {
-    setNavigationHistory(prev => {
-      if (prev[prev.length - 1] === newView) return prev;
-      return [...prev, newView];
-    });
+    if (navRef.current[navRef.current.length - 1] === newView) return;
+    navRef.current = [...navRef.current, newView];
+    setNavigationHistory([...navRef.current]);
   }, []);
 
   const goBack = useCallback(() => {
-    setNavigationHistory(prev => {
-      if (prev.length <= 1) return ['home'];
-      return prev.slice(0, -1);
-    });
+    if (navRef.current.length <= 1) {
+      navRef.current = ['home'];
+    } else {
+      navRef.current = navRef.current.slice(0, -1);
+    }
+    setNavigationHistory([...navRef.current]);
   }, []);
 
   const goHome = useCallback(() => {
@@ -504,23 +506,21 @@ export default function App() {
     if (selectedMosque) { setSelectedMosque(null); return; }
 
     // سورہ سے پیچھے → quran list
-    if (currentView === 'surah') {
+    if (navRef.current[navRef.current.length - 1] === 'surah') {
       setSelectedSurahNum(null);
-      setNavigationHistory(prev => {
-        const without = prev.filter(v => v !== 'surah');
-        return without.length > 0 ? without : ['quran'];
-      });
+      goBack();
       return;
     }
 
     // حدیث view میں ہیں → HadithView کو custom event بھیجیں
-    if (currentView === 'hadith') {
+    if (navRef.current[navRef.current.length - 1] === 'hadith') {
       window.dispatchEvent(new Event('hadith-back'));
       return;
     }
 
+    // goBack — navRef اور navigationHistory دونوں ایک ساتھ update
     goBack();
-  }, [selectedMosque, currentView, goBack]);
+  }, [selectedMosque, goBack]);
 
   useEffect(() => {
     if (currentView !== 'surah') setSelectedSurahNum(null);
@@ -736,7 +736,7 @@ export default function App() {
 
               {currentView === 'quran' && <QuranView onSelectSurah={handleSelectSurah} />}
               {currentView === 'surah' && selectedSurahNum !== null && <SurahReader surahNum={selectedSurahNum} onBack={() => goBack()} />}
-              {currentView === 'hadith' && <HadithView onBack={() => setNavigationHistory(prev => prev.length <= 1 ? ['home'] : prev.slice(0, -1))} />}
+              {currentView === 'hadith' && <HadithView onBack={() => goBack()} />}
               {currentView === 'namaz' && <NamazView />}
               {currentView === 'duas' && <DuasView />}
               {currentView === 'tasbih' && (
