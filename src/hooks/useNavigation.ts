@@ -54,51 +54,57 @@ export const useNavigation = ({
     setNavigationHistory(views);
   }, []);
 
-  // ============ ANDROID BACK BUTTON ============
-  useEffect(() => {
-    window.history.pushState({ view: 'app-initial' }, '', window.location.href);
 
-    const handlePopState = () => {
-      window.history.pushState({ view: 'app' }, '', window.location.href);
+// ============ ANDROID BACK BUTTON ============
+useEffect(() => {
+  window.history.pushState({ view: 'app-initial' }, '', window.location.href);
 
-      if (selectedMosque) {
-        setSelectedMosque(null);
-        return;
-      }
+  const handlePopState = () => {
+    window.history.pushState({ view: 'app' }, '', window.location.href);
 
-      if (navRef.current[navRef.current.length - 1] === 'surah') {
-        setSelectedSurahNum(null);
-        goBack();
-        return;
-      }
+    // mosque modal
+    if (selectedMosque) {
+      setSelectedMosque(null);
+      return;
+    }
 
-      if (navRef.current[navRef.current.length - 1] === 'hadith') {
-        window.dispatchEvent(new Event('hadith-back'));
-        return;
-      }
+    const current = navRef.current[navRef.current.length - 1];
 
-      if (navRef.current.length > 1) {
-        goBack();
-        return;
-      }
+    // سورت کھلی ہے
+    if (current === 'surah') {
+      // صرف goBack — useEffect خود surahNum null کرے گا
+      goBack();
+      return;
+    }
 
-      // Home پر ہیں — toast دکھائیں
-      const toast = document.createElement('div');
-      toast.textContent = 'باہر نکلنے کے لیے دوبارہ دبائیں';
-      toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-urdu z-50';
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 2000);
-    };
+    // حدیث
+    if (current === 'hadith') {
+      window.dispatchEvent(new Event('hadith-back'));
+      return;
+    }
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedMosque, goBack, setSelectedMosque, setSelectedSurahNum]);
+    // کوئی اور view
+    if (navRef.current.length > 1) {
+      goBack();
+      return;
+    }
 
-  // ============ SURAH RESET ON VIEW CHANGE ============
-  useEffect(() => {
-    if (currentView !== 'surah') setSelectedSurahNum(null);
-  }, [currentView, setSelectedSurahNum]);
+    // home پر ہیں
+    const toast = document.createElement('div');
+    toast.textContent = 'باہر نکلنے کے لیے دوبارہ دبائیں';
+    toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-urdu z-50';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  };
 
+  window.addEventListener('popstate', handlePopState);
+  return () => window.removeEventListener('popstate', handlePopState);
+}, [selectedMosque, goBack, setSelectedMosque]);
+
+// ============ SURAH RESET ON VIEW CHANGE ============
+useEffect(() => {
+  if (currentView !== 'surah') setSelectedSurahNum(null);
+}, [currentView, setSelectedSurahNum]);
   return {
     currentView,
     navigationHistory,
