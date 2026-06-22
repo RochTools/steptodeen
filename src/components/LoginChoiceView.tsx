@@ -46,9 +46,16 @@ export function LoginChoiceView({
   const [loading, setLoading] = useState(false);
 
   // Imam OTP states (Sign Up only)
-  const [imamOtpStep, setImamOtpStep] = useState<'form' | 'otp'>('form');
+  const [imamOtpStep, setImamOtpStep] = useState<'form' | 'otp' | 'forgot-email' | 'forgot-otp' | 'forgot-new-password'>('form');
   const [imamOtpCode, setImamOtpCode] = useState('');
   const [imamResendTimer, setImamResendTimer] = useState(0);
+
+  // Imam Forgot Password states
+  const [imamForgotEmail, setImamForgotEmail] = useState('');
+  const [imamForgotOtpCode, setImamForgotOtpCode] = useState('');
+  const [imamForgotNewPassword, setImamForgotNewPassword] = useState('');
+  const [imamForgotConfirmPassword, setImamForgotConfirmPassword] = useState('');
+  const [imamForgotResendTimer, setImamForgotResendTimer] = useState(0);
 
   // ── User OTP states ──────────────────────────────────
   const [name, setName] = useState('');
@@ -102,6 +109,9 @@ export function LoginChoiceView({
           data[emailKey] = { count: 0, blockedAt: null };
           localStorage.setItem(OTP_RATE_KEY, JSON.stringify(data));
         }
+      }
+      if ((record.count || 0) >= MAX_REQUESTS) {
+        return { allowed: false, minutesLeft: 120 };
       }
       return { allowed: true, minutesLeft: 0 };
     } catch { return { allowed: true, minutesLeft: 0 }; }
@@ -247,6 +257,101 @@ export function LoginChoiceView({
     setImamSuccess('');
   };
 
+  // ═══════════════════ IMAM FORGOT PASSWORD HANDLERS ═══════════════════
+
+  const startImamForgotResendTimer = () => {
+    setImamForgotResendTimer(60);
+    const t = setInterval(() => {
+      setImamForgotResendTimer(prev => {
+        if (prev <= 1) { clearInterval(t); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleImamForgotSendOTP = async () => {
+    if (!imamForgotEmail || !imamForgotEmail.includes('@')) {
+      setImamError('Please enter a valid email address.');
+      return;
+    }
+    const { exists } = await checkEmailExists(imamForgotEmail);
+    if (!exists) {
+      setImamError('No Imam account found with this email.');
+      return;
+    }
+    const rateCheck = checkRateLimit(imamForgotEmail);
+    if (!rateCheck.allowed) {
+      setImamError(`Too many requests. Please try again in ${rateCheck.minutesLeft} minute(s).`);
+      return;
+    }
+    setImamError('');
+    setLoading(true);
+    try {
+      const result = await sendOTPToEmail(imamForgotEmail);
+      if (result.success) {
+        recordOTPRequest(imamForgotEmail);
+        setImamOtpStep('forgot-otp');
+        startImamForgotResendTimer();
+      } else {
+        setImamError(result.message);
+      }
+    } catch (err: any) {
+      setImamError('Failed to send OTP: ' + err.message);
+    }
+    setLoading(false);
+  };
+
+  const handleImamForgotVerifyOTP = async () => {
+    if (!imamForgotOtpCode || imamForgotOtpCode.length !== 6) {
+      setImamError('Please enter the 6-digit OTP code.');
+      return;
+    }
+    setImamError('');
+    setLoading(true);
+    try {
+      const result = await verifyOTP(imamForgotEmail, imamForgotOtpCode);
+      if (result.success) {
+        setImamOtpStep('forgot-new-password');
+      } else {
+        setImamError(result.message);
+      }
+    } catch (err: any) {
+      setImamError('Verification failed: ' + err.message);
+    }
+    setLoading(false);
+  };
+
+  const handleImamForgotSetNewPassword = async () => {
+    if (!imamForgotNewPassword || imamForgotNewPassword.length < 6) {
+      setImamError('Password must be at least 6 characters.');
+      return;
+    }
+    if (imamForgotNewPassword !== imamForgotConfirmPassword) {
+      setImamError('Passwords do not match.');
+      return;
+    }
+    setImamError('');
+    setLoading(true);
+    try {
+      const result = await resetPasswordInFirestore(imamForgotEmail, imamForgotNewPassword);
+      if (result.success) {
+        const emailToKeep = imamForgotEmail;
+        setImamForgotEmail('');
+        setImamForgotOtpCode('');
+        setImamForgotNewPassword('');
+        setImamForgotConfirmPassword('');
+        setEmail(emailToKeep);
+        setImamOtpStep('form');
+        setImamSuccess('Password updated! Please log in with your new password.');
+      } else {
+        setImamError(result.message);
+      }
+    } catch (err: any) {
+      setImamError('Error: ' + err.message);
+    }
+    setLoading(false);
+  };
+
   // ═══════════════════ GOOGLE SIGN-IN ═══════════════════
   const handleGoogleSignIn = async () => {
     setUserError('');
@@ -363,7 +468,7 @@ export function LoginChoiceView({
       if (result.success) {
         setAuthEmail(userEmail);
         setAuthName(name.trim());
-        setAuthUid(userEmail);
+        setAuthUid(result.uid || userEmail);
         onUserLogin(name.trim(), userEmail);
       } else {
         setUserError(result.message);
@@ -488,11 +593,12 @@ export function LoginChoiceView({
       const result = await resetPasswordInFirestore(forgotEmail, forgotNewPassword);
       if (result.success) {
         // Reset all forgot states and go to login
+        const emailToKeep = forgotEmail; // save before clearing
         setForgotEmail('');
         setForgotOtpCode('');
         setForgotNewPassword('');
         setForgotConfirmPassword('');
-        setUserEmail(forgotEmail);
+        setUserEmail(emailToKeep);
         setLoginFlowStep('login-password');
         setUserError('');
         // Show success briefly
@@ -615,6 +721,127 @@ export function LoginChoiceView({
                 <span dir='ltr'>{loading ? 'Verifying...' : 'Verify & Create Account'}</span>
               </button>
             </>
+          ) : imamOtpStep === 'forgot-email' ? (
+            <>
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
+                <p className="text-rose-800 text-sm font-bold">🔑 Reset Imam Password</p>
+                <p className="text-rose-600 text-xs mt-1">Enter your email — we'll send an OTP to verify.</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-left text-xs text-slate-600 font-semibold">Email</label>
+                <input
+                  type="email"
+                  placeholder="imam@mosque.com"
+                  value={imamForgotEmail}
+                  onChange={e => { setImamForgotEmail(e.target.value); setImamError(''); }}
+                  className="w-full border-2 border-slate-200 focus:border-rose-400 rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                  dir="ltr"
+                />
+              </div>
+              {imamError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{imamError}</p>}
+              <button
+                onClick={handleImamForgotSendOTP}
+                disabled={loading || !imamForgotEmail}
+                className="w-full py-4 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+              >
+                <span dir="ltr">{loading ? 'Sending OTP...' : 'Send OTP'}</span>
+              </button>
+              <button
+                onClick={() => { setImamOtpStep('form'); setImamError(''); }}
+                className="w-full text-center text-slate-400 text-sm hover:text-slate-600"
+              >
+                Go Back →
+              </button>
+            </>
+          ) : imamOtpStep === 'forgot-otp' ? (
+            <>
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
+                <p className="text-rose-800 text-sm font-bold">✓ OTP Sent</p>
+                <p className="text-rose-600 text-xs mt-1">A code was sent to {imamForgotEmail}</p>
+              </div>
+              <div className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                <button
+                  onClick={async () => {
+                    const rateCheck = checkRateLimit(imamForgotEmail);
+                    if (!rateCheck.allowed) { setImamError(`Too many requests. Try again in ${rateCheck.minutesLeft} min.`); return; }
+                    setLoading(true);
+                    const result = await sendOTPToEmail(imamForgotEmail);
+                    if (result.success) { recordOTPRequest(imamForgotEmail); startImamForgotResendTimer(); }
+                    else setImamError(result.message);
+                    setLoading(false);
+                  }}
+                  disabled={imamForgotResendTimer > 0}
+                  className="text-sm font-bold text-rose-600 hover:underline disabled:text-slate-400 disabled:cursor-not-allowed"
+                >
+                  {imamForgotResendTimer > 0 ? `⏳ Resend in ${imamForgotResendTimer}s` : '🔄 Resend OTP'}
+                </button>
+                <button
+                  onClick={() => { setImamOtpStep('forgot-email'); setImamError(''); setImamForgotOtpCode(''); }}
+                  className="text-sm text-slate-500 hover:text-slate-700 font-medium"
+                >
+                  Change Email
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-left text-xs text-slate-600 font-semibold">OTP Code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="••••••"
+                  value={imamForgotOtpCode}
+                  onChange={e => { setImamForgotOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setImamError(''); }}
+                  className="w-full border-2 border-slate-200 focus:border-rose-400 rounded-xl px-4 py-3.5 text-black text-center tracking-[0.5em] font-mono text-lg outline-none transition-all"
+                  dir="ltr"
+                />
+              </div>
+              {imamError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{imamError}</p>}
+              <button
+                onClick={handleImamForgotVerifyOTP}
+                disabled={loading || imamForgotOtpCode.length !== 6}
+                className="w-full py-4 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+              >
+                <span dir="ltr">{loading ? 'Verifying...' : 'Verify'}</span>
+              </button>
+            </>
+          ) : imamOtpStep === 'forgot-new-password' ? (
+            <>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                <p className="text-emerald-800 text-sm font-bold">✓ Identity Verified</p>
+                <p className="text-emerald-600 text-xs mt-1">Now set your new password.</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-left text-xs text-slate-600 font-semibold">New Password (min. 6 characters)</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={imamForgotNewPassword}
+                  onChange={e => { setImamForgotNewPassword(e.target.value); setImamError(''); }}
+                  className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                  dir="ltr"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-left text-xs text-slate-600 font-semibold">Confirm New Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={imamForgotConfirmPassword}
+                  onChange={e => { setImamForgotConfirmPassword(e.target.value); setImamError(''); }}
+                  className="w-full border-2 border-slate-200 focus:border-black rounded-xl px-4 py-3.5 text-black placeholder:text-slate-300 outline-none transition-all text-sm"
+                  dir="ltr"
+                />
+              </div>
+              {imamError && <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">{imamError}</p>}
+              {imamSuccess && <p className="text-xs text-emerald-600 bg-emerald-50 p-2 rounded-lg">{imamSuccess}</p>}
+              <button
+                onClick={handleImamForgotSetNewPassword}
+                disabled={loading || !imamForgotNewPassword || !imamForgotConfirmPassword}
+                className="w-full py-4 bg-black hover:bg-slate-800 active:scale-95 text-white font-bold text-base rounded-xl shadow-md transition-all disabled:opacity-40"
+              >
+                <span dir="ltr">{loading ? 'Saving...' : 'Save New Password & Login'}</span>
+              </button>
+            </>
           ) : (
             <>
               {/* ── Normal Form Step ── */}
@@ -672,6 +899,15 @@ export function LoginChoiceView({
               >
                 {isSignUp ? 'Already have an account? Log in' : 'Create a new Imam account'}
               </button>
+
+              {!isSignUp && (
+                <button
+                  onClick={() => { setImamForgotEmail(email); setImamOtpStep('forgot-email'); setImamError(''); }}
+                  className="w-full text-center text-rose-500 text-sm hover:underline font-semibold"
+                >
+                  Forgot Password?
+                </button>
+              )}
 
               <button onClick={() => { setMode('choice'); resetImamOtpFlow(); }} className="w-full text-center text-slate-400 text-sm hover:text-slate-600 transition-colors">
                 Go Back →
@@ -995,7 +1231,7 @@ export function LoginChoiceView({
         )}
 
       </div>
-      <p className="text-slate-300 text-xs text-center max-w-xs" dir="ltr" dir="ltr">Your information is stored securely in Firebase.</p>
+      <p className="text-slate-300 text-xs text-center max-w-xs" dir="ltr">Your information is stored securely in Firebase.</p>
     </div>
   );
 }
