@@ -134,11 +134,8 @@ const parseSavedMosques = (savedData: string | null): string[] => {
   }
 };
 
-const DEFAULT_COORDS = { latitude: 21.4225, longitude: 39.8262 };
-
-// ============ ERROR BOUNDARY ============
-
-class ErrorBoundary extends Component<
+const DEFAULT_COORDS = null;
+class EErrorBoundaryextends Component<
   { children: React.ReactNode; fallback?: React.ReactNode },
   { hasError: boolean; error?: Error }
 > {
