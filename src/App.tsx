@@ -87,11 +87,11 @@ export default function App() {
   });
 
   // ============ SURAH HANDLER ============
-  const handleSelectSurah = useCallback((surahNum: number) => {
-    setSelectedSurahNum(surahNum);
-    nav.navigateTo('surah');
-  }, [nav]);
-
+const handleSelectSurah = useCallback((surahNum: number) => {
+  setSelectedSurahNum(surahNum);
+  nav.navigateTo('quran'); // ← یہ add کریں
+  nav.navigateTo('surah');
+}, [nav]);
   // ============ FCM ============
   useEffect(() => {
     let isMountedLocal = true;
