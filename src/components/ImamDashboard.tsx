@@ -179,20 +179,39 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     };
   }, [activePicker]);
 
-  // Handle location auto-grabber
-  const handleAutoGrabLocation = () => {
-    if (userCoords) {
-      setLatitude(userCoords.latitude);
-      setLongitude(userCoords.longitude);
-      setSuccessMessage('موجودہ جی پی ایس کوآرڈینیٹس کامیابی سے فارم میں ایڈ کر دیے گئے ہیں۔');
-      setTimeout(() => setSuccessMessage(''), 4000);
-    } else {
-      requestLocation();
-      setErrorMessage('لوکیشن حاصل کرنے میں دشواری پیش آ رہی ہے۔ لوکیشن پرمیشن کو چیک کریں۔');
-      setTimeout(() => setErrorMessage(''), 4000);
-    }
-  };
 
+// Handle location auto-grabber
+const handleAutoGrabLocation = () => {
+  if (!navigator.geolocation) {
+    setErrorMessage('آپ کا براؤزر لوکیشن سپورٹ نہیں کرتا۔');
+    setTimeout(() => setErrorMessage(''), 4000);
+    return;
+  }
+
+  setSuccessMessage('لوکیشن حاصل کی جا رہی ہے...');
+  setErrorMessage('');
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      setLatitude(pos.coords.latitude);
+      setLongitude(pos.coords.longitude);
+      setSuccessMessage(
+        `✅ لوکیشن کامیابی سے حاصل ہوئی — درستگی: ${Math.round(pos.coords.accuracy)} میٹر`
+      );
+      setTimeout(() => setSuccessMessage(''), 5000);
+    },
+    (err) => {
+      setErrorMessage('لوکیشن نہیں مل سکی۔ براہ کرم GPS اور پرمیشن چیک کریں۔');
+      setTimeout(() => setErrorMessage(''), 5000);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    }
+  );
+};
+  
   // ── Auth Submit Handler ──────────────────────────────────────────────────────
   // Uses real Firebase Auth when available; falls back to demo mode otherwise.
   const handleAuthSubmit = async (e: React.FormEvent) => {
