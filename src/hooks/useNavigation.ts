@@ -58,9 +58,7 @@ export const useNavigation = ({
   useEffect(() => {
     // تین states push کریں
     window.history.pushState({ view: 'app' }, '', window.location.href);
-    window.history.pushState({ view: 'app' }, '', window.location.href);
-    window.history.pushState({ view: 'app' }, '', window.location.href);
-
+    
     const handlePopState = () => {
       // فوراً واپس push کریں
       window.history.pushState({ view: 'app' }, '', window.location.href);
@@ -92,7 +90,7 @@ export const useNavigation = ({
       toast.textContent = 'باہر نکلنے کے لیے دوبارہ دبائیں';
       toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-urdu z-50';
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 2000);
+      setTimeout(() => toast.remove(), 1000);
     };
 
     window.addEventListener('popstate', handlePopState);
