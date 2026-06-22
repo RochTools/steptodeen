@@ -30,25 +30,45 @@ export const fetchHijriDate = async (): Promise<string> => {
   const today = `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
   const cacheKey = `hijri_cache_${today}`;
 
+  // ✅ پہلے cache چیک کریں
   const cached = localStorage.getItem(cacheKey);
   if (cached) return cached;
 
+  // ✅ API try کریں
   try {
-    const res = await fetch(`https://api.aladhan.com/v1/gToH?date=${today}`);
-    const data = await res.json();
-    if (data.code === 200) {
-      const h = data.data.hijri;
-      const result = `${urduDays[d.getDay()]}، ${h.day} ${hijriMonthsUrdu[parseInt(h.month.number) - 1]} ${h.year}ھ`;
-      localStorage.setItem(cacheKey, result);
-      Object.keys(localStorage).forEach(k => {
-        if (k.startsWith('hijri_cache_') && k !== cacheKey) localStorage.removeItem(k);
-      });
-      return result;
-    }
-  } catch {
-    // internet نہیں — math fallback
-  }
+    const res = await fetch(
+      `https://api.aladhan.com/v1/gToH?date=${today}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
 
-  const { hDay, hMonth, hYear } = getHijriMath(d);
-  return `${urduDays[d.getDay()]}، ${hDay} ${hijriMonthsUrdu[hMonth - 1]} ${hYear}ھ`;
+    if (!res.ok) throw new Error('API response not ok');
+
+    const data = await res.json();
+
+    if (data.code === 200 && data.data?.hijri) {
+      const h = data.data.hijri;
+      const monthIndex = parseInt(h.month.number) - 1;
+
+      if (monthIndex >= 0 && monthIndex < 12) {
+        const result = `${urduDays[d.getDay()]}، ${h.day} ${hijriMonthsUrdu[monthIndex]} ${h.year}ھ`;
+        
+        localStorage.setItem(cacheKey, result);
+        
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('hijri_cache_') && k !== cacheKey)
+            localStorage.removeItem(k);
+        });
+
+        return result;
+      }
+    }
+
+    throw new Error('Invalid API data');
+
+  } catch (err) {
+    // ✅ صرف یہاں math fallback
+    console.warn('Hijri API failed, using math:', err);
+    const { hDay, hMonth, hYear } = getHijriMath(d);
+    return `${urduDays[d.getDay()]}، ${hDay} ${hijriMonthsUrdu[hMonth - 1]} ${hYear}ھ`;
+  }
 };
