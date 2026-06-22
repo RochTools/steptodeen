@@ -135,7 +135,7 @@ const parseSavedMosques = (savedData: string | null): string[] => {
 };
 
 const DEFAULT_COORDS = null;
-class EErrorBoundaryextends Component<
+class ErrorBoundary extends Component<
   { children: React.ReactNode; fallback?: React.ReactNode },
   { hasError: boolean; error?: Error }
 > {
