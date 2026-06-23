@@ -80,7 +80,7 @@ export const useNavigation = ({
         return;
       }
 
-      const current = navRef.current[navRef.current.length - 1];
+      const current = navRef.current[navRef.current.length - 2];
 
       // سورت
       if (current === 'surah') {
