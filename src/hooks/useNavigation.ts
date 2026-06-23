@@ -28,7 +28,6 @@ export const useNavigation = ({
 
   const currentView = navigationHistory[navigationHistory.length - 1];
 
-  // ✅ اصلاح 1: یہاں سے ALL pushState ہٹا دیں (صرف React اسٹیک چلے گا)
   const navigateTo = useCallback((newView: string) => {
     if (navRef.current[navRef.current.length - 1] === newView) return;
     navRef.current = [...navRef.current, newView];
@@ -70,13 +69,11 @@ export const useNavigation = ({
 
   // ============ ANDROID BACK BUTTON ============
   useEffect(() => {
-    // ✅ اصلاح 2: شروع میں بالکل 3 دفعہ pushState کریں (یہ Android کو کنٹرول کرے گا)
     window.history.pushState({ view: 'app' }, '', window.location.href);
     window.history.pushState({ view: 'app' }, '', window.location.href);
     window.history.pushState({ view: 'app' }, '', window.location.href);
 
     const handlePopState = () => {
-      // Mosque modal
       if (selectedMosqueRef.current) {
         setSelectedMosqueRef.current(null);
         return;
@@ -84,19 +81,20 @@ export const useNavigation = ({
 
       const current = navRef.current[navRef.current.length - 1];
 
-      // ✅ حدیث اور سورہ سے بیک پر ایک سٹیپ پیچھے جائیں
-      if (current === 'surah' || current === 'hadith') {
-        goBackRef.current(); // اس سے آپ 'abwab' یا 'surah-list' پر آئیں گے
-        return;
-      }
-
-      // ✅ باقی تمام اسٹیک (kitaab, abwab, surah-list وغیرہ) یہاں ہینڈل ہوں گے
-      if (navRef.current.length > 1) {
+      if (current === 'surah') {
         goBackRef.current();
         return;
       }
 
-      // ✅ جب 'home' پر ہوں اور ہسٹری ختم ہو، Android خود بخود ایپ بند کر دے گا
+      if (current === 'hadith') {
+        window.dispatchEvent(new Event('hadith-back'));
+        return;
+      }
+
+      if (navRef.current.length > 1) {
+        goBackRef.current();
+        return;
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
