@@ -85,13 +85,6 @@ export const useNavigation = ({
         return;
       }
 
-      // home پر toast
-      const toast = document.createElement('div');
-      toast.textContent = 'باہر نکلنے کے لیے دوبارہ دبائیں';
-      toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-urdu z-50';
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 1000);
-    };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
