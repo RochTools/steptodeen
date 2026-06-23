@@ -55,7 +55,6 @@ export const useNavigation = ({
     setNavigationHistory(views);
   }, []);
 
-  // ✅ Refs تاکہ useEffect دوبارہ register نہ ہو
   const selectedMosqueRef = useRef(selectedMosque);
   useEffect(() => {
     selectedMosqueRef.current = selectedMosque;
@@ -69,43 +68,42 @@ export const useNavigation = ({
 
   // ============ ANDROID BACK BUTTON ============
   useEffect(() => {
+    // ✅ شروع میں تین push
+    window.history.pushState({ view: 'app' }, '', window.location.href);
+    window.history.pushState({ view: 'app' }, '', window.location.href);
     window.history.pushState({ view: 'app' }, '', window.location.href);
 
     const handlePopState = () => {
-      window.history.pushState({ view: 'app' }, '', window.location.href);
+      // ❌ pushState نہیں کریں یہاں
 
-      // mosque modal
       if (selectedMosqueRef.current) {
         setSelectedMosqueRef.current(null);
         return;
       }
 
-      const current = navRef.current[navRef.current.length - 2];
+      const current = navRef.current[navRef.current.length - 1];
 
-      // سورت
       if (current === 'surah') {
         goBackRef.current();
         return;
       }
 
-      // حدیث
       if (current === 'hadith') {
         window.dispatchEvent(new Event('hadith-back'));
         return;
       }
 
-      // کوئی اور view
       if (navRef.current.length > 1) {
         goBackRef.current();
         return;
       }
 
-      // home پر — کچھ نہیں
+      // ✅ home پر — Android خود ایپ بند کرے گا
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []); // ✅ خالی — صرف ایک بار register
+  }, []);
 
   // ============ SURAH RESET ON VIEW CHANGE ============
   useEffect(() => {
