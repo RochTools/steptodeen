@@ -72,7 +72,7 @@ export const useNavigation = ({
     window.history.pushState({ view: 'app' }, '', window.location.href);
     window.history.pushState({ view: 'app' }, '', window.location.href);
     window.history.pushState({ view: 'app' }, '', window.location.href);
-
+window.history.pushState({ view: newView }, '', `#${newView}`);
     const handlePopState = () => {
       // ❌ pushState نہیں کریں یہاں
 
