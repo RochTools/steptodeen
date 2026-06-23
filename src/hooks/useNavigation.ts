@@ -28,11 +28,11 @@ export const useNavigation = ({
 
   const currentView = navigationHistory[navigationHistory.length - 1];
 
+  // ✅ اصلاح 1: `window.history.pushState` کو ہٹا دیا ہے کیونکہ یہی الجھن کا سبب تھا
   const navigateTo = useCallback((newView: string) => {
     if (navRef.current[navRef.current.length - 1] === newView) return;
     navRef.current = [...navRef.current, newView];
     setNavigationHistory([...navRef.current]);
-    window.history.pushState({ view: newView }, '', `#${newView}`);
   }, []);
 
   const goBack = useCallback(() => {
@@ -50,7 +50,7 @@ export const useNavigation = ({
     setNavigationHistory(['home']);
     setSelectedSurahNum(null);
     setSelectedMosque(null);
-    window.history.pushState({ view: 'home' }, '', '#home');
+    // ✅ اصلاح 2: یہاں سے بھی `pushState` ہٹا دیا ہے
   }, [setSelectedSurahNum, setSelectedMosque]);
 
   const setNavigationHistoryDirect = useCallback((views: string[]) => {
@@ -71,13 +71,13 @@ export const useNavigation = ({
 
   // ============ ANDROID BACK BUTTON ============
   useEffect(() => {
-    // ✅ اصلاح 1: شروع میں 3 بار pushState کریں (Android WebView کو کنٹرول کرنے کے لیے)
-    window.history.pushState({ view: 'home' }, '', '#home');
-    window.history.pushState({ view: 'home' }, '', '#home');
-    window.history.pushState({ view: 'home' }, '', '#home');
+    // ✅ شروع میں 3 دفعہ pushState کرنا بالکل کافی ہے (Android کو کنٹرول کرنے کے لیے)
+    window.history.pushState({ view: 'app' }, '', window.location.href);
+    window.history.pushState({ view: 'app' }, '', window.location.href);
+    window.history.pushState({ view: 'app' }, '', window.location.href);
 
-    const handlePopState = () => { // ❌ اصلاح 2: event کو ہٹا دیا کیونکہ event.state پر کوئی انحصار نہیں
-      // mosque modal
+    const handlePopState = () => {
+      // Mosque modal بند کرنا
       if (selectedMosqueRef.current) {
         setSelectedMosqueRef.current(null);
         return;
@@ -85,13 +85,19 @@ export const useNavigation = ({
 
       const current = navRef.current[navRef.current.length - 1];
 
-      // اگر browser نے پیچھے لیا
+      // ✅ حدیث اور سورہ دونوں کے لیے ایک جیسا فارمولا
+      if (current === 'surah' || current === 'hadith') {
+        goBackRef.current(); 
+        return;
+      }
+
+      // بقیہ سٹیپ (kitaab, abwab, وغیرہ) بھی یہیں ہینڈل ہوں گے
       if (navRef.current.length > 1) {
         goBackRef.current();
         return;
       }
 
-      // ✅ home پر — Android خود ایپ بند کرے گا (کیونکہ اب ہم 3 pushStates کے اندر ہیں)
+      // ✅ Home پر ہے اور ہسٹری ختم ہو چکی ہے — Android خود ایپ بند کر دے گا۔
     };
 
     window.addEventListener('popstate', handlePopState);
