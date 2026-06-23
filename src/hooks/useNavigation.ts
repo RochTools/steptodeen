@@ -70,10 +70,11 @@ export const useNavigation = ({
   // ============ ANDROID BACK BUTTON ============
   useEffect(() => {
     window.history.pushState({ view: 'app' }, '', window.location.href);
-    window.history.pushState({ view: 'app' }, '', window.location.href);
-    window.history.pushState({ view: 'app' }, '', window.location.href);
 
     const handlePopState = () => {
+      // ✅ فوراً push کرو تاکہ stack کبھی ختم نہ ہو
+      window.history.pushState({ view: 'app' }, '', window.location.href);
+
       if (selectedMosqueRef.current) {
         setSelectedMosqueRef.current(null);
         return;
