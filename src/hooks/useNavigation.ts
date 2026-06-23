@@ -32,14 +32,16 @@ export const useNavigation = ({
     if (navRef.current[navRef.current.length - 1] === newView) return;
     navRef.current = [...navRef.current, newView];
     setNavigationHistory([...navRef.current]);
+    window.history.pushState({ view: newView }, '', `#${newView}`);
   }, []);
 
   const goBack = useCallback(() => {
     if (navRef.current.length <= 1) {
       navRef.current = ['home'];
-    } else {
-      navRef.current = navRef.current.slice(0, -1);
+      setNavigationHistory(['home']);
+      return;
     }
+    navRef.current = navRef.current.slice(0, -1);
     setNavigationHistory([...navRef.current]);
   }, []);
 
@@ -48,6 +50,7 @@ export const useNavigation = ({
     setNavigationHistory(['home']);
     setSelectedSurahNum(null);
     setSelectedMosque(null);
+    window.history.pushState({ view: 'home' }, '', '#home');
   }, [setSelectedSurahNum, setSelectedMosque]);
 
   const setNavigationHistoryDirect = useCallback((views: string[]) => {
@@ -68,14 +71,13 @@ export const useNavigation = ({
 
   // ============ ANDROID BACK BUTTON ============
   useEffect(() => {
-    // ✅ شروع میں تین push
-    window.history.pushState({ view: 'app' }, '', window.location.href);
-    window.history.pushState({ view: 'app' }, '', window.location.href);
-    window.history.pushState({ view: 'app' }, '', window.location.href);
-window.history.pushState({ view: newView }, '', `#${newView}`);
-    const handlePopState = () => {
-      // ❌ pushState نہیں کریں یہاں
+    // ✅ اصلاح 1: شروع میں 3 بار pushState کریں (Android WebView کو کنٹرول کرنے کے لیے)
+    window.history.pushState({ view: 'home' }, '', '#home');
+    window.history.pushState({ view: 'home' }, '', '#home');
+    window.history.pushState({ view: 'home' }, '', '#home');
 
+    const handlePopState = () => { // ❌ اصلاح 2: event کو ہٹا دیا کیونکہ event.state پر کوئی انحصار نہیں
+      // mosque modal
       if (selectedMosqueRef.current) {
         setSelectedMosqueRef.current(null);
         return;
@@ -83,22 +85,13 @@ window.history.pushState({ view: newView }, '', `#${newView}`);
 
       const current = navRef.current[navRef.current.length - 1];
 
-      if (current === 'surah') {
-        goBackRef.current();
-        return;
-      }
-
-      if (current === 'hadith') {
-        window.dispatchEvent(new Event('hadith-back'));
-        return;
-      }
-
+      // اگر browser نے پیچھے لیا
       if (navRef.current.length > 1) {
         goBackRef.current();
         return;
       }
 
-      // ✅ home پر — Android خود ایپ بند کرے گا
+      // ✅ home پر — Android خود ایپ بند کرے گا (کیونکہ اب ہم 3 pushStates کے اندر ہیں)
     };
 
     window.addEventListener('popstate', handlePopState);
