@@ -44,6 +44,7 @@ export const useNavigation = ({
   }, []);
 
   const goHome = useCallback(() => {
+    navRef.current = ['home'];
     setNavigationHistory(['home']);
     setSelectedSurahNum(null);
     setSelectedMosque(null);
@@ -56,11 +57,9 @@ export const useNavigation = ({
 
   // ============ ANDROID BACK BUTTON ============
   useEffect(() => {
-    // تین states push کریں
     window.history.pushState({ view: 'app' }, '', window.location.href);
-    
+
     const handlePopState = () => {
-      // فوراً واپس push کریں
       window.history.pushState({ view: 'app' }, '', window.location.href);
 
       if (selectedMosque) {
@@ -85,6 +84,8 @@ export const useNavigation = ({
         return;
       }
 
+      // home پر ہیں — کچھ نہیں کریں
+    };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
