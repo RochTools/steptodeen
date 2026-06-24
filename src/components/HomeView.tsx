@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, LogIn, Compass, AlertTriangle, RotateCcw } from 'lucide-react';
 import { Surah, Mosque } from '../types';
+import SocialLinks from './SocialLinks';
 
 interface HomeViewProps {
   onNavigate: (view: string) => void;
@@ -387,40 +388,64 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* سرچ بار */}
-        <div className="relative z-10 px-4 mb-3">
-          <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
-            <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
-            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} placeholder="سورۃ یٰسین آیت ۷ تلاش کریں..." className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] font-urdu text-right outline-none" dir="rtl" />
-            {searchQuery && (
-              <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-white/50 hover:text-white transition-colors">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
-            )}
-          </div>
-          {searchResults.length > 0 && (
-            <div className="absolute left-4 right-4 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
-              {searchResults.map((result, i) => (
-                <div key={i} onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }} className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors">
-                  <span className="text-lg shrink-0">{result.icon}</span>
-                  <div className="flex-1 text-right">
-                    <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
-                    {result.subtitle && <div className="text-[10px] text-slate-400 font-urdu">{result.subtitle}</div>}
-                  </div>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shrink-0">{result.type}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {isSearching && (
-            <div className="absolute left-4 right-4 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
-              <span className="text-[12px] text-slate-500 font-urdu">تلاش جاری ہے...</span>
-            </div>
-          )}
-        </div>
+        
+{/* سرچ بار + سوشل لنکس */}
+<div className="relative z-10 px-4 mb-3 flex items-center gap-2">
+  
+  {/* سرچ بار — تھوڑی چھوٹی */}
+  <div className="relative flex-1">
+    <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
+      <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+      </svg>
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && handleSearch()}
+        placeholder="سورۃ یٰسین آیت ۷ تلاش کریں..."
+        className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] font-urdu text-right outline-none"
+        dir="rtl"
+      />
+      {searchQuery && (
+        <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-white/50 hover:text-white transition-colors">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    </div>
 
+    {/* سرچ نتائج */}
+    {searchResults.length > 0 && (
+      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+        {searchResults.map((result, i) => (
+          <div key={i} onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }} className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors">
+            <span className="text-lg shrink-0">{result.icon}</span>
+            <div className="flex-1 text-right">
+              <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
+              {result.subtitle && <div className="text-[10px] text-slate-400 font-urdu">{result.subtitle}</div>}
+            </div>
+            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shrink-0">{result.type}</span>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {isSearching && (
+      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
+        <span className="text-[12px] text-slate-500 font-urdu">تلاش جاری ہے...</span>
+      </div>
+    )}
+  </div>
+
+  {/* سوشل لنکس بٹن */}
+  <div className="shrink-0">
+    <SocialLinks />
+  </div>
+
+</div>
         <div className="relative z-10 px-4 pb-8">
           {dailyAyah ? (
             <p className="text-[11px] text-white/65 font-amiri leading-relaxed text-center drop-shadow" dir="rtl">
