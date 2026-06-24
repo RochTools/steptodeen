@@ -386,14 +386,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
             })()}
           </div>
         </div>
+   
 
-        {/* سرچ بار */}
-        
 {/* سرچ بار + سوشل لنکس */}
-<div className="relative z-10 px-4 mb-3 flex items-center gap-2">
-  
-  {/* سرچ بار — تھوڑی چھوٹی */}
-  <div className="relative flex-1">
+<div className="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
+
+  {/* سوشل لنکس بٹن — بائیں طرف */}
+  <div className="shrink-0">
+    <SocialLinks />
+  </div>
+
+  {/* سرچ بار */}
+  <div className="relative flex-1 min-w-0">
     <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
       <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -404,11 +408,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
         onChange={e => setSearchQuery(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && handleSearch()}
         placeholder="سورۃ یٰسین آیت ۷ تلاش کریں..."
-        className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] font-urdu text-right outline-none"
+        className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] font-urdu text-right outline-none min-w-0"
         dir="rtl"
       />
       {searchQuery && (
-        <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-white/50 hover:text-white transition-colors">
+        <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-white/50 hover:text-white transition-colors shrink-0">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
@@ -440,11 +444,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     )}
   </div>
 
-  {/* سوشل لنکس بٹن */}
-  <div className="shrink-0">
-    <SocialLinks />
-  </div>
-
+</div>
 </div>
         <div className="relative z-10 px-4 pb-8">
           {dailyAyah ? (
