@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, LogIn, Compass, AlertTriangle, RotateCcw } from 'lucide-react';
 import { Surah, Mosque } from '../types';
-import SocialLinks from './SocialLinks';
 
 interface HomeViewProps {
   onNavigate: (view: string) => void;
