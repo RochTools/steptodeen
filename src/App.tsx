@@ -297,10 +297,11 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               )}
 {currentView === 'menu' && (
   <FullScreenMenu 
-    onNavigate={onNavigate} 
-    onClose={() => onNavigate('home')} 
+    onNavigate={(view) => nav.navigateTo(view)} 
+    onClose={() => nav.navigateTo('home')} 
   />
 )}
+              
               {currentView === 'imam-login' && (
                 <ImamDashboard
                   onAddOrUpdateMosque={mosques.handleAddOrUpdateMosque}
