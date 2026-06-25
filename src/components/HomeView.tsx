@@ -225,7 +225,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setSearchResults([...local, ...mosques]);
   }, [searchQuery, nearbyMosques, onNavigate, onOpenMosque]);
 
-  useEffect(() =>gap-2 const handleOnline = () => setIsDeviceOffline(false);
+  useEffect(() => {
+    const handleOnline = () => setIsDeviceOffline(false);
     const handleOffline = () => setIsDeviceOffline(true);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
