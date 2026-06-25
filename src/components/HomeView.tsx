@@ -387,7 +387,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
    
-
 {/* سرچ بار + سوشل لنکس */}
 <div className="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
 
@@ -445,17 +444,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
   </div>
 
 </div>
+
+<div className="relative z-10 px-4 pb-8">
+  {dailyAyah ? (
+    <p className="text-[11px] text-white/65 font-amiri leading-relaxed text-center drop-shadow" dir="rtl">
+      {dailyAyah.ar.length > 80 ? dailyAyah.ar.substring(0, 80) + '...' : dailyAyah.ar}
+    </p>
+  ) : (
+    <p className="text-[11px] text-white/50 font-amiri text-center" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+  )}
 </div>
-        <div className="relative z-10 px-4 pb-8">
-          {dailyAyah ? (
-            <p className="text-[11px] text-white/65 font-amiri leading-relaxed text-center drop-shadow" dir="rtl">
-              {dailyAyah.ar.length > 80 ? dailyAyah.ar.substring(0, 80) + '...' : dailyAyah.ar}
-            </p>
-          ) : (
-            <p className="text-[11px] text-white/50 font-amiri text-center" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-          )}
-        </div>
-      </div>
 
       {/* ═══════════ نیچے کا مواد ═══════════ */}
       <div className="relative z-10 -mt-4 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
