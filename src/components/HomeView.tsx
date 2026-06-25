@@ -392,7 +392,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
    
 {/* سرچ بار + سوشل لنکس */}
 <div className="shrink-0 flex items-center gap-2">
-  <SocialLinks />
   <button
     onClick={() => onNavigate('menu')}
     style={{
