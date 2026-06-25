@@ -389,9 +389,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
             })()}
           </div>
         </div>
-   
-{/* سرچ بار + سوشل لنکس */}
-<div className="shrink-0 flex items-center gap-2">
+
+{/* سرچ بار + مینو بٹن */}
+<div className="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
+  <div className="relative flex-1">
+    <input
+      type="text"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+      placeholder="سورہ، آیت یا سیکشن تلاش کریں..."
+      className="w-full py-2.5 px-4 pr-10 bg-white/15 backdrop-blur-md border border-white/30 text-white placeholder-white/60 rounded-xl text-[12px] font-urdu outline-none focus:border-amber-400/70 transition-all"
+    />
+    <button
+      onClick={handleSearch}
+      className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-white/70 hover:text-white transition-colors"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.3-4.3"/>
+      </svg>
+    </button>
+  </div>
+
   <button
     onClick={() => onNavigate('menu')}
     style={{
@@ -405,6 +425,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       color: "#ffffff",
       border: "1px solid rgba(255,255,255,0.3)",
       cursor: "pointer",
+      flexShrink: 0,
     }}
   >
     <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
@@ -414,34 +435,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
     </svg>
   </button>
 </div>
-<div className="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
 
-
-    {/* سرچ نتائج */}
-    {searchResults.length > 0 && (
-      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
-        {searchResults.map((result, i) => (
-          <div key={i} onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }} className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors">
-            <span className="text-lg shrink-0">{result.icon}</span>
-            <div className="flex-1 text-right">
-              <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
-              {result.subtitle && <div className="text-[10px] text-slate-400 font-urdu">{result.subtitle}</div>}
-            </div>
-            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shrink-0">{result.type}</span>
-          </div>
-        ))}
+{/* سرچ نتائج */}
+{searchResults.length > 0 && (
+  <div className="absolute left-4 right-4 top-12 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+    {searchResults.map((result, i) => (
+      <div key={i} onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }} className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors">
+        <span className="text-lg shrink-0">{result.icon}</span>
+        <div className="flex-1 text-right">
+          <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
+          {result.subtitle && <div className="text-[10px] text-slate-400 font-urdu">{result.subtitle}</div>}
+        </div>
+        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shrink-0">{result.type}</span>
       </div>
-    )}
-
-    {isSearching && (
-      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
-        <span className="text-[12px] text-slate-500 font-urdu">تلاش جاری ہے...</span>
-      </div>
-    )}
+    ))}
   </div>
+)}
 
-</div>
+{isSearching && (
+  <div className="absolute left-4 right-4 top-12 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2">
+    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
+    <span className="text-[12px] text-slate-500 font-urdu">تلاش جاری ہے...</span>
+  </div>
+)}
 
 <div className="relative z-10 px-4 pb-8">
   {dailyAyah ? (
@@ -452,7 +468,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
     <p className="text-[11px] text-white/50 font-amiri text-center" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
   )}
 </div>
-
       {/* ═══════════ نیچے کا مواد ═══════════ */}
 <div className="relative -mt-4 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
         {isDeviceOffline && (
