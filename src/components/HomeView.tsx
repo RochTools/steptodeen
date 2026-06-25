@@ -411,7 +411,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <circle cx="10" cy="16" r="1.8" />
     </svg>
   </button>
-</div>="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
+</div>
+<div className="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
 
 
     {/* سرچ نتائج */}
