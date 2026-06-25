@@ -244,7 +244,7 @@ export default function FullScreenMenu() {
               </button>
             </div>
 
-            {/* ── Scrollable Content ── */}
+            {/* ── Scrollable Conten ── */}
             <div style={{
               flex: 1,
               overflow: "auto",
