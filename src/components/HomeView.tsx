@@ -225,8 +225,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setSearchResults([...local, ...mosques]);
   }, [searchQuery, nearbyMosques, onNavigate, onOpenMosque]);
 
-  useEffect(() => {
-    const handleOnline = () => setIsDeviceOffline(false);
+  useEffect(() =>gap-2 const handleOnline = () => setIsDeviceOffline(false);
     const handleOffline = () => setIsDeviceOffline(true);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -388,7 +387,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
    
 {/* سرچ بار + سوشل لنکس */}
-<div className{/* سوشل لنکس بٹن — بائیں طرف */}
 <div className="shrink-0 flex items-center gap-2">
   <SocialLinks />
   <button
