@@ -296,6 +296,13 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                 />
               )}
 
+           {currentView === 'menu' && (
+             <FullScreenMenu 
+        onNavigate={(view) => nav.navigateTo(view)} 
+             onClose={() => nav.navigateTo('home')} 
+        />
+          )}
+              
           {currentView === 'imam-login' && (
                 <ImamDashboard
                   onAddOrUpdateMosque={mosques.handleAddOrUpdateMosque}
