@@ -53,7 +53,7 @@ class ErrorBoundary extends Component<
           <div className="text-center space-y-4">
             <div className="text-4xl">⚠️</div>
             <h2 className="text-xl font-bold text-slate-800 font-urdu">کچھ غلط ہو گیا</h2>
-            <p className="text-sm text-slate-600">براہ کرم ایپ کو دوبارہ شروع کریں</p>
+            <p className="text-xs text-red-500 mt-2 break-words px-2">{this.state.error?.message}</p>
             <button
               onClick={this.handleRetry}
               className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-urdu hover:bg-emerald-700 transition-colors"
