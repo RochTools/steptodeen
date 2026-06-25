@@ -388,36 +388,32 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
    
 {/* سرچ بار + سوشل لنکس */}
-<div className="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
+<div className{/* سوشل لنکس بٹن — بائیں طرف */}
+<div className="shrink-0 flex items-center gap-2">
+  <SocialLinks />
+  <button
+    onClick={() => onNavigate('menu')}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      background: "rgba(255,255,255,0.15)",
+      color: "#ffffff",
+      border: "1px solid rgba(255,255,255,0.3)",
+      cursor: "pointer",
+    }}
+  >
+    <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+      <circle cx="10" cy="4" r="1.8" />
+      <circle cx="10" cy="10" r="1.8" />
+      <circle cx="10" cy="16" r="1.8" />
+    </svg>
+  </button>
+</div>="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
 
-  {/* سوشل لنکس بٹن — بائیں طرف */}
-  <div className="shrink-0">
-    <SocialLinks />
-  </div>
-
-  {/* سرچ بار */}
-  <div className="relative flex-1 min-w-0">
-    <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
-      <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-      </svg>
-      <input
-        type="text"
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && handleSearch()}
-        placeholder="سورۃ یٰسین آیت ۷ تلاش کریں..."
-        className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] font-urdu text-right outline-none min-w-0"
-        dir="rtl"
-      />
-      {searchQuery && (
-        <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-white/50 hover:text-white transition-colors shrink-0">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
-      )}
-    </div>
 
     {/* سرچ نتائج */}
     {searchResults.length > 0 && (
