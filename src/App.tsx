@@ -22,6 +22,7 @@ import { TasbihView } from './components/TasbihView';
 import { QiblaView } from './components/QiblaView';
 import { UserDashboard } from './components/UserDashboard';
 import { LoginChoiceView } from './components/LoginChoiceView';
+import FullScreenMenu from './components/FullScreenMenu';
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, MapPin } from 'lucide-react';
 import { formatTo12Hour } from './utils/timeHelpers';
@@ -294,7 +295,12 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                   }}
                 />
               )}
-
+{currentView === 'menu' && (
+  <FullScreenMenu 
+    onNavigate={onNavigate} 
+    onClose={() => onNavigate('home')} 
+  />
+)}
               {currentView === 'imam-login' && (
                 <ImamDashboard
                   onAddOrUpdateMosque={mosques.handleAddOrUpdateMosque}
