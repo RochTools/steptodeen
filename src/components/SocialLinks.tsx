@@ -198,7 +198,7 @@ export default function FullScreenMenu() {
               bottom: 0,
               width: "100%",
               maxWidth: 400,
-              zIndex: 9999,
+              zIndex: 99999,
               background: "#ffffff",
               animation: "slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
               display: "flex",
