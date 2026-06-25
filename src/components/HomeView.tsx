@@ -315,7 +315,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   return (
     <div className="pb-16 animate-fadeIn bg-slate-50">
 
-      {/* ═══════════ TOP BANNER ═══════════ */}
+      {/* ═══════════ TOP ═══════════ */}
       <div className="relative text-white overflow-hidden" style={{ backgroundImage: "url('/mosque-bg.jpg')", backgroundSize: 'cover', backgroundPosition: 'center 30%' }}>
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/70 pointer-events-none" />
 
