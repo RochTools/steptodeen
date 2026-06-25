@@ -143,9 +143,9 @@ export default function SocialLinks() {
             width: 36,
             height: 36,
             borderRadius: 8,
-            border: "1px solid #e2e8f0",
-            background: open ? "#e2e8f0" : "#ffffff",
-            color: "#64748b",
+            background: open ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.15)",
+color: "#ffffff",
+border: "1px solid rgba(255,255,255,0.3)",
             cursor: "pointer",
             transition: "all 0.15s ease",
             boxShadow: open
@@ -162,8 +162,8 @@ export default function SocialLinks() {
             role="menu"
             style={{
               position: "absolute",
-              top: "calc(100% + 10px)",
-              right: 0,
+              top: "calc(100% + right)",
+             left: 0,
               width: 230,
               background: "#ffffff",
               border: "1px solid #e8ecf0",
