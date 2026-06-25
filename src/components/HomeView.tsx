@@ -456,7 +456,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
 </div>
 
       {/* ═══════════ نیچے کا مواد ═══════════ */}
-      <div className="relative z-10 -mt-4 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
 
         {isDeviceOffline && (
           <div className="mx-4 p-2.5 bg-amber-50/70 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] flex items-center gap-2.5 text-amber-900 animate-fadeIn">
