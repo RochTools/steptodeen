@@ -150,7 +150,7 @@ export default function FullScreenMenu({ onNavigate, onClose }: Props) {
               <button
                 key={item.id}
                 className="menu-item"
-                onClick={() => { onNavigate(item.id); onClose(); }}
+                onClick={() => { onNavigate(item.id); }}
                 style={{
                   display: "flex", alignItems: "center", gap: 12,
                   width: "100%", padding: "12px 14px",
