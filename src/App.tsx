@@ -23,6 +23,8 @@ import { QiblaView } from './components/QiblaView';
 import { UserDashboard } from './components/UserDashboard';
 import { LoginChoiceView } from './components/LoginChoiceView';
 import FullScreenMenu from './components/FullScreenMenu';
+import AboutPage from './components/AboutPage';
+import ContactPage from './components/ContactPage';
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, MapPin } from 'lucide-react';
 import { formatTo12Hour } from './utils/timeHelpers';
@@ -302,6 +304,14 @@ const handleSelectSurah = useCallback((surahNum: number) => {
              onClose={() => nav.navigateTo('home')} 
         />
           )}
+
+              {currentView === 'about' && (
+                <AboutPage onBack={() => nav.goBack()} />
+              )}
+
+              {currentView === 'contact' && (
+                <ContactPage onBack={() => nav.goBack()} />
+              )}
               
           {currentView === 'imam-login' && (
                 <ImamDashboard
