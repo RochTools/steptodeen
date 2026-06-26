@@ -120,6 +120,7 @@ export default function FullScreenMenu({ onNavigate, onClose }: Props) {
           animation: "slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
           display: "flex", flexDirection: "column",
           boxShadow: "-4px 0 30px rgba(0,0,0,0.15)",
+          direction: "ltr",
         }}
       >
         {/* Header */}
@@ -157,6 +158,7 @@ export default function FullScreenMenu({ onNavigate, onClose }: Props) {
                   cursor: "pointer", textAlign: "left",
                   fontSize: 14, fontWeight: 500, color: "#334155",
                   transition: "background 0.12s ease",
+                  direction: "ltr",
                 }}
               >
                 <span style={{
