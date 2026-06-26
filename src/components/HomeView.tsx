@@ -468,6 +468,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     <p className="text-[11px] text-white/50 font-amiri text-center" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
   )}
 </div>
+      </div>
       {/* ═══════════ نیچے کا مواد ═══════════ */}
 <div className="relative -mt-4 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
         {isDeviceOffline && (
