@@ -299,11 +299,13 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               )}
 
            {currentView === 'menu' && (
-             <FullScreenMenu 
-        onNavigate={(view) => nav.navigateTo(view)} 
-             onClose={() => nav.navigateTo('home')} 
-        />
-          )}
+  <FullScreenMenu 
+    onNavigate={(view) => {
+      nav.navigateTo(view);
+    }} 
+    onClose={() => nav.navigateTo('home')}
+  />
+)}
 
               {currentView === 'about' && (
                 <AboutPage onBack={() => nav.goBack()} />
