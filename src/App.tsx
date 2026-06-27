@@ -323,10 +323,7 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               {currentView === 'contact' && (
                 <ContactPage onBack={() => nav.goBack()} />
               )}
-
-
-)}
-{currentView === 'privacy' && (
+       {currentView === 'privacy' && (
   <PrivacyPolicyPage onBack={() => nav.goBack()} />
 )}
 {currentView === 'faq' && (
