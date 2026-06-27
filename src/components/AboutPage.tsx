@@ -67,7 +67,7 @@ interface AboutProps {
 
 export default function AboutPage({ onBack }: AboutProps) {
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
+    <div dir="ltr" style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
 
       {/* Hero */}
       <div style={{
