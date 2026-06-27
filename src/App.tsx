@@ -25,6 +25,15 @@ import { LoginChoiceView } from './components/LoginChoiceView';
 import FullScreenMenu from './components/FullScreenMenu';
 import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
+import PrivacyPolicyPage from './components/PrivacyPolicyPage';
+import FAQPage from './components/FAQPage';
+import TermsOfServicePage from './components/TermsOfServicePage';
+import ShareAppPage from './components/ShareAppPage';
+import FeedbackPage from './components/FeedbackPage';
+import HelpCenterPage from './components/HelpCenterPage';
+
+
+
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, MapPin } from 'lucide-react';
 import { formatTo12Hour } from './utils/timeHelpers';
@@ -314,7 +323,29 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               {currentView === 'contact' && (
                 <ContactPage onBack={() => nav.goBack()} />
               )}
-              
+
+
+)}
+{currentView === 'privacy' && (
+  <PrivacyPolicyPage onBack={() => nav.goBack()} />
+)}
+{currentView === 'faq' && (
+  <FAQPage onBack={() => nav.goBack()} />
+)}
+{currentView === 'terms' && (
+  <TermsOfServicePage onBack={() => nav.goBack()} />
+)}
+{currentView === 'share' && (
+  <ShareAppPage onBack={() => nav.goBack()} />
+)}
+{currentView === 'feedback' && (
+  <FeedbackPage onBack={() => nav.goBack()} />
+)}
+{currentView === 'help' && (
+  <HelpCenterPage onBack={() => nav.goBack()} />
+)}
+
+            
           {currentView === 'imam-login' && (
                 <ImamDashboard
                   onAddOrUpdateMosque={mosques.handleAddOrUpdateMosque}
