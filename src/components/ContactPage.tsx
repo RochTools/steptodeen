@@ -78,7 +78,7 @@ export default function ContactPage({ onBack }: ContactProps) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
+    <div dir="ltr" style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
 
       {/* Header */}
       <div style={{
