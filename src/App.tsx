@@ -31,6 +31,7 @@ import TermsOfServicePage from './components/TermsOfServicePage';
 import ShareAppPage from './components/ShareAppPage';
 import FeedbackPage from './components/FeedbackPage';
 import HelpCenterPage from './components/HelpCenterPage';
+import SettingsPage from './components/SettingsPage';
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, MapPin } from 'lucide-react';
 import { formatTo12Hour } from './utils/timeHelpers';
@@ -335,7 +336,9 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               {currentView === 'help' && (
                 <HelpCenterPage onBack={() => nav.goBack()} />
               )}
-              
+              {currentView === 'settings' && (
+  <SettingsPage onBack={() => nav.goBack()} />
+)}
           {currentView === 'imam-login' && (
                 <ImamDashboard
                   onAddOrUpdateMosque={mosques.handleAddOrUpdateMosque}
