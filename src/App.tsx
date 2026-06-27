@@ -307,15 +307,6 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                 />
               )}
 
-           {currentView === 'menu' && (
-  <FullScreenMenu 
-    onNavigate={(view) => {
-      nav.navigateTo(view);
-    }} 
-    onClose={() => nav.navigateTo('home')}
-  />
-)}
-
               {currentView === 'about' && (
                 <AboutPage onBack={() => nav.goBack()} />
               )}
@@ -341,7 +332,6 @@ const handleSelectSurah = useCallback((surahNum: number) => {
 {currentView === 'help' && (
   <HelpCenterPage onBack={() => nav.goBack()} />
 )}
-
             
           {currentView === 'imam-login' && (
                 <ImamDashboard
