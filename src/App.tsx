@@ -245,6 +245,7 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                   isUserAuthenticated={auth.isAnyUser}
                   userAuthName={auth.currentUserName}
                   authName={auth.authName}
+                  isLoading={mosques.isLoading}
                 />
               )}
 
