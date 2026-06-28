@@ -545,7 +545,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
             <div onClick={() => onNavigate('quran')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
               <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
-                <img src="/Quran.jpeg" alt="قرآن مجید" className="w-full h-full object-cover" />
+                <img src="/Quran.jpeg" alt="قرآن مجید" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <span className="text-xs font-bold text-slate-800 font-urdu">قرآن مجید</span>
               <span className="text-[10px] text-slate-400 font-urdu mt-0.5">۱۱۴ سورتیں مکی و مدنی</span>
@@ -553,7 +553,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <div onClick={() => onNavigate('hadith')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
               <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
-                <img src="/Hadith.jpg" alt="احادیث شریفہ" className="w-full h-full object-cover" />
+                <img src="/Hadith.jpg" alt="احادیث شریفہ" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <span className="text-xs font-bold text-slate-800 font-urdu">احادیث شریفہ</span>
               <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح بخاری و مسلم مجموعہ</span>
@@ -561,7 +561,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <div onClick={() => onNavigate('namaz')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
               <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
-                <img src="/namaz.png" alt="نماز کا طریقہ" className="w-full h-full object-cover" />
+                <img src="/namaz.jpg" alt="نماز کا طریقہ" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <span className="text-xs font-bold text-slate-800 font-urdu">نماز کا طریقہ</span>
               <span className="text-[10px] text-slate-400 font-urdu mt-0.5">ترجمہ اور طریقہ کار</span>
@@ -569,7 +569,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <div onClick={() => onNavigate('duas')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
               <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
-                <img src="/dua.jpg" alt="مسنون دعائیں" className="w-full h-full object-cover" />
+                <img src="/dua.jpg" alt="مسنون دعائیں" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <span className="text-xs font-bold text-slate-800 font-urdu">مسنون دعائیں</span>
               <span className="text-[10px] text-slate-400 font-urdu mt-0.5">روزمرہ کلمات و اذکار</span>
@@ -577,7 +577,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <div onClick={() => onNavigate('tasbih')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
               <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
-                <img src="/tasbeeh.jpg" alt="تسبیح کاؤنٹر" className="w-full h-full object-cover" />
+                <img src="/tasbeeh.jpg" alt="تسبیح کاؤنٹر" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <span className="text-xs font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
               <span className="text-[10px] text-slate-400 font-urdu mt-0.5">تسبیح پڑھیں</span>
@@ -585,7 +585,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <div onClick={() => onNavigate('qibla')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
               <div className="w-12 h-12 rounded-xl overflow-hidden mb-2 shadow-sm">
-                <img src="/Qiblasemt.jpg" alt="قبلہ رخ" className="w-full h-full object-cover" />
+                <img src="/Qiblasemt.jpg" alt="قبلہ رخ" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <span className="text-xs font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
               <span className="text-[10px] text-slate-400 font-urdu mt-0.5">صحیح قبلہ سمت معلوم کریں</span>
