@@ -1,8 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
-
+import { defineConfig } from 'vite';
 import { cloudflare } from "@cloudflare/vite-plugin";
 
 export default defineConfig(() => {
@@ -13,11 +12,29 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      // FIX 7: Split vendor chunks so browser caches them separately
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Firebase in its own chunk — large library
+            'firebase-core': ['firebase/app', 'firebase/auth'],
+            'firebase-firestore': ['firebase/firestore'],
+            // React core
+            'react-vendor': ['react', 'react-dom'],
+            // Icons — loaded lazily
+            'lucide': ['lucide-react'],
+          },
+        },
+      },
+      // FIX 8: Compress aggressively
+      minify: 'esbuild',
+      target: 'es2020',
+      // Warn if a chunk is still large
+      chunkSizeWarningLimit: 300,
+    },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };
