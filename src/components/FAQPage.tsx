@@ -5,6 +5,23 @@ import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 
 const FAQS = [
   {
+    category: "Location Permission — Important",
+    items: [
+      {
+        q: "I tapped 'Allow Location' but nothing happened. Why?",
+        a: "This happens when your browser has previously blocked location permission for StepToDeen. Once blocked, the browser will not show the permission popup again automatically. To fix this: open Chrome, go to Settings → Site Settings → Location, find StepToDeen in the blocked list, and change it to Allow. Then come back to the app and try again.",
+      },
+      {
+        q: "Masjid distances are showing incorrectly or from a different city. Why?",
+        a: "This happens when location permission is blocked or turned off. The app needs your current live location to calculate accurate distances. If location is off, no distance will be shown. Please allow location permission from your browser settings to see correct nearby masjids.",
+      },
+      {
+        q: "How do I allow location permission from browser settings on Android?",
+        a: "Open Chrome → tap the three-dot menu (top right) → Settings → Site Settings → Location → find steptodeen.hubproapk.workers.dev in the blocked list → tap it → change to Allow. Then reload the app.",
+      },
+    ],
+  },
+  {
     category: "Account",
     items: [
       {
