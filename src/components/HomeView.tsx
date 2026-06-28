@@ -504,9 +504,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </div>
             ) : (
               <div className="space-y-2">
-                {nearbyMosques.length === 0 ? (
-                  <p className="text-xs text-center text-gray-500 font-urdu py-2">قریبی علاقے میں کوئی مسجد رجسٹرڈ نہیں ہے۔</p>
-                ) : (
+{nearbyMosques.length === 0 ? (
+  isLoading ? (
+    <div className="flex items-center justify-center py-4">
+      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
+    </div>
+  ) : (
+    <p className="text-xs text-center text-gray-500 font-urdu py-2">
+      قریبی علاقے میں کوئی مسجد رجسٹرڈ نہیں ہے۔
+    </p>
+  )
+) : (
+                
                   (() => {
                     const mosquesWithDistance = nearbyMosques.map(mosque => ({ mosque, distance: calculateDistance(userCoords.latitude, userCoords.longitude, mosque.latitude, mosque.longitude) }));
                     return mosquesWithDistance.sort((a, b) => a.distance - b.distance).slice(0, 3).map(({ mosque, distance }) => (
