@@ -16,10 +16,17 @@ export const useMosques = (
   realFirebaseActive: boolean
 ) => {
   const [mosques, setMosques] = useState<Mosque[]>([]);
+  const [isLoading, setIsLoading] = useState(true); // ← نئی state
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
   const [savedPopupMosques, setSavedPopupMosques] = useState<string[]>(
     () => parseSavedMosques(localStorage.getItem('user_saved_mosques'))
   );
+
+  // ── setMosques wrapper جو loading بند کرے ──
+  const setMosquesAndStopLoading = useCallback((list: Mosque[]) => {
+    setMosques(list);
+    setIsLoading(false);
+  }, []);
 
   // ============ ADD / UPDATE ============
   const handleAddOrUpdateMosque = useCallback(async (
@@ -104,7 +111,10 @@ export const useMosques = (
   }, []);
 
   return {
-    mosques, setMosques,
+    mosques,
+    setMosques: setMosquesAndStopLoading, // ← wrapper return کریں
+    isLoading,
+    setIsLoading,
     selectedMosque, setSelectedMosque,
     savedPopupMosques, setSavedPopupMosques,
     handleAddOrUpdateMosque,
