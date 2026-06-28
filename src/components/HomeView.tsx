@@ -15,6 +15,7 @@ interface HomeViewProps {
   isUserAuthenticated: boolean;
   userAuthName: string;
   authName: string;
+  isLoading?: boolean;
 }
 
 const SURAH_NAMES_UR = [
@@ -123,7 +124,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   isAuthenticated,
   isUserAuthenticated,
   userAuthName,
-  authName
+  authName,
+  isLoading = false,
 }) => {
   const [dailyAyah, setDailyAyah] = useState<{ ar: string; ur: string; ref: string } | null>(null);
   const [dailyHadith, setDailyHadith] = useState<{ ar: string; ur: string; ref: string } | null>(null);
