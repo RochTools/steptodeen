@@ -1,4 +1,4 @@
-import React, { Component, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Component, Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { initializeFirebaseAtRuntime, subscribeToAuthState } from './firebase';
 import { onSnapshot, collection, doc, getDoc } from 'firebase/firestore';
 import { initFCM, listenForegroundMessages } from './utils/fcm';
@@ -9,29 +9,32 @@ import { usePrayerTimes } from './hooks/usePrayerTimes';
 import { useMosques } from './hooks/useMosques';
 import { useNavigation } from './hooks/useNavigation';
 
-// ============ COMPONENTS ============
+// ============ HOME: eager load (first screen) ============
 import { HomeView } from './components/HomeView';
-import { QuranView } from './components/QuranView';
-import { SurahReader } from './components/SurahReader';
-import { HadithView } from './components/HadithView';
-import { NamazView } from './components/NamazView';
-import { DuasView } from './components/DuasView';
-import { MosqueFinderView } from './components/MosqueFinderView';
-import { ImamDashboard } from './components/ImamDashboard';
-import { TasbihView } from './components/TasbihView';
-import { QiblaView } from './components/QiblaView';
-import { UserDashboard } from './components/UserDashboard';
-import { LoginChoiceView } from './components/LoginChoiceView';
-import FullScreenMenu from './components/FullScreenMenu';
-import AboutPage from './components/AboutPage';
-import ContactPage from './components/ContactPage';
-import PrivacyPolicyPage from './components/PrivacyPolicyPage';
-import FAQPage from './components/FAQPage';
-import TermsOfServicePage from './components/TermsOfServicePage';
-import ShareAppPage from './components/ShareAppPage';
-import FeedbackPage from './components/FeedbackPage';
-import HelpCenterPage from './components/HelpCenterPage';
-import SettingsPage from './components/SettingsPage';
+
+// ============ ALL OTHER COMPONENTS: lazy loaded ============
+// FIX: یہ سب صرف تب load ہوں گے جب user اس page پر جائے
+const QuranView       = lazy(() => import('./components/QuranView').then(m => ({ default: m.QuranView })));
+const SurahReader     = lazy(() => import('./components/SurahReader').then(m => ({ default: m.SurahReader })));
+const HadithView      = lazy(() => import('./components/HadithView').then(m => ({ default: m.HadithView })));
+const NamazView       = lazy(() => import('./components/NamazView').then(m => ({ default: m.NamazView })));
+const DuasView        = lazy(() => import('./components/DuasView').then(m => ({ default: m.DuasView })));
+const MosqueFinderView = lazy(() => import('./components/MosqueFinderView').then(m => ({ default: m.MosqueFinderView })));
+const ImamDashboard   = lazy(() => import('./components/ImamDashboard').then(m => ({ default: m.ImamDashboard })));
+const TasbihView      = lazy(() => import('./components/TasbihView').then(m => ({ default: m.TasbihView })));
+const QiblaView       = lazy(() => import('./components/QiblaView').then(m => ({ default: m.QiblaView })));
+const UserDashboard   = lazy(() => import('./components/UserDashboard').then(m => ({ default: m.UserDashboard })));
+const LoginChoiceView = lazy(() => import('./components/LoginChoiceView').then(m => ({ default: m.LoginChoiceView })));
+const FullScreenMenu  = lazy(() => import('./components/FullScreenMenu'));
+const AboutPage       = lazy(() => import('./components/AboutPage'));
+const ContactPage     = lazy(() => import('./components/ContactPage'));
+const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'));
+const FAQPage         = lazy(() => import('./components/FAQPage'));
+const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'));
+const ShareAppPage    = lazy(() => import('./components/ShareAppPage'));
+const FeedbackPage    = lazy(() => import('./components/FeedbackPage'));
+const HelpCenterPage  = lazy(() => import('./components/HelpCenterPage'));
+const SettingsPage    = lazy(() => import('./components/SettingsPage'));
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, MapPin } from 'lucide-react';
 import { formatTo12Hour } from './utils/timeHelpers';
@@ -228,6 +231,12 @@ const handleSelectSurah = useCallback((surahNum: number) => {
         {/* MAIN CONTENT */}
         {currentView !== 'login-splash' && (
           <>
+            {/* FIX: Suspense fallback for lazy-loaded pages */}
+            <Suspense fallback={
+              <div className="flex items-center justify-center flex-1 min-h-[300px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600" />
+              </div>
+            }>
             <div className={`flex-1 min-h-[500px] flex flex-col ${currentView === 'tasbih' ? 'bg-[#fef2c7]' : 'bg-slate-50'}`}>
 
               {currentView === 'home' && (
@@ -368,6 +377,8 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                 />
               )}
             </div>
+            </Suspense>
+
 
             {/* BOTTOM NAV */}
             <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-200 flex justify-around p-2 z-40 shadow-xl">
