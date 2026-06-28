@@ -5,9 +5,7 @@ import { Mosque } from '../types';
 const formatTo12Hour = (timeStr?: string, defaultVal = '') => {
   const target = timeStr || defaultVal;
   if (!target) return '';
-  if (target.toLowerCase().includes('am') || target.toLowerCase().includes('pm')) {
-    return target;
-  }
+  if (target.toLowerCase().includes('am') || target.toLowerCase().includes('pm')) return target;
   const parts = target.split(':');
   if (parts.length < 2) return target;
   const h = parseInt(parts[0], 10);
@@ -24,13 +22,15 @@ interface MosqueFinderViewProps {
   userCoords: { latitude: number; longitude: number } | null;
   requestLocation: () => void;
   onOpenMosque: (mosque: Mosque) => void;
+  isLoading?: boolean; // ← نئی prop
 }
 
 export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
   nearbyMosques,
   userCoords,
   requestLocation,
-  onOpenMosque
+  onOpenMosque,
+  isLoading = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [notifPreferences, setNotifPreferences] = useState<{ [key: string]: boolean }>({});
@@ -61,7 +61,7 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // radius of Earth in km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -71,23 +71,9 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
     return parseFloat((R * c).toFixed(1));
   };
 
-  const notifyUrduMessage = (mosqueName: string, prayer: string, time: string) => {
-    if (Notification.permission === 'granted') {
-      new Notification(`StepToDeen - ${mosqueName}`, {
-        body: `نمازِ ${prayer} کا وقتِ جماعت اب ${time} ہے۔`,
-        icon: '/favicon.ico',
-        dir: 'rtl'
-      });
-    } else {
-      // Custom fall-back alerting with a beautiful modal style or simple alert
-      alert(` StepToDeen الرٹ:\n\n${mosqueName} کی نمازِ ${prayer} کا وقتِ جماعت اب ${time} پر مقرر ہو گیا ہے۔`);
-    }
-  };
-
   const handleToggleNotification = (mosque: Mosque, e: React.MouseEvent) => {
     e.stopPropagation();
     const isSubscribed = !!notifPreferences[mosque.id];
-
     if (!isSubscribed) {
       if ('Notification' in window) {
         Notification.requestPermission().then((permission) => {
@@ -98,30 +84,29 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
               dir: 'rtl'
             });
           } else {
-            // Simulated permission
             setNotifPreferences((prev) => ({ ...prev, [mosque.id]: true }));
-            alert(`StepToDeen الرٹ:\n\nآپ نے ${mosque.name} کے لیے ریئل ٹائم نوٹیفیکیشنز دفتری الرٹس کامیابی سے آن کر لی ہیں!`);
+            alert(`StepToDeen الرٹ:\n\nآپ نے ${mosque.name} کے لیے ریئل ٹائم نوٹیفیکیشنز کامیابی سے آن کر لی ہیں!`);
           }
         });
       } else {
         setNotifPreferences((prev) => ({ ...prev, [mosque.id]: true }));
-        alert(`StepToDeen الرٹ:\n\nآپ نے ${mosque.name} کے لیے ریئل ٹائم نوٹیفیکیشنز دفتری الرٹس کامیابی سے آن کر لی ہیں!`);
       }
     } else {
       setNotifPreferences((prev) => ({ ...prev, [mosque.id]: false }));
-      alert(`StepToDeen الرٹ:\n\nآپ نے ${mosque.name} کے لیے الرٹس آف کر دی ہیں۔`);
     }
   };
 
-  // Sort mosques by distance if location available
   const processedMosques = nearbyMosques
-    .map((m) => {
-      const distance = userCoords
+    .map((m) => ({
+      ...m,
+      distance: userCoords
         ? calculateDistance(userCoords.latitude, userCoords.longitude, m.latitude, m.longitude)
-        : 999999;
-      return { ...m, distance };
-    })
-    .sort((a, b) => a.distance - b.distance);
+        : null, // ← null رکھو جب location نہ ہو
+    }))
+    .sort((a, b) => {
+      if (a.distance === null || b.distance === null) return 0;
+      return a.distance - b.distance;
+    });
 
   const filteredMosques = processedMosques.filter(
     (m) =>
@@ -131,18 +116,19 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
 
   return (
     <div className="space-y-4 p-4 pb-20 animate-fadeIn">
-      {/* Header and short intro */}
+
+      {/* Header */}
       <div className="bg-emerald-50 text-emerald-950 p-3.5 rounded-2xl border border-emerald-100 text-right space-y-1.5 shadow-sm">
         <h3 className="text-xs font-bold text-emerald-800 font-urdu flex items-center gap-1.5 justify-end uppercase tracking-tight">
           <Compass size={16} className="text-emerald-750" />
           قریبی مساجد کے اوقاتِ جمعہ و جماعت
         </h3>
-        <p className="text-[11px] text-slate-705 text-slate-700 leading-relaxed font-urdu">
+        <p className="text-[11px] text-slate-700 leading-relaxed font-urdu">
           مسجد کے امام حضرات کی طرف سے ریئل ٹائم اپڈیٹ کیے گئے نماز اور جمعہ کے درست اوقات لائیو حاصل کریں۔
         </p>
       </div>
 
-      {/* Seek/Search box */}
+      {/* Search */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 px-3 flex items-center gap-3.5">
         <input
           type="text"
@@ -155,7 +141,7 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
         <Search size={15} className="text-slate-400" />
       </div>
 
-      {/* Geolocation trigger */}
+      {/* Location request */}
       {!userCoords && (
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2.5">
           <p className="text-[11px] text-slate-600 font-urdu leading-relaxed">
@@ -171,9 +157,16 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
         </div>
       )}
 
-      {/* Listing mosques */}
+      {/* Mosques list */}
       <div className="space-y-3">
-        {filteredMosques.length === 0 ? (
+
+        {/* Loading spinner */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-slate-400 font-urdu">مساجد لوڈ ہو رہی ہیں...</p>
+          </div>
+        ) : filteredMosques.length === 0 ? (
           <div className="text-center text-slate-400 font-urdu py-8 text-xs">
             کوئی مسجد نہیں ملی۔ امام پینل سے نئی مسجد رجسٹر کریں۔
           </div>
@@ -196,7 +189,6 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                           ? 'bg-emerald-600 border-emerald-600 text-white'
                           : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-emerald-700'
                       }`}
-                      title={hasSubscribed ? 'الرٹس آن ہیں' : 'الرٹس آن کریں'}
                     >
                       <Bell size={13} className={hasSubscribed ? 'animate-bounce' : ''} />
                     </button>
@@ -215,7 +207,8 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   <div className="text-right flex-1 pr-3">
                     <h4 className="text-xs font-bold text-slate-800 font-urdu">{mosque.name}</h4>
                     <p className="text-[9px] text-slate-400 font-urdu mt-0.5">{mosque.address}</p>
-                    {userCoords && mosque.distance !== 999999 && (
+                    {/* ← صرف تب دکھاو جب distance موجود ہو */}
+                    {userCoords && mosque.distance !== null && (
                       <div className="flex items-center justify-end gap-0.5 mt-1 text-[9px] text-emerald-700 font-bold">
                         <span>{mosque.distance} کلومیٹر دور</span>
                         <MapPin size={10} className="text-rose-500 shrink-0" />
@@ -224,7 +217,7 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   </div>
                 </div>
 
-                {/* Announcement if any */}
+                {/* Announcement */}
                 {mosque.announcement && (
                   <div className="p-2.5 bg-amber-50/75 border border-amber-200 rounded-xl text-right text-[10px] text-amber-900 font-urdu flex items-start gap-2 justify-end">
                     <span className="flex-1 leading-relaxed">{mosque.announcement}</span>
@@ -232,7 +225,7 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   </div>
                 )}
 
-                {/* Grid for jamaat timings — 12 گھنٹے والا فارمیٹ */}
+                {/* Prayer times grid */}
                 <div className="grid grid-cols-6 gap-1 bg-slate-50 p-1.5 rounded-xl text-center border border-slate-150">
                   {[
                     { label: 'فجر', val: mosque.fajr },
@@ -251,7 +244,7 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   ))}
                 </div>
 
-                {/* Eid Timings Sub-row (Always displayed) */}
+                {/* Eid timings */}
                 <div className="flex justify-between items-center text-[9px] px-2.5 text-purple-800 font-bold font-urdu bg-purple-50/50 p-1.5 rounded-xl border border-purple-100">
                   <span className="text-[8px] px-1 bg-purple-200 text-purple-900 rounded select-none scale-90">عیدین اوقات</span>
                   <div className="flex gap-3">
@@ -261,19 +254,19 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   </div>
                 </div>
 
-                {/* سحری اور افطاری */}
+                {/* Ramadan timings */}
                 {(mosque.sehri || mosque.iftar) && (
                   <div className="flex justify-between items-center text-[9px] px-2.5 text-teal-800 font-bold font-urdu bg-teal-50/50 p-1.5 rounded-xl border border-teal-100">
                     <span className="text-[8px] px-1 bg-teal-200 text-teal-900 rounded select-none scale-90">رمضان اوقات</span>
                     <div className="flex gap-3">
-                      {mosque.sehri && <div>🌙 سحری: <span className="font-mono text-[10px]">{formatTo12Hour(mosque.sehri, '04:30')}</span></div>}
+                      {mosque.sehri && <div>سحری: <span className="font-mono text-[10px]">{formatTo12Hour(mosque.sehri, '04:30')}</span></div>}
                       {mosque.sehri && mosque.iftar && <div className="border-r border-teal-200 h-3"></div>}
-                      {mosque.iftar && <div>🌅 افطاری: <span className="font-mono text-[10px]">{formatTo12Hour(mosque.iftar, '18:30')}</span></div>}
+                      {mosque.iftar && <div>افطاری: <span className="font-mono text-[10px]">{formatTo12Hour(mosque.iftar, '18:30')}</span></div>}
                     </div>
                   </div>
                 )}
 
-                {/* Last updated badge */}
+                {/* Last updated */}
                 <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-100 pt-2 pb-0.5">
                   <div className="font-mono text-slate-500 font-semibold">
                     {new Date(mosque.updatedAt).toLocaleDateString()} {new Date(mosque.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
