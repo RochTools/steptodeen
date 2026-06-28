@@ -280,13 +280,14 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               )}
 
               {currentView === 'mosques' && (
-                <MosqueFinderView
-                  nearbyMosques={mosques.mosques}
-                  userCoords={prayer.userCoords}
-                  requestLocation={prayer.requestLocation}
-                  onOpenMosque={(m) => mosques.setSelectedMosque(m)}
-                />
-              )}
+  <MosqueFinderView
+    nearbyMosques={mosques.mosques}
+    userCoords={prayer.userCoords}
+    requestLocation={prayer.requestLocation}
+    onOpenMosque={(m) => mosques.setSelectedMosque(m)}
+    isLoading={mosques.isLoading}
+  />
+)}
 
               {currentView === 'user-dashboard' && (
                 <UserDashboard
