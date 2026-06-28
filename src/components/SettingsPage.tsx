@@ -122,7 +122,17 @@ export default function SettingsPage({ onBack }: SettingsProps) {
                   {statusText}
                 </span>
               </div>
-
+               {/* Note */}
+<div style={{
+  marginBottom: 12, padding: "10px 14px",
+  background: "#fffbeb", borderRadius: 10,
+  border: "1px solid #fde68a",
+  borderLeft: "3px solid #f59e0b",
+}}>
+  <p style={{ margin: 0, fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+    <strong>Note:</strong> If you tapped "Allow Location" before and selected Block, the browser will not show the popup again. In that case, you must allow it manually from your browser settings — go to Chrome Settings → Site Settings → Location → find this site → change to Allow.
+  </p>
+</div>
               {/* Button */}
               {locationStatus !== "unsupported" && (
                 locationStatus === "denied" ? (
@@ -130,16 +140,30 @@ export default function SettingsPage({ onBack }: SettingsProps) {
                     <p style={{ margin: "0 0 8px", fontSize: 12, color: "#dc2626", lineHeight: 1.5 }}>
                       Location was denied. Please allow it manually from your browser settings.
                     </p>
-                    <button
-                      onClick={() => window.open("about:blank")}
-                      style={{
-                        padding: "9px 16px", borderRadius: 10, border: "none",
-                        background: "#f1f5f9", color: "#475569",
-                        fontSize: 13, fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
-                      Open Browser Settings
-                    </button>
+
+               locationStatus === "denied" ? (
+  <div>
+    <div style={{
+      background: "#fef2f2", borderRadius: 10, padding: "12px 14px",
+      border: "1px solid #fecaca", marginBottom: 8,
+    }}>
+      <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: "#dc2626" }}>
+        Location Blocked
+      </p>
+      <p style={{ margin: 0, fontSize: 12, color: "#7f1d1d", lineHeight: 1.7 }}>
+        You have blocked location permission. The app cannot request it again automatically.
+        Please follow these steps:
+      </p>
+    </div>
+    <p style={{ margin: "8px 0 4px", fontSize: 12, color: "#475569", lineHeight: 1.8 }}>
+      1. Open Chrome menu (3 dots, top right)<br/>
+      2. Settings → Site Settings → Location<br/>
+      3. Find this site and change to <strong>Allow</strong><br/>
+      4. Come back and tap Back — done!
+    </p>
+  </div>
+)   
+                
                   </div>
                 ) : locationStatus === "granted" ? (
                   <p style={{ margin: 0, fontSize: 12, color: "#16a34a", fontWeight: 500 }}>
