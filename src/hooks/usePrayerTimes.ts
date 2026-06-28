@@ -82,27 +82,17 @@ export const usePrayerTimes = () => {
           fetchPrayerTimes(coords.latitude, coords.longitude);
         }
       },
-      (err) => {
-        console.warn('Location denied:', err);
-        if (isMounted.current) {
-          const lastCoords = localStorage.getItem('last_known_coords');
-          const coords = lastCoords
-            ? JSON.parse(lastCoords)
-            : { latitude: 31.5204, longitude: 74.3587 };
-          setUserCoords(coords);
-          fetchPrayerTimes(coords.latitude, coords.longitude);
-        }
-      },
+       (err) => {
+  console.warn('Location denied:', err);
+  if (isMounted.current) {
+    setUserCoords(null);
+    fetchPrayerTimes(31.5204, 74.3587);
+  }
+},
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
   }, [fetchPrayerTimes]);
 
-  // ============ SAVE COORDS ============
-  useEffect(() => {
-    if (userCoords) {
-      localStorage.setItem('last_known_coords', JSON.stringify(userCoords));
-    }
-  }, [userCoords]);
 
   // ============ INIT LOCATION ============
   useEffect(() => {
