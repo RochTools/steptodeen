@@ -338,9 +338,12 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               {currentView === 'help' && (
                 <HelpCenterPage onBack={() => nav.goBack()} />
               )}
-              {currentView === 'settings' && (
-  <SettingsPage onBack={() => nav.goBack()} />
-)}
+             {currentView === 'settings' && (
+             <SettingsPage onBack={() => {
+               prayer.requestLocation(); 
+                nav.goBack();
+                 }} />
+                 )} 
           {currentView === 'imam-login' && (
                 <ImamDashboard
                   onAddOrUpdateMosque={mosques.handleAddOrUpdateMosque}
