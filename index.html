@@ -17,12 +17,10 @@
     <!-- SEO -->
     <meta name="description" content="اسلامی راہنمائی کا ڈیجیٹل ساتھی — نماز اوقات، قرآن، تسبیح" />
 
-    <!-- FIX 1: Preconnect to speed up external requests -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
 
-    <!-- FIX 2: Load fonts with display=swap and non-blocking -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap"
@@ -33,7 +31,6 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" />
     </noscript>
 
-    <!-- FIX 3: Font Awesome — only load icons actually used (defer) -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -41,45 +38,82 @@
       onload="this.media='all'"
     />
 
-    <!-- FIX 4: Inline critical CSS for first paint — no FOUC -->
     <style>
-      body { margin: 0; background: #f4f6f4; color: #1e293b; font-family: sans-serif; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { margin: 0; background: #ffffff; color: #1e293b; font-family: sans-serif; }
       #root { min-height: 100vh; }
-      /* Skeleton loader while JS boots */
+
       .app-splash {
-        display: flex; align-items: center; justify-content: center;
-        min-height: 100vh; background: #0d1b2a;
-        flex-direction: column; gap: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: #ffffff;
+        flex-direction: column;
+        gap: 28px;
       }
-      .app-splash-icon { font-size: 48px; }
-      .app-splash-dot {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: #10b981; display: inline-block;
-        animation: pulse 1.2s ease-in-out infinite;
+
+      /* ویلکم میسج */
+      .splash-welcome {
+        font-family: 'Noto Nastaliq Urdu', sans-serif;
+        font-size: 15px;
+        color: #10b981;
+        letter-spacing: 1px;
+        opacity: 0;
+        animation: fadeDown 0.8s ease forwards 0.2s;
       }
-      .app-splash-dot:nth-child(2) { animation-delay: 0.2s; }
-      .app-splash-dot:nth-child(3) { animation-delay: 0.4s; }
-      @keyframes pulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+
+      /* مین ٹائٹل */
+      .splash-title {
+        font-family: sans-serif;
+        font-size: 48px;
+        font-weight: 900;
+        color: #0d1b2a;
+        letter-spacing: -1px;
+        direction: ltr;
+        text-align: center;
+        line-height: 1;
+        opacity: 0;
+        animation: fadeDown 0.8s ease forwards 0.45s;
+      }
+      .splash-title em {
+        font-style: normal;
+        color: #10b981;
+      }
+
+      /* گول فرکی spinner */
+      .splash-spinner {
+        width: 42px;
+        height: 42px;
+        border: 3.5px solid #e2e8f0;
+        border-top-color: #10b981;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+        opacity: 0;
+        animation: spin 0.9s linear infinite, fadeDown 0.8s ease forwards 0.7s;
+      }
+
+      @keyframes fadeDown {
+        from { opacity: 0; transform: translateY(-12px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
-  <body class="bg-[#f4f6f4] text-slate-800">
-    <!-- FIX 5: Show instant splash while React boots -->
+  <body>
     <div id="root">
       <div class="app-splash">
-        <div class="app-splash-icon">🕌</div>
-        <div style="display:flex;gap:6px">
-          <div class="app-splash-dot"></div>
-          <div class="app-splash-dot"></div>
-          <div class="app-splash-dot"></div>
-        </div>
+        <div class="splash-welcome">خوش آمدید 🌿</div>
+        <div class="splash-title">Step<em>To</em>Deen</div>
+        <div class="splash-spinner"></div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Service Worker + Background Sync + Periodic Sync -->
     <script>
       if ('serviceWorker' in navigator) {
-        // FIX 6: Don't block page load — register SW after load event
         window.addEventListener('load', async () => {
           try {
             const reg = await navigator.serviceWorker.register('/sw.js');
