@@ -1,7 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Compass, Bell, Clock, RefreshCw, AlertCircle, Info, Heart } from 'lucide-react';
 import { Mosque } from '../types';
 
+// ── وقت کو منٹ میں بدلو ──
+const timeToMinutes = (timeStr: string): number => {
+  const parts = timeStr.split(':');
+  return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+};
+
+// ── منٹ کو HH:MM میں بدلو ──
+const minutesToTime = (minutes: number): string => {
+  const total = ((minutes % 1440) + 1440) % 1440;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+// ── API سے وقت لو + offset لگاؤ ──
+const applyOffset = (timeStr: string, offsetMins: number): string => {
+  if (!timeStr || !timeStr.includes(':')) return timeStr;
+  const mins = timeToMinutes(timeStr);
+  return minutesToTime(mins + offsetMins);
+};
+
+// ── 12 گھنٹے فارمیٹ ──
 const formatTo12Hour = (timeStr?: string, defaultVal = '') => {
   const target = timeStr || defaultVal;
   if (!target) return '';
@@ -17,13 +39,49 @@ const formatTo12Hour = (timeStr?: string, defaultVal = '') => {
   return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
 };
 
+// ── مسجد کے coordinates سے API وقت لو ──
+const fetchPrayerTimesFromAPI = async (
+  latitude: number,
+  longitude: number,
+  method = 1  // 1 = University of Islamic Sciences Karachi (حنفی)
+): Promise<Record<string, string> | null> => {
+  try {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const dateStr = `${dd}-${mm}-${yyyy}`;
+
+    const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${latitude}&longitude=${longitude}&method=${method}&school=1`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.code === 200) {
+      const t = data.data.timings;
+      return {
+        fajr:    t.Fajr.split(' ')[0],
+        zuhr:    t.Dhuhr.split(' ')[0],
+        asr:     t.Asr.split(' ')[0],
+        maghrib: t.Maghrib.split(' ')[0],
+        isha:    t.Isha.split(' ')[0],
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 interface MosqueFinderViewProps {
   nearbyMosques: Mosque[];
   userCoords: { latitude: number; longitude: number } | null;
   requestLocation: () => void;
   onOpenMosque: (mosque: Mosque) => void;
-  isLoading?: boolean; // ← نئی prop
+  isLoading?: boolean;
 }
+
+// ── ہر مسجد کے لیے API وقت cache ──
+const apiTimesCache: Record<string, { times: Record<string, string>; date: string }> = {};
 
 export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
   nearbyMosques,
@@ -42,6 +100,58 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
       return list.reduce((acc, m) => ({ ...acc, [m.id]: true }), {});
     } catch { return {}; }
   });
+
+  // ── API سے آئے اذان اوقات (مسجد id → times) ──
+  const [mosqueApiTimes, setMosqueApiTimes] = useState<Record<string, Record<string, string>>>({});
+  const [apiLoadingIds, setApiLoadingIds] = useState<Set<string>>(new Set());
+
+  // ── ہر مسجد کے لیے API سے وقت لو ──
+  useEffect(() => {
+    const today = new Date().toDateString();
+
+    nearbyMosques.forEach(async (mosque) => {
+      // offset موجود ہے تو API call کرو، ورنہ Firebase کا وقت کافی ہے
+      const hasOffset =
+        (mosque.fajrOffset ?? 0) !== 0 ||
+        (mosque.zuhrOffset ?? 0) !== 0 ||
+        (mosque.asrOffset ?? 0) !== 0 ||
+        (mosque.maghribOffset ?? 0) !== 0 ||
+        (mosque.ishaOffset ?? 0) !== 0;
+
+      if (!hasOffset) return; // offset نہیں تو API کی ضرورت نہیں
+
+      // Cache چیک کرو — آج کا data پہلے سے ہے؟
+      const cacheKey = `${mosque.id}`;
+      if (apiTimesCache[cacheKey]?.date === today) {
+        setMosqueApiTimes(prev => ({ ...prev, [mosque.id]: apiTimesCache[cacheKey].times }));
+        return;
+      }
+
+      // API call کرو
+      setApiLoadingIds(prev => new Set(prev).add(mosque.id));
+      const times = await fetchPrayerTimesFromAPI(mosque.latitude, mosque.longitude);
+      if (times) {
+        apiTimesCache[cacheKey] = { times, date: today };
+        setMosqueApiTimes(prev => ({ ...prev, [mosque.id]: times }));
+      }
+      setApiLoadingIds(prev => { const s = new Set(prev); s.delete(mosque.id); return s; });
+    });
+  }, [nearbyMosques]);
+
+  // ── مسجد کا فائنل اذان وقت حاصل کرو ──
+  // اگر offset ہے → API وقت + offset
+  // ورنہ → امام کا سیٹ کیا وقت
+  const getAzanTime = (mosque: Mosque, prayer: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha'): string => {
+    const offsetKey = `${prayer}Offset` as keyof Mosque;
+    const offset = (mosque[offsetKey] as number) ?? 0;
+    const apiTimes = mosqueApiTimes[mosque.id];
+
+    if (offset !== 0 && apiTimes?.[prayer]) {
+      return applyOffset(apiTimes[prayer], offset);
+    }
+    // offset نہیں یا API نہیں آئی → امام کا براہ راست وقت
+    return mosque[prayer] as string;
+  };
 
   const handleToggleSave = (mosque: Mosque, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,7 +195,6 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
             });
           } else {
             setNotifPreferences((prev) => ({ ...prev, [mosque.id]: true }));
-            alert(`StepToDeen الرٹ:\n\nآپ نے ${mosque.name} کے لیے ریئل ٹائم نوٹیفیکیشنز کامیابی سے آن کر لی ہیں!`);
           }
         });
       } else {
@@ -101,7 +210,7 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
       ...m,
       distance: userCoords
         ? calculateDistance(userCoords.latitude, userCoords.longitude, m.latitude, m.longitude)
-        : null, // ← null رکھو جب location نہ ہو
+        : null,
     }))
     .sort((a, b) => {
       if (a.distance === null || b.distance === null) return 0;
@@ -159,8 +268,6 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
 
       {/* Mosques list */}
       <div className="space-y-3">
-
-        {/* Loading spinner */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
@@ -173,6 +280,18 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
         ) : (
           filteredMosques.map((mosque) => {
             const hasSubscribed = !!notifPreferences[mosque.id];
+            const isApiLoading = apiLoadingIds.has(mosque.id);
+
+            // ── پانچوں نمازوں کے فائنل اوقات ──
+            const prayers = [
+              { label: 'فجر',  val: getAzanTime(mosque, 'fajr') },
+              { label: 'ظہر',  val: getAzanTime(mosque, 'zuhr') },
+              { label: 'عصر',  val: getAzanTime(mosque, 'asr') },
+              { label: 'مغرب', val: getAzanTime(mosque, 'maghrib') },
+              { label: 'عشاء', val: getAzanTime(mosque, 'isha') },
+              { label: 'جمعہ', val: mosque.jumah },
+            ];
+
             return (
               <div
                 key={mosque.id}
@@ -207,7 +326,6 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                   <div className="text-right flex-1 pr-3">
                     <h4 className="text-xs font-bold text-slate-800 font-urdu">{mosque.name}</h4>
                     <p className="text-[9px] text-slate-400 font-urdu mt-0.5">{mosque.address}</p>
-                    {/* ← صرف تب دکھاو جب distance موجود ہو */}
                     {userCoords && mosque.distance !== null && (
                       <div className="flex items-center justify-end gap-0.5 mt-1 text-[9px] text-emerald-700 font-bold">
                         <span>{mosque.distance} کلومیٹر دور</span>
@@ -226,15 +344,14 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                 )}
 
                 {/* Prayer times grid */}
-                <div className="grid grid-cols-6 gap-1 bg-slate-50 p-1.5 rounded-xl text-center border border-slate-150">
-                  {[
-                    { label: 'فجر', val: mosque.fajr },
-                    { label: 'ظہر', val: mosque.zuhr },
-                    { label: 'عصر', val: mosque.asr },
-                    { label: 'مغرب', val: mosque.maghrib },
-                    { label: 'عشاء', val: mosque.isha },
-                    { label: 'جمعہ', val: mosque.jumah }
-                  ].map((item, idx) => (
+                <div className="grid grid-cols-6 gap-1 bg-slate-50 p-1.5 rounded-xl text-center border border-slate-150 relative">
+                  {/* API loading indicator */}
+                  {isApiLoading && (
+                    <div className="absolute top-1 left-1">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" title="اوقات اپڈیٹ ہو رہے ہیں" />
+                    </div>
+                  )}
+                  {prayers.map((item, idx) => (
                     <div key={idx} className="space-y-0.5 border-r border-slate-200/50 last:border-0">
                       <div className="text-[8px] text-slate-500 font-urdu font-medium">{item.label}</div>
                       <div className="text-[11px] font-mono font-bold text-slate-800">
@@ -269,7 +386,8 @@ export const MosqueFinderView: React.FC<MosqueFinderViewProps> = ({
                 {/* Last updated */}
                 <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-100 pt-2 pb-0.5">
                   <div className="font-mono text-slate-500 font-semibold">
-                    {new Date(mosque.updatedAt).toLocaleDateString()} {new Date(mosque.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    {new Date(mosque.updatedAt).toLocaleDateString()}{' '}
+                    {new Date(mosque.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </div>
                   <div className="font-urdu flex items-center gap-1 text-slate-500 font-bold">
                     <span>آخری اپڈیٹ (کلاؤڈ سنک)</span>
