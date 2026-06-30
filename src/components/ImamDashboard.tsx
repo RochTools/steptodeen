@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { LogIn, Key, UserPlus, Info, Save, RotateCcw, MapPin, CheckCircle, Trash, PlusCircle, AlertCircle, RefreshCw, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { 
+  LogIn, Key, UserPlus, Info, Save, RotateCcw, MapPin, 
+  CheckCircle, Trash, PlusCircle, AlertCircle, RefreshCw, Clock 
+} from 'lucide-react';
 import { Mosque } from '../types';
 import { firebaseSignIn, firebaseSignUp, firebaseSignOut } from '../firebase';
+import { Auth } from 'firebase/auth';
 
+// ── انٹرفیسز ──
 interface ImamDashboardProps {
   onAddOrUpdateMosque: (mosque: Omit<Mosque, 'id' | 'updatedAt'> & { id?: string }) => void;
   onDeleteMosque: (id: string) => void;
@@ -19,9 +24,108 @@ interface ImamDashboardProps {
   setAuthName: (val: string) => void;
   authUid: string;
   setAuthUid: (val: string) => void;
-  realtimeAuth: any;
+  realtimeAuth: Auth | null; // ✅ 'any' کو درست کیا
 }
 
+// ── ٹائم ہیلپرز ──
+const minutesToHHMM = (totalMinutes: number): string => {
+  const total = ((totalMinutes % 1440) + 1440) % 1440;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+const hhmmToMinutes = (timeStr: string): number => {
+  const parts = timeStr.split(':');
+  return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+};
+
+const to12Hour = (timeStr: string): string => {
+  if (!timeStr) return '--:--';
+  const [h, m] = timeStr.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return '--:--';
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  let h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`;
+};
+
+// ── تصویر کمپریس کرنے کا فنکشن ──
+const compressImage = (file: File, maxWidth = 200, quality = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (maxWidth / width) * height;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxWidth) {
+            width = (maxWidth / height) * width;
+            height = maxWidth;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+// ── MosqueCard کمپوننٹ (پرفارمنس کے لیے) ──
+const MosqueCard = React.memo(({ 
+  mosque, 
+  onEdit, 
+  onDelete 
+}: { 
+  mosque: Mosque; 
+  onEdit: (mosque: Mosque) => void; 
+  onDelete: (id: string) => void;
+}) => {
+  return (
+    <div className="flex items-center justify-between gap-2 py-2.5 px-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div className="text-right flex-1 min-w-0">
+        <p className="text-xs font-bold text-slate-800 font-urdu truncate">{mosque.name}</p>
+        <p className="text-[10px] text-slate-400 font-urdu truncate">{mosque.address}</p>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button 
+          type="button" 
+          onClick={() => onEdit(mosque)} 
+          className="w-7 h-7 flex items-center justify-center rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 transition-all cursor-pointer"
+        >
+          <RefreshCw size={12} />
+        </button>
+        <button 
+          type="button" 
+          onClick={() => onDelete(mosque.id)} 
+          className="w-7 h-7 flex items-center justify-center rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-500 transition-all cursor-pointer"
+        >
+          <Trash size={12} />
+        </button>
+      </div>
+    </div>
+  );
+});
+
+MosqueCard.displayName = 'MosqueCard';
+
+// ── مین کمپوننٹ ──
 export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   onAddOrUpdateMosque,
   onDeleteMosque,
@@ -40,6 +144,12 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   realtimeAuth,
   onLoggedOut
 }) => {
+  // ── ریفرنسز ──
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const apiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+
+  // ── اسٹیٹس ──
   const [authEmailInput, setAuthEmailInput] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -58,13 +168,17 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [name, setName] = useState('');
   const [imamName, setImamName] = useState('');
   const [address, setAddress] = useState('');
-  const [latitude, setLatitude] = useState<number | ''>('');
-  const [longitude, setLongitude] = useState<number | ''>('');
-  const [fajr, setFajr] = useState('05:30');
-  const [zuhr, setZuhr] = useState('13:30');
-  const [asr, setAsr] = useState('16:30');
-  const [maghrib, setMaghrib] = useState('19:05');
-  const [isha, setIsha] = useState('20:30');
+  const [latitude, setLatitude] = useState<number | null>(null); // ✅ null استعمال کریں
+  const [longitude, setLongitude] = useState<number | null>(null); // ✅ null استعمال کریں
+
+  // ── جماعت offsets ──
+  const [fajrOffset, setFajrOffset] = useState<number>(15);
+  const [zuhrOffset, setZuhrOffset] = useState<number>(15);
+  const [asrOffset, setAsrOffset] = useState<number>(15);
+  const [maghribOffset, setMaghribOffset] = useState<number>(5);
+  const [ishaOffset, setIshaOffset] = useState<number>(15);
+
+  // ── manual اوقات ──
   const [jumah, setJumah] = useState('13:30');
   const [eidFitr, setEidFitr] = useState('07:00');
   const [eidAdha, setEidAdha] = useState('07:15');
@@ -72,81 +186,158 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [iftar, setIftar] = useState('18:30');
   const [announcement, setAnnouncement] = useState('');
 
-  // ── نئے offset states ──
-  // یہ ایک بار سیٹ کریں — API کے وقت میں ±منٹ کا فرق
-  const [fajrOffset, setFajrOffset]       = useState<number>(0);
-  const [zuhrOffset, setZuhrOffset]       = useState<number>(0);
-  const [asrOffset, setAsrOffset]         = useState<number>(0);
-  const [maghribOffset, setMaghribOffset] = useState<number>(5);
-  const [ishaOffset, setIshaOffset]       = useState<number>(0);
-
-  // ── API سے آج کا لائیو اذان وقت (صرف دکھانے کے لیے) ──
+  // ── API اوقات ──
   const [apiTimes, setApiTimes] = useState<Record<string, string> | null>(null);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState(false);
 
-  // ── coordinates بدلیں تو API سے تازہ وقت لاؤ ──
-  useEffect(() => {
-    if (latitude === '' || longitude === '') {
-      setApiTimes(null);
-      return;
-    }
-    let cancelled = false;
-    setApiLoading(true);
-    setApiError(false);
-
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const yyyy = today.getFullYear();
-    const dateStr = `${dd}-${mm}-${yyyy}`;
-    const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${latitude}&longitude=${longitude}&method=1&school=1`;
-
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (data.code === 200) {
-          const t = data.data.timings;
-          setApiTimes({
-            fajr: t.Fajr.split(' ')[0],
-            zuhr: t.Dhuhr.split(' ')[0],
-            asr: t.Asr.split(' ')[0],
-            maghrib: t.Maghrib.split(' ')[0],
-            isha: t.Isha.split(' ')[0],
-          });
-        } else {
-          setApiError(true);
-        }
-      })
-      .catch(() => { if (!cancelled) setApiError(true); })
-      .finally(() => { if (!cancelled) setApiLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [latitude, longitude]);
-
-  // ── API وقت + offset لگا کر فائنل وقت 12 گھنٹے فارمیٹ میں دو ──
-  const previewFinalTime = (prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha', offset: number): string | null => {
-    if (!apiTimes || !apiTimes[prayerKey]) return null;
-    const [h, m] = apiTimes[prayerKey].split(':').map(Number);
-    let total = h * 60 + m + offset;
-    total = ((total % 1440) + 1440) % 1440;
-    const fh = Math.floor(total / 60);
-    const fm = total % 60;
-    const suffix = fh >= 12 ? 'PM' : 'AM';
-    let h12 = fh % 12;
-    if (h12 === 0) h12 = 12;
-    return `${String(h12).padStart(2, '0')}:${String(fm).padStart(2, '0')} ${suffix}`;
-  };
-
   const [activePicker, setActivePicker] = useState<{
-    prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha' | 'jumah' | 'eidFitr' | 'eidAdha' | 'sehri' | 'iftar';
+    prayerKey: 'jumah' | 'eidFitr' | 'eidAdha' | 'sehri' | 'iftar';
     label: string;
     hour: number;
     minute: number;
     isPm: boolean;
   } | null>(null);
 
+  // ── مسجد کی لسٹ ──
+  const myMosques = useMemo(() => {
+    return mosques.filter((m) => m.imamEmail === authEmail);
+  }, [mosques, authEmail]);
+
+  // ── کلین اپ ──
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // ✅ تمام انٹروال اور ٹائم آؤٹ کلئیر کریں
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      if (apiTimeoutRef.current) {
+        clearTimeout(apiTimeoutRef.current);
+        apiTimeoutRef.current = null;
+      }
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  // ── Authenticated ہونے پر امام کا نام سیٹ کریں ──
+  useEffect(() => {
+    if (isAuthenticated) {
+      setImamName(authName || authEmail.split('@')[0]);
+    }
+  }, [isAuthenticated, authEmail, authName]);
+
+  // ── موجودہ مسجد لوڈ کریں ──
+  useEffect(() => {
+    if (isAuthenticated && !editId) {
+      const existing = mosques.find((m) => m.imamEmail === authEmail);
+      if (existing) handleEditMosque(existing);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, mosques, editId, authEmail]);
+
+  // ── Active Picker کے لیے باڈی اسکرول بند کریں ──
+  useEffect(() => {
+    if (activePicker) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [activePicker]);
+
+  // ── API سے اوقات حاصل کریں (Debounce کے ساتھ) ──
+  useEffect(() => {
+    // پہلے سے چل رہی ٹائمر کلئیر کریں
+    if (apiTimeoutRef.current) {
+      clearTimeout(apiTimeoutRef.current);
+      apiTimeoutRef.current = null;
+    }
+
+    if (latitude === null || longitude === null) {
+      setApiTimes(null);
+      return;
+    }
+
+    // ✅ 500ms ڈیلی کے ساتھ API کال
+    apiTimeoutRef.current = setTimeout(() => {
+      let cancelled = false;
+      setApiLoading(true);
+      setApiError(false);
+
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, '0');
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const yyyy = today.getFullYear();
+      const dateStr = `${dd}-${mm}-${yyyy}`;
+      const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${latitude}&longitude=${longitude}&method=1&school=1`;
+
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (cancelled || !isMountedRef.current) return;
+          if (data.code === 200) {
+            const t = data.data.timings;
+            setApiTimes({
+              fajr: t.Fajr.split(' ')[0],
+              zuhr: t.Dhuhr.split(' ')[0],
+              asr: t.Asr.split(' ')[0],
+              maghrib: t.Maghrib.split(' ')[0],
+              isha: t.Isha.split(' ')[0],
+            });
+            setApiError(false);
+          } else {
+            setApiError(true);
+            setErrorMessage('API سے درست ڈیٹا نہیں ملا');
+            setTimeout(() => setErrorMessage(''), 4000);
+          }
+        })
+        .catch((err) => {
+          if (cancelled || !isMountedRef.current) return;
+          setApiError(true);
+          // ✅ مخصوص ایرر میسجز
+          if (err.name === 'AbortError') {
+            setErrorMessage('درخواست منسوخ کر دی گئی');
+          } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+            setErrorMessage('⚠️ انٹرنیٹ کنکشن چیک کریں');
+          } else if (err.message?.includes('429')) {
+            setErrorMessage('⏳ بہت زیادہ درخواستیں، تھوڑا انتظار کریں');
+          } else {
+            setErrorMessage(`❌ سرور سے رابطہ ممکن نہیں: ${err.message}`);
+          }
+          setTimeout(() => setErrorMessage(''), 5000);
+        })
+        .finally(() => {
+          if (!cancelled && isMountedRef.current) {
+            setApiLoading(false);
+          }
+        });
+
+      return () => { cancelled = true; };
+    }, 500);
+
+    return () => {
+      if (apiTimeoutRef.current) {
+        clearTimeout(apiTimeoutRef.current);
+        apiTimeoutRef.current = null;
+      }
+    };
+  }, [latitude, longitude]);
+
+  // ── جماعت کا فائنل وقت ──
+  const getJamaatTime = useCallback((prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha', offset: number): string | null => {
+    if (!apiTimes || !apiTimes[prayerKey]) return null;
+    return minutesToHHMM(hhmmToMinutes(apiTimes[prayerKey]) + offset);
+  }, [apiTimes]);
+
+  // ── فارمیٹ ہیلپرز ──
   const formatTo12HourString = (timeStr: string) => {
     if (!timeStr) return '';
     const parts = timeStr.split(':');
@@ -160,7 +351,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   };
 
   const openCustomTimePicker = (
-    prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha' | 'jumah' | 'eidFitr' | 'eidAdha' | 'sehri' | 'iftar',
+    prayerKey: 'jumah' | 'eidFitr' | 'eidAdha' | 'sehri' | 'iftar',
     label: string,
     currentTimeString: string
   ) => {
@@ -180,12 +371,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     if (isPm && hour < 12) h24 += 12;
     if (!isPm && hour === 12) h24 = 0;
     const newTimeValue = `${String(h24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-    if (prayerKey === 'fajr') setFajr(newTimeValue);
-    else if (prayerKey === 'zuhr') setZuhr(newTimeValue);
-    else if (prayerKey === 'asr') setAsr(newTimeValue);
-    else if (prayerKey === 'maghrib') setMaghrib(newTimeValue);
-    else if (prayerKey === 'isha') setIsha(newTimeValue);
-    else if (prayerKey === 'jumah') setJumah(newTimeValue);
+    if (prayerKey === 'jumah') setJumah(newTimeValue);
     else if (prayerKey === 'eidFitr') setEidFitr(newTimeValue);
     else if (prayerKey === 'eidAdha') setEidAdha(newTimeValue);
     else if (prayerKey === 'sehri') setSehri(newTimeValue);
@@ -193,28 +379,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     setActivePicker(null);
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      setImamName(authName || authEmail.split('@')[0]);
-    }
-  }, [isAuthenticated, authEmail, authName]);
-
-  useEffect(() => {
-    if (isAuthenticated && !editId) {
-      const existing = mosques.find((m) => m.imamEmail === authEmail);
-      if (existing) handleEditMosque(existing);
-    }
-  }, [isAuthenticated, mosques, editId, authEmail]);
-
-  useEffect(() => {
-    if (activePicker) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [activePicker]);
-
+  // ── لوکیشن حاصل کریں ──
   const handleAutoGrabLocation = () => {
     if (!navigator.geolocation) {
       setErrorMessage('آپ کا براؤزر لوکیشن سپورٹ نہیں کرتا۔');
@@ -238,6 +403,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     );
   };
 
+  // ── Auth Submit ──
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!authEmailInput || !authPassword) {
@@ -249,40 +415,40 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
       return;
     }
     setErrorMessage('');
-    if (isRealFirebase && realtimeAuth) {
-      try {
-        if (isSignUp) {
-          await firebaseSignUp(realtimeAuth, authEmailInput, authPassword, authName);
-        } else {
-          await firebaseSignIn(realtimeAuth, authEmailInput, authPassword);
-        }
-        setSuccessMessage(isSignUp ? 'مبارک ہو! آپ کا امام اکاؤنٹ کامیابی سے رجسٹر ہو گیا ہے۔' : 'خوش آمدید! آپ کامیابی سے لاگ ان ہو گئے ہیں۔');
-        setTimeout(() => setSuccessMessage(''), 4000);
-      } catch (err: any) {
-        const code: string = err?.code || '';
-        if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-          setErrorMessage('ای میل یا پاسورڈ غلط ہے۔ دوبارہ کوشش کریں۔');
-        } else if (code === 'auth/email-already-in-use') {
-          setErrorMessage('یہ ای میل پہلے سے رجسٹر ہے۔ لاگ ان کریں۔');
-        } else if (code === 'auth/weak-password') {
-          setErrorMessage('پاسورڈ کم از کم 6 حروف کا ہونا چاہیے۔');
-        } else if (code === 'auth/invalid-email') {
-          setErrorMessage('ای میل کا فارمیٹ درست نہیں ہے۔');
-        } else if (code === 'auth/network-request-failed') {
-          setErrorMessage('انٹرنیٹ کنکشن چیک کریں اور دوبارہ کوشش کریں۔');
-        } else {
-          setErrorMessage('لاگ ان میں دشواری پیش آئی: ' + (err?.message || code));
-        }
+
+    // ✅ سیکیورٹی: بغیر Firebase کے لاگ ان نہیں ہوگا
+    if (!isRealFirebase || !realtimeAuth) {
+      setErrorMessage('سرور سے رابطہ قائم نہیں ہو سکا۔ براہ کرم انٹرنیٹ کنکشن چیک کر کے دوبارہ کوشش کریں۔');
+      return;
+    }
+
+    try {
+      if (isSignUp) {
+        await firebaseSignUp(realtimeAuth, authEmailInput, authPassword, authName);
+      } else {
+        await firebaseSignIn(realtimeAuth, authEmailInput, authPassword);
       }
-    } else {
-      setIsAuthenticated(true);
-      setAuthEmail(authEmailInput);
-      setAuthUid('demo_' + authEmailInput.split('@')[0]);
-      setSuccessMessage(isSignUp ? 'مبارک ہو! (آف لائن موڈ)' : 'خوش آمدید! (آف لائن موڈ)');
+      setSuccessMessage(isSignUp ? 'مبارک ہو! آپ کا امام اکاؤنٹ کامیابی سے رجسٹر ہو گیا ہے۔' : 'خوش آمدید! آپ کامیابی سے لاگ ان ہو گئے ہیں۔');
       setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err: any) {
+      const code: string = err?.code || '';
+      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        setErrorMessage('ای میل یا پاسورڈ غلط ہے۔ دوبارہ کوشش کریں۔');
+      } else if (code === 'auth/email-already-in-use') {
+        setErrorMessage('یہ ای میل پہلے سے رجسٹر ہے۔ لاگ ان کریں۔');
+      } else if (code === 'auth/weak-password') {
+        setErrorMessage('پاسورڈ کم از کم 6 حروف کا ہونا چاہیے۔');
+      } else if (code === 'auth/invalid-email') {
+        setErrorMessage('ای میل کا فارمیٹ درست نہیں ہے۔');
+      } else if (code === 'auth/network-request-failed') {
+        setErrorMessage('انٹرنیٹ کنکشن چیک کریں اور دوبارہ کوشش کریں۔');
+      } else {
+        setErrorMessage('لاگ ان میں دشواری پیش آئی: ' + (err?.message || code));
+      }
     }
   };
 
+  // ── لاگ آؤٹ ──
   const handleLogOut = async () => {
     if (isRealFirebase && realtimeAuth) {
       try { await firebaseSignOut(realtimeAuth); } catch (err) { console.error(err); }
@@ -298,33 +464,27 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     if (onLoggedOut) onLoggedOut();
   };
 
+  // ── فارم ری سیٹ ──
   const resetForm = () => {
     setEditId(undefined);
     setName('');
     setAddress('');
-    setLatitude('');
-    setLongitude('');
-    setFajr('05:30');
-    setZuhr('13:15');
-    setAsr('16:30');
-    setMaghrib('19:05');
-    setIsha('20:30');
+    setLatitude(null);
+    setLongitude(null);
     setJumah('13:30');
     setEidFitr('07:00');
     setEidAdha('07:15');
     setSehri('04:30');
     setIftar('18:30');
     setAnnouncement('');
-    // offset reset
-    setFajrOffset(0);
-    setZuhrOffset(0);
-    setAsrOffset(0);
+    setFajrOffset(15);
+    setZuhrOffset(15);
+    setAsrOffset(15);
     setMaghribOffset(5);
-    setIshaOffset(0);
+    setIshaOffset(15);
   };
 
-  const myMosques = mosques.filter((m) => m.imamEmail === authEmail);
-
+  // ── مسجد ایڈٹ ──
   const handleEditMosque = (mosque: Mosque) => {
     setEditId(mosque.id);
     setName(mosque.name);
@@ -332,42 +492,69 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     setAddress(mosque.address);
     setLatitude(mosque.latitude);
     setLongitude(mosque.longitude);
-    setFajr(mosque.fajr);
-    setZuhr(mosque.zuhr);
-    setAsr(mosque.asr);
-    setMaghrib(mosque.maghrib);
-    setIsha(mosque.isha);
     setJumah(mosque.jumah);
     setEidFitr(mosque.eidFitr || '07:00');
     setEidAdha(mosque.eidAdha || '07:15');
     setSehri(mosque.sehri || '04:30');
     setIftar(mosque.iftar || '18:30');
     setAnnouncement(mosque.announcement || '');
-    // ── پرانی مسجد کے offset لوڈ کریں ──
-    setFajrOffset(mosque.fajrOffset ?? 0);
-    setZuhrOffset(mosque.zuhrOffset ?? 0);
-    setAsrOffset(mosque.asrOffset ?? 0);
+    setFajrOffset(mosque.fajrOffset ?? 15);
+    setZuhrOffset(mosque.zuhrOffset ?? 15);
+    setAsrOffset(mosque.asrOffset ?? 15);
     setMaghribOffset(mosque.maghribOffset ?? 5);
-    setIshaOffset(mosque.ishaOffset ?? 0);
+    setIshaOffset(mosque.ishaOffset ?? 15);
   };
 
+  // ── فارم جمع کروائیں ──
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !address || latitude === '' || longitude === '') {
+    
+    // ✅ چیک کریں کہ null نہ ہوں
+    if (!name || !address || latitude === null || longitude === null) {
       setErrorMessage('براہ کرم سرخ نشان والی تمام معلومات پُر کریں۔');
       return;
     }
+    if (!apiTimes) {
+      setErrorMessage('جماعت کے اوقات API سے ابھی تک نہیں آئے۔ تھوڑا انتظار کریں یا انٹرنیٹ چیک کریں۔');
+      return;
+    }
+    
     setIsSaving(true);
     setSavingStep(3);
-    const countdownInterval = setInterval(() => {
+    
+    // ✅ پہلے سے چل رہا انٹروال کلئیر کریں
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    
+    // ✅ نیا انٹروال شروع کریں
+    countdownIntervalRef.current = setInterval(() => {
       setSavingStep((prev) => {
-        if (prev <= 1) { clearInterval(countdownInterval); return 0; }
+        if (prev <= 1) {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
 
+    const finalFajr = getJamaatTime('fajr', fajrOffset) || '05:30';
+    const finalZuhr = getJamaatTime('zuhr', zuhrOffset) || '13:30';
+    const finalAsr = getJamaatTime('asr', asrOffset) || '16:30';
+    const finalMaghrib = getJamaatTime('maghrib', maghribOffset) || '19:05';
+    const finalIsha = getJamaatTime('isha', ishaOffset) || '20:30';
+
     setTimeout(() => {
-      clearInterval(countdownInterval);
+      // ✅ انٹروال کلئیر کریں
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      
       onAddOrUpdateMosque({
         id: editId,
         name,
@@ -377,18 +564,17 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         address,
         latitude: Number(latitude),
         longitude: Number(longitude),
-        fajr,
-        zuhr,
-        asr,
-        maghrib,
-        isha,
+        fajr: finalFajr,
+        zuhr: finalZuhr,
+        asr: finalAsr,
+        maghrib: finalMaghrib,
+        isha: finalIsha,
         jumah,
         eidFitr,
         eidAdha,
         sehri,
         iftar,
         announcement,
-        // ── offset Firebase میں save ہوگا ──
         fajrOffset,
         zuhrOffset,
         asrOffset,
@@ -406,60 +592,72 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     }, 3000);
   };
 
-  // ── Offset input helper component (fixed classes — no dynamic tailwind) ──
-  const OFFSET_THEMES: Record<string, { bg: string; border: string; text: string; btn: string }> = {
-    fajr:    { bg: 'bg-sky-50',    border: 'border-sky-200',    text: 'text-sky-800',    btn: 'border-sky-300 text-sky-700' },
-    zuhr:    { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', btn: 'border-orange-300 text-orange-700' },
-    asr:     { bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-800',  btn: 'border-amber-300 text-amber-700' },
-    maghrib: { bg: 'bg-rose-50',   border: 'border-rose-200',   text: 'text-rose-800',   btn: 'border-rose-300 text-rose-700' },
-    isha:    { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-800', btn: 'border-indigo-300 text-indigo-700' },
+  // ── تھیمز ──
+  const PRAYER_THEMES: Record<string, { bg: string; border: string; text: string; btn: string; solidBg: string }> = {
+    fajr: { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-800', btn: 'border-sky-300 text-sky-700', solidBg: 'bg-sky-600' },
+    zuhr: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', btn: 'border-amber-300 text-amber-700', solidBg: 'bg-amber-600' },
+    asr: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', btn: 'border-orange-300 text-orange-700', solidBg: 'bg-orange-600' },
+    maghrib: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-800', btn: 'border-rose-300 text-rose-700', solidBg: 'bg-rose-600' },
+    isha: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-800', btn: 'border-indigo-300 text-indigo-700', solidBg: 'bg-indigo-600' },
   };
 
-  const OffsetInput = ({
-    prayerKey, label, value, onChange
+  const PRAYER_LABELS: Record<string, string> = {
+    fajr: 'فجر', zuhr: 'ظہر', asr: 'عصر', maghrib: 'مغرب', isha: 'عشاء',
+  };
+
+  // ── JamaatCard کمپوننٹ ──
+  const JamaatCard = ({
+    prayerKey, offset, onChange
   }: {
     prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha';
-    label: string; value: number; onChange: (v: number) => void;
+    offset: number; onChange: (v: number) => void;
   }) => {
-    const theme = OFFSET_THEMES[prayerKey];
+    const theme = PRAYER_THEMES[prayerKey];
     const apiVal = apiTimes?.[prayerKey];
-    const finalVal = previewFinalTime(prayerKey, value);
+    const jamaatVal = getJamaatTime(prayerKey, offset);
+
+    // ✅ منفی آفسیٹ کو روکیں
+    const handleDecrement = () => {
+      if (offset > 0) {
+        onChange(offset - 1);
+      }
+    };
 
     return (
       <div className={`flex flex-col items-center gap-1.5 ${theme.bg} border ${theme.border} rounded-2xl p-2.5`}>
-        <span className={`text-[10px] font-black font-urdu ${theme.text}`}>{label}</span>
+        <span className={`text-[11px] font-black font-urdu ${theme.text}`}>{PRAYER_LABELS[prayerKey]}</span>
 
-        {/* API لائیو وقت */}
         <div className="text-[8px] font-mono text-slate-400 leading-tight text-center">
-          {apiLoading ? '...' : apiVal ? `API: ${apiVal}` : '—'}
+          {apiLoading ? 'لوڈ ہو رہا ہے...' : apiVal ? `اذان: ${to12Hour(apiVal)}` : '—'}
         </div>
 
-        {/* +/- بٹن */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => onChange(value - 1)}
-            className={`w-6 h-6 rounded-lg bg-white border ${theme.btn} font-bold text-sm flex items-center justify-center active:scale-95 cursor-pointer shrink-0`}
+            onClick={handleDecrement}
+            className={`w-7 h-7 rounded-lg bg-white border ${theme.btn} font-bold text-base flex items-center justify-center active:scale-95 cursor-pointer shrink-0 ${offset === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={offset === 0}
           >−</button>
           <span className={`w-9 text-center font-mono font-black text-xs ${theme.text}`}>
-            {value > 0 ? `+${value}` : value}
+            {offset > 0 ? `+${offset}` : offset}
           </span>
           <button
             type="button"
-            onClick={() => onChange(value + 1)}
-            className={`w-6 h-6 rounded-lg bg-white border ${theme.btn} font-bold text-sm flex items-center justify-center active:scale-95 cursor-pointer shrink-0`}
+            onClick={() => onChange(offset + 1)}
+            className={`w-7 h-7 rounded-lg bg-white border ${theme.btn} font-bold text-base flex items-center justify-center active:scale-95 cursor-pointer shrink-0`}
           >+</button>
         </div>
         <span className="text-[8px] text-slate-400 font-mono -mt-1">منٹ</span>
 
-        {/* فائنل وقت جو یوزر کو نظر آئے گا */}
-        <div className={`text-[9px] font-mono font-black ${theme.text} bg-white/70 rounded-lg px-1.5 py-0.5 text-center leading-tight`}>
-          {finalVal || '—'}
+        <div className={`w-full text-[12px] font-mono font-black text-white ${theme.solidBg} rounded-lg px-1.5 py-1.5 text-center leading-tight shadow-sm`}>
+          {jamaatVal ? to12Hour(jamaatVal) : '—:—'}
         </div>
+        <span className="text-[8px] text-slate-400 font-urdu">جماعت کا وقت</span>
       </div>
     );
   };
 
+  // ── رینڈر ──
   return (
     <>
       <div className="space-y-4 pb-20 animate-fadeIn">
@@ -472,7 +670,6 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         ) : (
           <div className="space-y-3">
 
-            {/* پروفائل سیکشن */}
             <div className="animate-fadeIn">
               <div className="bg-white pt-5 pb-4 px-4 text-center">
                 <div className="flex items-center justify-between mb-4">
@@ -495,17 +692,26 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                       </svg>
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          const result = ev.target?.result as string;
-                          setMosqueImage(result);
-                          localStorage.setItem('mosque_profile_image', result);
-                        };
-                        reader.readAsDataURL(file);
-                      }} />
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            // ✅ تصویر کمپریس کریں
+                            const compressed = await compressImage(file, 200, 0.7);
+                            setMosqueImage(compressed);
+                            localStorage.setItem('mosque_profile_image', compressed);
+                            setSuccessMessage('✅ تصویر کامیابی سے اپ لوڈ ہوگئی');
+                            setTimeout(() => setSuccessMessage(''), 3000);
+                          } catch (error) {
+                            setErrorMessage('تصویر کمپریس کرنے میں مسئلہ ہوا');
+                            setTimeout(() => setErrorMessage(''), 3000);
+                          }
+                        }} 
+                      />
                     </label>
                   </div>
                 </div>
@@ -515,7 +721,6 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
               </div>
             </div>
 
-            {/* Toast messages */}
             {successMessage && (
               <div className="p-3.5 bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs rounded-2xl text-right font-urdu flex items-center gap-2 justify-end shadow-sm animate-scaleUp mx-4">
                 <span className="font-bold">{successMessage}</span>
@@ -529,7 +734,6 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
               </div>
             )}
 
-            {/* میری مساجد */}
             {myMosques.length > 0 && (
               <div className="px-4 space-y-1.5 animate-fadeIn">
                 <div className="flex items-center justify-between px-1 mb-2">
@@ -539,21 +743,16 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                   </span>
                 </div>
                 {myMosques.map((mosque) => (
-                  <div key={mosque.id} className="flex items-center justify-between gap-2 py-2.5 px-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                    <div className="text-right flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-800 font-urdu truncate">{mosque.name}</p>
-                      <p className="text-[10px] text-slate-400 font-urdu truncate">{mosque.address}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button type="button" onClick={() => handleEditMosque(mosque)} className="w-7 h-7 flex items-center justify-center rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 transition-all cursor-pointer"><RefreshCw size={12} /></button>
-                      <button type="button" onClick={() => setDeleteConfirmId(mosque.id)} className="w-7 h-7 flex items-center justify-center rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-500 transition-all cursor-pointer"><Trash size={12} /></button>
-                    </div>
-                  </div>
+                  <MosqueCard
+                    key={mosque.id}
+                    mosque={mosque}
+                    onEdit={handleEditMosque}
+                    onDelete={setDeleteConfirmId}
+                  />
                 ))}
               </div>
             )}
 
-            {/* فارم */}
             <div className="space-y-4 animate-fadeIn px-4">
               <div className="flex items-center justify-end">
                 <span className="text-[9px] text-amber-600 font-urdu font-bold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
@@ -562,19 +761,16 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
               </div>
 
               <form onSubmit={handleFormSubmit} className="space-y-4 text-right">
-                {/* مسجد کا نام */}
                 <div className="space-y-1">
                   <label className="text-[11px] text-slate-705 font-bold font-urdu block">مسجد کا نام *</label>
                   <input type="text" required placeholder="مثال: جامع مسجد مدینہ" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-urdu shadow-sm" dir="rtl" />
                 </div>
 
-                {/* پتہ */}
                 <div className="space-y-1">
                   <label className="text-[11px] text-slate-705 font-bold font-urdu block">پتہ / ریجن / سیکٹر *</label>
                   <input type="text" required placeholder="مثال: سیکٹر ایف ٹین، اسلام آباد" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full p-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-urdu shadow-sm" dir="rtl" />
                 </div>
 
-                {/* GPS */}
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <div className="flex items-center justify-between gap-2">
                     <button type="button" onClick={handleAutoGrabLocation} className="py-1.5 px-3 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 active:scale-95 rounded-xl text-[10px] font-bold border border-emerald-100/80 shadow-sm transition-all font-urdu flex items-center gap-1.5 cursor-pointer">
@@ -585,114 +781,92 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                   <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100">
                     <div className="space-y-1">
                       <div className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider text-left">Longitude</div>
-                      <input type="number" step="any" required placeholder="72.9984" value={longitude} onChange={(e) => setLongitude(e.target.value === '' ? '' : Number(e.target.value))} className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 transition-all text-left font-mono shadow-inner" />
+                      <input 
+                        type="text" 
+                        inputMode="decimal" 
+                        pattern="[0-9.]*"
+                        required 
+                        placeholder="72.9984" 
+                        value={longitude ?? ''} 
+                        onChange={(e) => {
+                          // ✅ صرف نمبر اور ڈیسیمل پوائنٹ
+                          const value = e.target.value.replace(/[^0-9.]/g, '');
+                          setLongitude(value === '' ? null : Number(value));
+                        }} 
+                        className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 transition-all text-left font-mono shadow-inner" 
+                      />
                     </div>
                     <div className="space-y-1">
                       <div className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider text-left">Latitude</div>
-                      <input type="number" step="any" required placeholder="33.6675" value={latitude} onChange={(e) => setLatitude(e.target.value === '' ? '' : Number(e.target.value))} className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 transition-all text-left font-mono shadow-inner" />
+                      <input 
+                        type="text" 
+                        inputMode="decimal" 
+                        pattern="[0-9.]*"
+                        required 
+                        placeholder="33.6675" 
+                        value={latitude ?? ''} 
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9.]/g, '');
+                          setLatitude(value === '' ? null : Number(value));
+                        }} 
+                        className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 transition-all text-left font-mono shadow-inner" 
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* ════════════════════════════════════════════
-                    نیا سیکشن: اذان وقت adjustment (offset)
-                    ════════════════════════════════════════════ */}
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <div className="flex items-center justify-end gap-2">
                     <div className="text-right">
-                      <span className="text-[11px] font-bold font-urdu text-slate-700 block">اذان وقت adjustment</span>
-                      <span className="text-[9px] text-slate-400 font-urdu">ایک بار سیٹ کریں — API خودبخود وقت لائے گا</span>
+                      <span className="text-[12px] font-bold font-urdu text-slate-700 block">جماعت کا وقت سیٹ کریں</span>
+                      <span className="text-[9px] text-slate-400 font-urdu">ایک بار سیٹ کریں — سال بھر خودبخود چلتا رہے گا</span>
                     </div>
-                    <span className="text-lg">⏱️</span>
+                    <span className="text-lg">🕌</span>
                   </div>
 
-                  {latitude === '' || longitude === '' ? (
+                  {latitude === null || longitude === null ? (
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-right">
                       <p className="text-[9px] text-slate-500 font-urdu leading-relaxed">
-                        پہلے اوپر GPS کوآرڈینیٹس درج کریں، تب API کا لائیو وقت یہاں نظر آئے گا۔
+                        پہلے اوپر GPS کوآرڈینیٹس درج کریں، تب اذان کا لائیو وقت یہاں نظر آئے گا۔
                       </p>
                     </div>
                   ) : apiError ? (
                     <div className="bg-rose-50 border border-rose-100 rounded-xl p-2.5 text-right">
                       <p className="text-[9px] text-rose-700 font-urdu leading-relaxed">
-                        API سے وقت لانے میں مسئلہ ہوا۔ انٹرنیٹ چیک کریں۔
+                        اذان کا وقت لانے میں مسئلہ ہوا۔ انٹرنیٹ چیک کریں۔
                       </p>
                     </div>
                   ) : (
                     <div className="bg-amber-50 border border-amber-100 rounded-xl p-2.5 text-right">
                       <p className="text-[9px] text-amber-800 font-urdu leading-relaxed">
-                        <span className="font-black">ہر باکس میں:</span> اوپر API کا آج کا وقت، نیچے آپ کے +/− کے بعد فائنل وقت جو یوزر کو دکھے گا ✅
+                        <span className="font-black">مثال:</span> آج اذان <span className="font-mono font-black">4:16</span> ہے، آپ نے <span className="font-mono font-black">+15</span> لگایا → جماعت <span className="font-mono font-black text-emerald-700">4:31</span> ہوگی۔ کل اذان 1 منٹ پہلے ہوئی تو جماعت بھی خودبخود 1 منٹ پہلے ہو جائے گی ✅
                       </p>
                     </div>
                   )}
 
-                  {/* 5 offset inputs — 3+2 wrap تاکہ overlap نہ ہو */}
                   <div className="grid grid-cols-3 gap-2">
-                    <OffsetInput prayerKey="fajr"    label="فجر"  value={fajrOffset}    onChange={setFajrOffset} />
-                    <OffsetInput prayerKey="zuhr"    label="ظہر"  value={zuhrOffset}    onChange={setZuhrOffset} />
-                    <OffsetInput prayerKey="asr"     label="عصر"  value={asrOffset}     onChange={setAsrOffset} />
+                    <JamaatCard prayerKey="fajr" offset={fajrOffset} onChange={setFajrOffset} />
+                    <JamaatCard prayerKey="zuhr" offset={zuhrOffset} onChange={setZuhrOffset} />
+                    <JamaatCard prayerKey="asr" offset={asrOffset} onChange={setAsrOffset} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <OffsetInput prayerKey="maghrib" label="مغرب" value={maghribOffset} onChange={setMaghribOffset} />
-                    <OffsetInput prayerKey="isha"    label="عشاء" value={ishaOffset}    onChange={setIshaOffset} />
+                    <JamaatCard prayerKey="maghrib" offset={maghribOffset} onChange={setMaghribOffset} />
+                    <JamaatCard prayerKey="isha" offset={ishaOffset} onChange={setIshaOffset} />
                   </div>
                 </div>
 
-                {/* جماعت کے اوقات */}
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <div className="flex items-center justify-end">
-                    <span className="text-[11px] font-bold font-urdu text-slate-700">جماعت کے اوقات</span>
+                    <span className="text-[11px] font-bold font-urdu text-slate-700">جمعہ، عیدین اور رمضان کے اوقات</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* فجر */}
-                    <div className="bg-sky-50/40 border border-sky-100 rounded-2xl p-2 flex flex-col items-center justify-between shadow-sm">
-                      <span className="text-[10px] text-sky-850 font-black font-urdu mb-1.5">فجر جماعت</span>
-                      <button type="button" onClick={() => openCustomTimePicker('fajr', 'فجر جماعت', fajr)} className="w-full py-1.5 px-1 bg-white hover:bg-sky-100/80 active:scale-95 border border-sky-200 rounded-xl text-[10px] text-center font-mono font-bold text-sky-950 flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm">
-                        <Clock size={11} className="text-sky-600 shrink-0" /><span>{formatTo12HourString(fajr)}</span>
-                      </button>
-                    </div>
-                    {/* ظہر */}
-                    <div className="bg-yellow-50/40 border border-yellow-100 rounded-2xl p-2 flex flex-col items-center justify-between shadow-sm">
-                      <span className="text-[10px] text-yellow-850 font-black font-urdu mb-1.5">ظہر جماعت</span>
-                      <button type="button" onClick={() => openCustomTimePicker('zuhr', 'ظہر جماعت', zuhr)} className="w-full py-1.5 px-1 bg-white hover:bg-yellow-100/80 active:scale-95 border border-yellow-200 rounded-xl text-[10px] text-center font-mono font-bold text-yellow-950 flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm">
-                        <Clock size={11} className="text-yellow-600 shrink-0" /><span>{formatTo12HourString(zuhr)}</span>
-                      </button>
-                    </div>
-                    {/* عصر */}
-                    <div className="bg-orange-50/40 border border-orange-100 rounded-2xl p-2 flex flex-col items-center justify-between shadow-sm">
-                      <span className="text-[10px] text-orange-850 font-black font-urdu mb-1.5">عصر جماعت</span>
-                      <button type="button" onClick={() => openCustomTimePicker('asr', 'عصر جماعت', asr)} className="w-full py-1.5 px-1 bg-white hover:bg-orange-100/80 active:scale-95 border border-orange-200 rounded-xl text-[10px] text-center font-mono font-bold text-orange-950 flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm">
-                        <Clock size={11} className="text-orange-600 shrink-0" /><span>{formatTo12HourString(asr)}</span>
-                      </button>
-                    </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-2 flex flex-col items-center justify-between shadow-sm">
+                    <span className="text-[10px] text-emerald-850 font-black font-urdu mb-1.5">نمازِ جمعہ</span>
+                    <button type="button" onClick={() => openCustomTimePicker('jumah', 'نمازِ جمعہ', jumah)} className="w-full py-1.5 px-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 border border-emerald-600 rounded-xl text-[10px] text-center font-mono font-bold text-white flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md">
+                      <Clock size={11} className="shrink-0 text-emerald-100" /><span>{formatTo12HourString(jumah)}</span>
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 mt-1">
-                    {/* مغرب */}
-                    <div className="bg-rose-50/40 border border-rose-100 rounded-2xl p-2 flex flex-col items-center justify-between shadow-sm">
-                      <span className="text-[10px] text-rose-850 font-black font-urdu mb-1.5">مغرب جماعت</span>
-                      <button type="button" onClick={() => openCustomTimePicker('maghrib', 'مغرب جماعت', maghrib)} className="w-full py-1.5 px-1 bg-white hover:bg-rose-100/80 active:scale-95 border border-rose-200 rounded-xl text-[10px] text-center font-mono font-bold text-rose-950 flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm">
-                        <Clock size={11} className="text-rose-600 shrink-0" /><span>{formatTo12HourString(maghrib)}</span>
-                      </button>
-                    </div>
-                    {/* عشاء */}
-                    <div className="bg-indigo-50/40 border border-indigo-100 rounded-2xl p-2 flex flex-col items-center justify-between shadow-sm">
-                      <span className="text-[10px] text-indigo-850 font-black font-urdu mb-1.5">عشاء جماعت</span>
-                      <button type="button" onClick={() => openCustomTimePicker('isha', 'عشاء جماعت', isha)} className="w-full py-1.5 px-1 bg-white hover:bg-indigo-100/80 active:scale-95 border border-indigo-200 rounded-xl text-[10px] text-center font-mono font-bold text-indigo-950 flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm">
-                        <Clock size={11} className="text-indigo-600 shrink-0" /><span>{formatTo12HourString(isha)}</span>
-                      </button>
-                    </div>
-                    {/* جمعہ */}
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-2 flex flex-col items-center justify-between shadow-sm">
-                      <span className="text-[10px] text-emerald-850 font-black font-urdu mb-1.5">نمازِ جمعہ</span>
-                      <button type="button" onClick={() => openCustomTimePicker('jumah', 'نمازِ جمعہ', jumah)} className="w-full py-1.5 px-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 border border-emerald-600 rounded-xl text-[10px] text-center font-mono font-bold text-white flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md">
-                        <Clock size={11} className="shrink-0 text-emerald-100" /><span>{formatTo12HourString(jumah)}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* عیدین */}
                   <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-3.5 space-y-2 mt-1.5 shadow-sm">
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="space-y-1">
@@ -710,7 +884,6 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                     </div>
                   </div>
 
-                  {/* رمضان */}
                   <div className="bg-teal-50/50 border border-teal-100 rounded-2xl p-3.5 space-y-2 mt-1.5 shadow-sm">
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="space-y-1">
@@ -729,13 +902,11 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* اعلان */}
                 <div className="space-y-1.5 border-t border-slate-100 pt-3">
                   <label className="text-[11px] text-slate-705 font-bold font-urdu block">اہم اعلان یا وقتی تبدیلی (اختیاری)</label>
                   <textarea placeholder="مثال: کل انشاء اللہ فجر کی نماز نئے وقت پر ادا کی جائے گی۔" value={announcement} onChange={(e) => setAnnouncement(e.target.value)} className="w-full p-2.5 h-16 bg-slate-50/70 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-urdu shadow-sm" dir="rtl" />
                 </div>
 
-                {/* Save button */}
                 <div className="pt-3 border-t border-slate-100">
                   <button type="submit" className="w-full py-3 bg-emerald-600 text-white rounded-xl text-xs font-urdu font-bold hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
                     <Save size={14} />
@@ -745,7 +916,6 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
               </form>
             </div>
 
-            {/* لاگ آؤٹ */}
             <div className="pt-1 pb-2 select-none px-4">
               <button type="button" onClick={() => setShowLogoutConfirm(true)} className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-urdu font-bold text-xs rounded-xl border border-rose-100 transition-all flex items-center justify-center gap-2 cursor-pointer">
                 لاگ آؤٹ کریں
@@ -755,12 +925,12 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         )}
       </div>
 
-      {/* Time Picker Modal */}
+      {/* ── Active Picker ── */}
       {activePicker && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-3 sm:p-4 touch-none overscroll-none select-none">
           <div className="bg-white rounded-3xl w-full max-w-[340px] shadow-2xl overflow-hidden border border-emerald-100 flex flex-col drop-shadow-lg animate-fadeIn">
             <div className="bg-gradient-to-r from-emerald-800 to-emerald-700 text-white p-3 text-center space-y-0.5">
-              <div className="text-[9px] text-emerald-200 font-bold uppercase tracking-wider font-urdu">جماعت کا وقت تبدیل کریں</div>
+              <div className="text-[9px] text-emerald-200 font-bold uppercase tracking-wider font-urdu">وقت تبدیل کریں</div>
               <h3 className="text-xs font-bold font-urdu text-amber-300">{activePicker.label} کا وقت</h3>
               <div className="text-xl font-mono font-extrabold tracking-widest mt-1 bg-emerald-950/45 py-1 px-3 rounded-lg inline-block border border-emerald-600/30">
                 {String(activePicker.hour).padStart(2, '0')}:{String(activePicker.minute).padStart(2, '0')}{' '}
@@ -769,7 +939,6 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
             </div>
             <div className="p-3 space-y-3 text-right">
               <div className="grid grid-cols-2 gap-3">
-                {/* گھنٹے */}
                 <div className="space-y-2">
                   <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider text-center font-urdu">گھنٹہ</div>
                   <div className="grid grid-cols-3 gap-1">
@@ -794,7 +963,6 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                     </button>
                   </div>
                 </div>
-                {/* منٹ */}
                 <div className="space-y-2">
                   <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider text-center font-urdu">منٹ</div>
                   <div className="grid grid-cols-3 gap-1">
@@ -821,7 +989,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         </div>
       )}
 
-      {/* Delete Confirm */}
+      {/* ── ڈیلیٹ کنفرم ── */}
       {deleteConfirmId && (() => {
         const target = myMosques.find(m => m.id === deleteConfirmId);
         return (
@@ -845,7 +1013,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         );
       })()}
 
-      {/* Logout Confirm */}
+      {/* ── لاگ آؤٹ کنفرم ── */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-3 touch-none overscroll-none select-none animate-fadeIn">
           <div className="bg-white rounded-3xl w-full max-w-[325px] shadow-2xl border border-rose-100 p-4 space-y-4 text-right">
@@ -862,7 +1030,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         </div>
       )}
 
-      {/* Saving Overlay */}
+      {/* ── سیونگ اوورلے ── */}
       {isSaving && (
         <div className="fixed inset-0 bg-slate-900/85 backdrop-blur-md z-[999999] flex flex-col items-center justify-center p-6 text-center select-none touch-none animate-fadeIn">
           <div className="bg-emerald-955/35 p-7 rounded-full border-2 border-emerald-500/25 shadow-2xl relative mb-4 animate-scaleUp">
