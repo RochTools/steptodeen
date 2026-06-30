@@ -15,6 +15,8 @@ export interface Mosque {
   address: string;
   latitude: number;
   longitude: number;
+
+  // ── جماعت کے اوقات (امام ایک بار سیٹ کرے) ──
   fajr: string;
   zuhr: string;
   asr: string;
@@ -28,6 +30,14 @@ export interface Mosque {
   iftar?: string;
   announcement?: string;
   updatedAt: string;
+
+  // ── API offset: اذان وقت میں ±منٹ adjustment ──
+  // امام ایک بار سیٹ کرے، پھر ہر روز API + offset = صحیح وقت
+  fajrOffset?: number;
+  zuhrOffset?: number;
+  asrOffset?: number;
+  maghribOffset?: number;
+  ishaOffset?: number;
 }
 
 export interface Surah {
