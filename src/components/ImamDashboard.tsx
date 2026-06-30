@@ -80,6 +80,65 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [maghribOffset, setMaghribOffset] = useState<number>(5);
   const [ishaOffset, setIshaOffset]       = useState<number>(0);
 
+  // ── API سے آج کا لائیو اذان وقت (صرف دکھانے کے لیے) ──
+  const [apiTimes, setApiTimes] = useState<Record<string, string> | null>(null);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState(false);
+
+  // ── coordinates بدلیں تو API سے تازہ وقت لاؤ ──
+  useEffect(() => {
+    if (latitude === '' || longitude === '') {
+      setApiTimes(null);
+      return;
+    }
+    let cancelled = false;
+    setApiLoading(true);
+    setApiError(false);
+
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const dateStr = `${dd}-${mm}-${yyyy}`;
+    const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${latitude}&longitude=${longitude}&method=1&school=1`;
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.code === 200) {
+          const t = data.data.timings;
+          setApiTimes({
+            fajr: t.Fajr.split(' ')[0],
+            zuhr: t.Dhuhr.split(' ')[0],
+            asr: t.Asr.split(' ')[0],
+            maghrib: t.Maghrib.split(' ')[0],
+            isha: t.Isha.split(' ')[0],
+          });
+        } else {
+          setApiError(true);
+        }
+      })
+      .catch(() => { if (!cancelled) setApiError(true); })
+      .finally(() => { if (!cancelled) setApiLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [latitude, longitude]);
+
+  // ── API وقت + offset لگا کر فائنل وقت 12 گھنٹے فارمیٹ میں دو ──
+  const previewFinalTime = (prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha', offset: number): string | null => {
+    if (!apiTimes || !apiTimes[prayerKey]) return null;
+    const [h, m] = apiTimes[prayerKey].split(':').map(Number);
+    let total = h * 60 + m + offset;
+    total = ((total % 1440) + 1440) % 1440;
+    const fh = Math.floor(total / 60);
+    const fm = total % 60;
+    const suffix = fh >= 12 ? 'PM' : 'AM';
+    let h12 = fh % 12;
+    if (h12 === 0) h12 = 12;
+    return `${String(h12).padStart(2, '0')}:${String(fm).padStart(2, '0')} ${suffix}`;
+  };
+
   const [activePicker, setActivePicker] = useState<{
     prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha' | 'jumah' | 'eidFitr' | 'eidAdha' | 'sehri' | 'iftar';
     label: string;
@@ -347,32 +406,59 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     }, 3000);
   };
 
-  // ── Offset input helper component ──
+  // ── Offset input helper component (fixed classes — no dynamic tailwind) ──
+  const OFFSET_THEMES: Record<string, { bg: string; border: string; text: string; btn: string }> = {
+    fajr:    { bg: 'bg-sky-50',    border: 'border-sky-200',    text: 'text-sky-800',    btn: 'border-sky-300 text-sky-700' },
+    zuhr:    { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', btn: 'border-orange-300 text-orange-700' },
+    asr:     { bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-800',  btn: 'border-amber-300 text-amber-700' },
+    maghrib: { bg: 'bg-rose-50',   border: 'border-rose-200',   text: 'text-rose-800',   btn: 'border-rose-300 text-rose-700' },
+    isha:    { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-800', btn: 'border-indigo-300 text-indigo-700' },
+  };
+
   const OffsetInput = ({
-    label, value, onChange, color
+    prayerKey, label, value, onChange
   }: {
-    label: string; value: number; onChange: (v: number) => void; color: string;
-  }) => (
-    <div className={`flex flex-col items-center gap-1 bg-${color}-50/50 border border-${color}-100 rounded-2xl p-2`}>
-      <span className={`text-[9px] font-bold font-urdu text-${color}-700`}>{label}</span>
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onChange(value - 1)}
-          className={`w-6 h-6 rounded-lg bg-white border border-${color}-200 text-${color}-700 font-bold text-sm flex items-center justify-center active:scale-95 cursor-pointer`}
-        >−</button>
-        <span className={`w-8 text-center font-mono font-black text-xs text-${color}-900`}>
-          {value > 0 ? `+${value}` : value}
-        </span>
-        <button
-          type="button"
-          onClick={() => onChange(value + 1)}
-          className={`w-6 h-6 rounded-lg bg-white border border-${color}-200 text-${color}-700 font-bold text-sm flex items-center justify-center active:scale-95 cursor-pointer`}
-        >+</button>
+    prayerKey: 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha';
+    label: string; value: number; onChange: (v: number) => void;
+  }) => {
+    const theme = OFFSET_THEMES[prayerKey];
+    const apiVal = apiTimes?.[prayerKey];
+    const finalVal = previewFinalTime(prayerKey, value);
+
+    return (
+      <div className={`flex flex-col items-center gap-1.5 ${theme.bg} border ${theme.border} rounded-2xl p-2.5`}>
+        <span className={`text-[10px] font-black font-urdu ${theme.text}`}>{label}</span>
+
+        {/* API لائیو وقت */}
+        <div className="text-[8px] font-mono text-slate-400 leading-tight text-center">
+          {apiLoading ? '...' : apiVal ? `API: ${apiVal}` : '—'}
+        </div>
+
+        {/* +/- بٹن */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onChange(value - 1)}
+            className={`w-6 h-6 rounded-lg bg-white border ${theme.btn} font-bold text-sm flex items-center justify-center active:scale-95 cursor-pointer shrink-0`}
+          >−</button>
+          <span className={`w-9 text-center font-mono font-black text-xs ${theme.text}`}>
+            {value > 0 ? `+${value}` : value}
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange(value + 1)}
+            className={`w-6 h-6 rounded-lg bg-white border ${theme.btn} font-bold text-sm flex items-center justify-center active:scale-95 cursor-pointer shrink-0`}
+          >+</button>
+        </div>
+        <span className="text-[8px] text-slate-400 font-mono -mt-1">منٹ</span>
+
+        {/* فائنل وقت جو یوزر کو نظر آئے گا */}
+        <div className={`text-[9px] font-mono font-black ${theme.text} bg-white/70 rounded-lg px-1.5 py-0.5 text-center leading-tight`}>
+          {finalVal || '—'}
+        </div>
       </div>
-      <span className="text-[8px] text-slate-400 font-mono">منٹ</span>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -520,20 +606,35 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                     <span className="text-lg">⏱️</span>
                   </div>
 
-                  {/* مثال */}
-                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-2.5 text-right">
-                    <p className="text-[9px] text-amber-800 font-urdu leading-relaxed">
-                      <span className="font-black">مثال:</span> API نے عصر <span className="font-mono font-black">4:30</span> بھیجا، آپ نے <span className="font-mono font-black">+10</span> لگایا → یوزر کو <span className="font-mono font-black text-emerald-700">4:40</span> دکھے گا ✅
-                    </p>
-                  </div>
+                  {latitude === '' || longitude === '' ? (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-right">
+                      <p className="text-[9px] text-slate-500 font-urdu leading-relaxed">
+                        پہلے اوپر GPS کوآرڈینیٹس درج کریں، تب API کا لائیو وقت یہاں نظر آئے گا۔
+                      </p>
+                    </div>
+                  ) : apiError ? (
+                    <div className="bg-rose-50 border border-rose-100 rounded-xl p-2.5 text-right">
+                      <p className="text-[9px] text-rose-700 font-urdu leading-relaxed">
+                        API سے وقت لانے میں مسئلہ ہوا۔ انٹرنیٹ چیک کریں۔
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-2.5 text-right">
+                      <p className="text-[9px] text-amber-800 font-urdu leading-relaxed">
+                        <span className="font-black">ہر باکس میں:</span> اوپر API کا آج کا وقت، نیچے آپ کے +/− کے بعد فائنل وقت جو یوزر کو دکھے گا ✅
+                      </p>
+                    </div>
+                  )}
 
-                  {/* 5 offset inputs */}
-                  <div className="grid grid-cols-5 gap-1.5">
-                    <OffsetInput label="فجر"   value={fajrOffset}    onChange={setFajrOffset}    color="sky"    />
-                    <OffsetInput label="ظہر"   value={zuhrOffset}    onChange={setZuhrOffset}    color="orange" />
-                    <OffsetInput label="عصر"   value={asrOffset}     onChange={setAsrOffset}     color="amber"  />
-                    <OffsetInput label="مغرب"  value={maghribOffset} onChange={setMaghribOffset} color="rose"   />
-                    <OffsetInput label="عشاء"  value={ishaOffset}    onChange={setIshaOffset}    color="indigo" />
+                  {/* 5 offset inputs — 3+2 wrap تاکہ overlap نہ ہو */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <OffsetInput prayerKey="fajr"    label="فجر"  value={fajrOffset}    onChange={setFajrOffset} />
+                    <OffsetInput prayerKey="zuhr"    label="ظہر"  value={zuhrOffset}    onChange={setZuhrOffset} />
+                    <OffsetInput prayerKey="asr"     label="عصر"  value={asrOffset}     onChange={setAsrOffset} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <OffsetInput prayerKey="maghrib" label="مغرب" value={maghribOffset} onChange={setMaghribOffset} />
+                    <OffsetInput prayerKey="isha"    label="عشاء" value={ishaOffset}    onChange={setIshaOffset} />
                   </div>
                 </div>
 
