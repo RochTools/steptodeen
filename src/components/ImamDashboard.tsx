@@ -13,6 +13,7 @@ interface ImamDashboardProps {
   onDeleteMosque: (id: string) => void;
   mosques: Mosque[];
   onLoggedOut?: () => void;
+  onNavigateToSettings?: () => void; // ✅ لوکیشن آف ہونے پر سیٹنگز پیج پر بھیجنے کے لیے
   userCoords: { latitude: number; longitude: number } | null;
   requestLocation: () => void;
   isRealFirebase: boolean;
@@ -142,7 +143,8 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   authUid,
   setAuthUid,
   realtimeAuth,
-  onLoggedOut
+  onLoggedOut,
+  onNavigateToSettings
 }) => {
   // ── ریفرنسز ──
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -159,6 +161,8 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [savingStep, setSavingStep] = useState(3);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showLocationOffPopup, setShowLocationOffPopup] = useState(false);
+  const [locationOffMessage, setLocationOffMessage] = useState('');
 
   const [mosqueImage, setMosqueImage] = useState<string | null>(() => {
     return localStorage.getItem('mosque_profile_image') || null;
@@ -390,14 +394,23 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     setErrorMessage('');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        setSuccessMessage('');
         setLatitude(pos.coords.latitude);
         setLongitude(pos.coords.longitude);
         setSuccessMessage(`✅ لوکیشن کامیابی سے حاصل ہوئی — درستگی: ${Math.round(pos.coords.accuracy)} میٹر`);
         setTimeout(() => setSuccessMessage(''), 5000);
       },
-      () => {
-        setErrorMessage('لوکیشن نہیں مل سکی۔ براہ کرم GPS اور پرمیشن چیک کریں۔');
-        setTimeout(() => setErrorMessage(''), 5000);
+      (err) => {
+        setSuccessMessage('');
+        // ✅ GPS بند ہونے یا پرمیشن نہ ہونے کی تشخیص — گائیڈ پاپ اپ دکھائیں
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationOffMessage('آپ نے لوکیشن کی اجازت مسترد کر دی ہے۔ براہ کرم اپنے براؤزر/فون کی سیٹنگز میں اس ایپ کے لیے لوکیشن کی اجازت دیں، یا نیچے دیے گئے بٹن سے دستی طور پر لوکیشن سیٹ کریں۔');
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setLocationOffMessage('برائے مہربانی پہلے اپنا لوکیشن (GPS) آن کریں۔ GPS آن کرنے کے بعد دوبارہ کوشش کریں، یا نیچے دیے گئے بٹن سے دستی طور پر لوکیشن سیٹ کریں۔');
+        } else {
+          setLocationOffMessage('لوکیشن حاصل نہیں ہو سکی۔ براہ کرم پہلے اپنا GPS آن کریں اور دوبارہ کوشش کریں، یا دستی طور پر لوکیشن سیٹ کریں۔');
+        }
+        setShowLocationOffPopup(true);
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
@@ -555,40 +568,48 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         countdownIntervalRef.current = null;
       }
       
-      onAddOrUpdateMosque({
-        id: editId,
-        name,
-        imamName,
-        imamEmail: authEmail,
-        imamUid: authUid || ('demo_' + authEmail.split('@')[0]),
-        address,
-        latitude: Number(latitude),
-        longitude: Number(longitude),
-        fajr: finalFajr,
-        zuhr: finalZuhr,
-        asr: finalAsr,
-        maghrib: finalMaghrib,
-        isha: finalIsha,
-        jumah,
-        eidFitr,
-        eidAdha,
-        sehri,
-        iftar,
-        announcement,
-        fajrOffset,
-        zuhrOffset,
-        asrOffset,
-        maghribOffset,
-        ishaOffset,
-      });
-      setIsSaving(false);
-      setSuccessMessage(editId
-        ? 'الحمد للہ! کلاؤڈ سرور پر مسجد کے نئے اوقات کامیابی کے ساتھ اپڈیٹ ہو گئے ہیں۔'
-        : 'مبارک ہو! نئی مسجد کا کلاؤڈ ریکارڈ کامیابی سے رجسٹر ہو گیا ہے۔'
-      );
-      setErrorMessage('');
-      resetForm();
-      setTimeout(() => setSuccessMessage(''), 6000);
+      try {
+        onAddOrUpdateMosque({
+          id: editId,
+          name,
+          imamName,
+          imamEmail: authEmail,
+          imamUid: authUid || ('demo_' + authEmail.split('@')[0]),
+          address,
+          latitude: Number(latitude),
+          longitude: Number(longitude),
+          fajr: finalFajr,
+          zuhr: finalZuhr,
+          asr: finalAsr,
+          maghrib: finalMaghrib,
+          isha: finalIsha,
+          jumah,
+          eidFitr,
+          eidAdha,
+          sehri,
+          iftar,
+          announcement,
+          fajrOffset,
+          zuhrOffset,
+          asrOffset,
+          maghribOffset,
+          ishaOffset,
+        });
+        setIsSaving(false);
+        setSuccessMessage(editId
+          ? 'الحمد للہ! کلاؤڈ سرور پر مسجد کے نئے اوقات کامیابی کے ساتھ اپڈیٹ ہو گئے ہیں۔'
+          : 'مبارک ہو! نئی مسجد کا کلاؤڈ ریکارڈ کامیابی سے رجسٹر ہو گیا ہے۔'
+        );
+        setErrorMessage('');
+        resetForm();
+        setTimeout(() => setSuccessMessage(''), 6000);
+      } catch (err: any) {
+        // ✅ اگر سیو کرنے میں ایرر آئے تو جھوٹی کامیابی نہ دکھائیں
+        setIsSaving(false);
+        setSuccessMessage('');
+        setErrorMessage('مسجد کا ریکارڈ محفوظ کرنے میں مسئلہ پیش آیا: ' + (err?.message || 'نامعلوم خرابی'));
+        setTimeout(() => setErrorMessage(''), 6000);
+      }
     }, 3000);
   };
 
@@ -703,7 +724,14 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                             // ✅ تصویر کمپریس کریں
                             const compressed = await compressImage(file, 200, 0.7);
                             setMosqueImage(compressed);
-                            localStorage.setItem('mosque_profile_image', compressed);
+                            try {
+                              localStorage.setItem('mosque_profile_image', compressed);
+                            } catch (storageErr) {
+                              // ✅ اسٹوریج بھرا ہو تو بھی تصویر اسکرین پر دکھائیں، صرف خبردار کریں
+                              setErrorMessage('تصویر دکھ تو رہی ہے، مگر محفوظ نہیں ہو سکی (اسٹوریج بھرا ہوا ہے)۔');
+                              setTimeout(() => setErrorMessage(''), 4000);
+                              return;
+                            }
                             setSuccessMessage('✅ تصویر کامیابی سے اپ لوڈ ہوگئی');
                             setTimeout(() => setSuccessMessage(''), 3000);
                           } catch (error) {
@@ -762,12 +790,12 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
 
               <form onSubmit={handleFormSubmit} className="space-y-4 text-right">
                 <div className="space-y-1">
-                  <label className="text-[11px] text-slate-705 font-bold font-urdu block">مسجد کا نام *</label>
+                  <label className="text-[11px] text-slate-700 font-bold font-urdu block">مسجد کا نام *</label>
                   <input type="text" required placeholder="مثال: جامع مسجد مدینہ" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-urdu shadow-sm" dir="rtl" />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] text-slate-705 font-bold font-urdu block">پتہ / ریجن / سیکٹر *</label>
+                  <label className="text-[11px] text-slate-700 font-bold font-urdu block">پتہ / ریجن / سیکٹر *</label>
                   <input type="text" required placeholder="مثال: سیکٹر ایف ٹین، اسلام آباد" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full p-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-urdu shadow-sm" dir="rtl" />
                 </div>
 
@@ -776,7 +804,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                     <button type="button" onClick={handleAutoGrabLocation} className="py-1.5 px-3 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 active:scale-95 rounded-xl text-[10px] font-bold border border-emerald-100/80 shadow-sm transition-all font-urdu flex items-center gap-1.5 cursor-pointer">
                       <MapPin size={12} className="shrink-0" /> موجودہ لوکیشن آٹو حاصل کریں
                     </button>
-                    <label className="text-[11px] text-slate-705 font-bold font-urdu block">نقشہ کے کوآرڈینیٹس (GPS) *</label>
+                    <label className="text-[11px] text-slate-700 font-bold font-urdu block">نقشہ کے کوآرڈینیٹس (GPS) *</label>
                   </div>
                   <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100">
                     <div className="space-y-1">
@@ -819,9 +847,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                   <div className="flex items-center justify-end gap-2">
                     <div className="text-right">
                       <span className="text-[12px] font-bold font-urdu text-slate-700 block">جماعت کا وقت سیٹ کریں</span>
-                      <span className="text-[9px] text-slate-400 font-urdu">ایک بار سیٹ کریں — سال بھر خودبخود چلتا رہے گا</span>
                     </div>
-                    <span className="text-lg">🕌</span>
                   </div>
 
                   {latitude === null || longitude === null ? (
@@ -836,13 +862,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                         اذان کا وقت لانے میں مسئلہ ہوا۔ انٹرنیٹ چیک کریں۔
                       </p>
                     </div>
-                  ) : (
-                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-2.5 text-right">
-                      <p className="text-[9px] text-amber-800 font-urdu leading-relaxed">
-                        <span className="font-black">مثال:</span> آج اذان <span className="font-mono font-black">4:16</span> ہے، آپ نے <span className="font-mono font-black">+15</span> لگایا → جماعت <span className="font-mono font-black text-emerald-700">4:31</span> ہوگی۔ کل اذان 1 منٹ پہلے ہوئی تو جماعت بھی خودبخود 1 منٹ پہلے ہو جائے گی ✅
-                      </p>
-                    </div>
-                  )}
+                  ) : null}
 
                   <div className="grid grid-cols-3 gap-2">
                     <JamaatCard prayerKey="fajr" offset={fajrOffset} onChange={setFajrOffset} />
@@ -861,7 +881,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                   </div>
 
                   <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-2 flex flex-col items-center justify-between shadow-sm">
-                    <span className="text-[10px] text-emerald-850 font-black font-urdu mb-1.5">نمازِ جمعہ</span>
+                    <span className="text-[10px] text-emerald-800 font-black font-urdu mb-1.5">نمازِ جمعہ</span>
                     <button type="button" onClick={() => openCustomTimePicker('jumah', 'نمازِ جمعہ', jumah)} className="w-full py-1.5 px-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 border border-emerald-600 rounded-xl text-[10px] text-center font-mono font-bold text-white flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md">
                       <Clock size={11} className="shrink-0 text-emerald-100" /><span>{formatTo12HourString(jumah)}</span>
                     </button>
@@ -903,7 +923,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1.5 border-t border-slate-100 pt-3">
-                  <label className="text-[11px] text-slate-705 font-bold font-urdu block">اہم اعلان یا وقتی تبدیلی (اختیاری)</label>
+                  <label className="text-[11px] text-slate-700 font-bold font-urdu block">اہم اعلان یا وقتی تبدیلی (اختیاری)</label>
                   <textarea placeholder="مثال: کل انشاء اللہ فجر کی نماز نئے وقت پر ادا کی جائے گی۔" value={announcement} onChange={(e) => setAnnouncement(e.target.value)} className="w-full p-2.5 h-16 bg-slate-50/70 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-urdu shadow-sm" dir="rtl" />
                 </div>
 
@@ -944,7 +964,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                   <div className="grid grid-cols-3 gap-1">
                     {[12,1,2,3,4,5,6,7,8,9,10,11].map((h) => (
                       <button key={h} type="button" onClick={() => setActivePicker({ ...activePicker, hour: h })}
-                        className={`py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${activePicker.hour === h ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-150'}`}>
+                        className={`py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${activePicker.hour === h ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'}`}>
                         {String(h).padStart(2, '0')}
                       </button>
                     ))}
@@ -968,7 +988,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                   <div className="grid grid-cols-3 gap-1">
                     {[0,5,10,15,20,25,30,35,40,45,50,55].map((m) => (
                       <button key={m} type="button" onClick={() => setActivePicker({ ...activePicker, minute: m })}
-                        className={`py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${activePicker.minute === m ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-150'}`}>
+                        className={`py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${activePicker.minute === m ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'}`}>
                         {String(m).padStart(2, '0')}
                       </button>
                     ))}
@@ -1013,6 +1033,49 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         );
       })()}
 
+      {/* ── لوکیشن آف / GPS گائیڈ پاپ اپ ── */}
+      {showLocationOffPopup && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-3 touch-none overscroll-none select-none animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-[340px] shadow-2xl border border-amber-100 p-4 space-y-4 text-right">
+            <div className="flex items-center gap-2 justify-end text-amber-600 border-b border-amber-100 pb-2">
+              <span className="text-xs font-bold font-urdu">لوکیشن آن کریں</span>
+              <MapPin size={15} className="shrink-0 text-amber-500" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[12px] text-slate-700 leading-relaxed font-urdu font-bold">
+                برائے مہربانی پہلے اپنا لوکیشن (GPS) آن کریں۔
+              </p>
+              <p className="text-[10px] text-slate-500 leading-relaxed font-urdu">
+                {locationOffMessage}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 pt-1 font-urdu">
+              <button
+                type="button"
+                onClick={() => { setShowLocationOffPopup(false); handleAutoGrabLocation(); }}
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <MapPin size={13} /> دوبارہ کوشش کریں
+              </button>
+              {onNavigateToSettings && (
+                <button
+                  type="button"
+                  onClick={() => { setShowLocationOffPopup(false); onNavigateToSettings(); }}
+                  className="w-full py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-xs font-bold border border-amber-200 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  دستی طور پر لوکیشن سیٹ کریں (سیٹنگز)
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowLocationOffPopup(false)}
+                className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold cursor-pointer"
+              >منسوخ کریں</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── لاگ آؤٹ کنفرم ── */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-3 touch-none overscroll-none select-none animate-fadeIn">
@@ -1033,14 +1096,14 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
       {/* ── سیونگ اوورلے ── */}
       {isSaving && (
         <div className="fixed inset-0 bg-slate-900/85 backdrop-blur-md z-[999999] flex flex-col items-center justify-center p-6 text-center select-none touch-none animate-fadeIn">
-          <div className="bg-emerald-955/35 p-7 rounded-full border-2 border-emerald-500/25 shadow-2xl relative mb-4 animate-scaleUp">
+          <div className="bg-emerald-950/35 p-7 rounded-full border-2 border-emerald-500/25 shadow-2xl relative mb-4 animate-scaleUp">
             <RefreshCw className="text-amber-400 animate-spin" size={54} strokeWidth={2} />
             <span className="absolute inset-x-0 top-[26px] flex items-center justify-center font-mono font-black text-white text-sm">{savingStep}</span>
           </div>
           <h3 className="text-sm font-black font-urdu text-amber-300 animate-pulse tracking-wide">اوقاتِ جماعت کلاؤڈ سرور پر اپڈیٹ ہو رہے ہیں...</h3>
           <p className="text-[11px] text-emerald-100 leading-relaxed font-urdu max-w-xs mt-2.5">براہ کرم تھوڑا انتظار کیجیئے۔</p>
-          <div className="w-52 bg-slate-850 rounded-full h-1.5 mt-5 overflow-hidden border border-emerald-800/10">
-            <div className="bg-amber-400 h-full rounded-full" style={{ width: `${((3.3 - savingStep) / 3) * 100}%`, transition: 'width 1.1s linear' }}></div>
+          <div className="w-52 bg-slate-800 rounded-full h-1.5 mt-5 overflow-hidden border border-emerald-800/10">
+            <div className="bg-amber-400 h-full rounded-full" style={{ width: `${((3 - savingStep) / 3) * 100}%`, transition: 'width 1.1s linear' }}></div>
           </div>
         </div>
       )}
