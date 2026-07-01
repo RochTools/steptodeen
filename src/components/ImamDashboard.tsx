@@ -167,6 +167,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [showEditInfoModal, setShowEditInfoModal] = useState(false);
   const [editInfoName, setEditInfoName] = useState('');
   const [editInfoAddress, setEditInfoAddress] = useState('');
+  const [isGrabbingLocation, setIsGrabbingLocation] = useState(false);
 
   const [mosqueImage, setMosqueImage] = useState<string | null>(() => {
     return localStorage.getItem('mosque_profile_image') || null;
@@ -314,11 +315,11 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
           if (err.name === 'AbortError') {
             setErrorMessage('درخواست منسوخ کر دی گئی');
           } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
-            setErrorMessage('⚠️ انٹرنیٹ کنکشن چیک کریں');
+            setErrorMessage('انٹرنیٹ کنکشن چیک کریں');
           } else if (err.message?.includes('429')) {
-            setErrorMessage('⏳ بہت زیادہ درخواستیں، تھوڑا انتظار کریں');
+            setErrorMessage('بہت زیادہ درخواستیں، تھوڑا انتظار کریں');
           } else {
-            setErrorMessage(`❌ سرور سے رابطہ ممکن نہیں: ${err.message}`);
+            setErrorMessage(`سرور سے رابطہ ممکن نہیں: ${err.message}`);
           }
           setTimeout(() => setErrorMessage(''), 5000);
         })
@@ -394,18 +395,18 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
       setTimeout(() => setErrorMessage(''), 4000);
       return;
     }
-    setSuccessMessage('لوکیشن حاصل کی جا رہی ہے...');
+    setIsGrabbingLocation(true);
     setErrorMessage('');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setSuccessMessage('');
+        setIsGrabbingLocation(false);
         setLatitude(pos.coords.latitude);
         setLongitude(pos.coords.longitude);
-        setSuccessMessage(`✅ لوکیشن کامیابی سے حاصل ہوئی — درستگی: ${Math.round(pos.coords.accuracy)} میٹر`);
+        setSuccessMessage(`لوکیشن کامیابی سے حاصل ہوئی — درستگی: ${Math.round(pos.coords.accuracy)} میٹر`);
         setTimeout(() => setSuccessMessage(''), 5000);
       },
       (err) => {
-        setSuccessMessage('');
+        setIsGrabbingLocation(false);
         // ✅ GPS بند ہونے یا پرمیشن نہ ہونے کی تشخیص — گائیڈ پاپ اپ دکھائیں
         if (err.code === err.PERMISSION_DENIED) {
           setLocationOffMessage('آپ نے لوکیشن کی اجازت مسترد کر دی ہے۔ براہ کرم اپنے براؤزر/فون کی سیٹنگز میں اس ایپ کے لیے لوکیشن کی اجازت دیں، یا نیچے دیے گئے بٹن سے دستی طور پر لوکیشن سیٹ کریں۔');
@@ -626,13 +627,11 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
         );
         setErrorMessage('');
         resetForm();
-        setTimeout(() => setSuccessMessage(''), 6000);
       } catch (err: any) {
         // ✅ اگر سیو کرنے میں ایرر آئے تو جھوٹی کامیابی نہ دکھائیں
         setIsSaving(false);
         setSuccessMessage('');
         setErrorMessage('مسجد کا ریکارڈ محفوظ کرنے میں مسئلہ پیش آیا: ' + (err?.message || 'نامعلوم خرابی'));
-        setTimeout(() => setErrorMessage(''), 6000);
       }
     }, 3000);
   };
@@ -775,19 +774,6 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
               </div>
             </div>
 
-            {successMessage && (
-              <div className="p-3.5 bg-emerald-50 text-emerald-900 border border-emerald-200 text-sm rounded-2xl text-right font-urdu flex items-center gap-2 justify-end animate-scaleUp mx-4">
-                <span className="font-bold">{successMessage}</span>
-                <CheckCircle size={16} className="text-emerald-600 shrink-0" />
-              </div>
-            )}
-            {errorMessage && (
-              <div className="p-3.5 bg-rose-50 text-rose-900 border border-rose-200 text-sm rounded-2xl text-right font-urdu flex items-center gap-2 justify-end animate-scaleUp mx-4">
-                <span className="font-bold">{errorMessage}</span>
-                <AlertCircle size={16} className="text-rose-600 shrink-0" />
-              </div>
-            )}
-
             {myMosques.length > 0 && (
               <div className="px-4 space-y-2 animate-fadeIn">
                 <div className="flex items-center justify-between px-1 mb-1">
@@ -831,8 +817,21 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
 
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <div className="flex items-center justify-between gap-2">
-                    <button type="button" onClick={handleAutoGrabLocation} className="py-2 px-3 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 active:scale-95 rounded-xl text-xs font-bold border border-emerald-100 transition-all font-urdu flex items-center gap-1.5 cursor-pointer">
-                      <MapPin size={13} className="shrink-0" /> موجودہ لوکیشن آٹو حاصل کریں
+                    <button
+                      type="button"
+                      onClick={handleAutoGrabLocation}
+                      disabled={isGrabbingLocation}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all font-urdu flex items-center gap-1.5 cursor-pointer ${isGrabbingLocation ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 active:scale-95 border-emerald-100'}`}
+                    >
+                      {isGrabbingLocation ? (
+                        <>
+                          <RefreshCw size={13} className="shrink-0 animate-spin" /> لوکیشن ڈھونڈ رہے ہیں...
+                        </>
+                      ) : (
+                        <>
+                          <MapPin size={13} className="shrink-0" /> موجودہ لوکیشن آٹو حاصل کریں
+                        </>
+                      )}
                     </button>
                     <label className="text-sm text-slate-700 font-bold font-urdu block">نقشہ کے کوآرڈینیٹس (GPS) *</label>
                   </div>
@@ -1172,6 +1171,29 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
           <p className="text-sm text-emerald-100 leading-relaxed font-urdu max-w-xs mt-2.5">براہ کرم تھوڑا انتظار کیجیئے۔</p>
           <div className="w-52 bg-slate-800 rounded-full h-1.5 mt-5 overflow-hidden">
             <div className="bg-amber-400 h-full rounded-full" style={{ width: `${((3 - savingStep) / 3) * 100}%`, transition: 'width 1.1s linear' }}></div>
+          </div>
+        </div>
+      )}
+
+      {/* ── نوٹیفکیشن پوپ اپ (تمام سکسس / فیل پیغامات) ── */}
+      {(successMessage || errorMessage) && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999999] flex items-center justify-center p-3 touch-none overscroll-none select-none animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-[320px] shadow-xl border border-slate-200 p-6 space-y-4 text-center animate-scaleUp">
+            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center ${errorMessage ? 'bg-rose-50' : 'bg-emerald-50'}`}>
+              {errorMessage ? (
+                <AlertCircle size={30} className="text-rose-600" />
+              ) : (
+                <CheckCircle size={30} className="text-emerald-600" />
+              )}
+            </div>
+            <p className="text-sm text-slate-700 leading-relaxed font-urdu font-bold">{errorMessage || successMessage}</p>
+            <button
+              type="button"
+              onClick={() => { setSuccessMessage(''); setErrorMessage(''); }}
+              className={`w-full py-2.5 rounded-xl text-sm font-bold font-urdu cursor-pointer text-white transition-all ${errorMessage ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-700 hover:bg-emerald-800'}`}
+            >
+              ٹھیک ہے
+            </button>
           </div>
         </div>
       )}
