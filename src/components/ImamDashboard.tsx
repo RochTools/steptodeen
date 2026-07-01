@@ -164,6 +164,9 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showLocationOffPopup, setShowLocationOffPopup] = useState(false);
   const [locationOffMessage, setLocationOffMessage] = useState('');
+  const [showEditInfoModal, setShowEditInfoModal] = useState(false);
+  const [editInfoName, setEditInfoName] = useState('');
+  const [editInfoAddress, setEditInfoAddress] = useState('');
 
   const [mosqueImage, setMosqueImage] = useState<string | null>(() => {
     return localStorage.getItem('mosque_profile_image') || null;
@@ -519,6 +522,26 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
     setIshaOffset(mosque.ishaOffset ?? 15);
   };
 
+  // ── پینسل آئیکن پر کلک: مسجد لوڈ کریں اور نام/پتہ کا چھوٹا ماڈل کھولیں ──
+  const handleEditMosqueClick = (mosque: Mosque) => {
+    handleEditMosque(mosque);
+    setEditInfoName(mosque.name);
+    setEditInfoAddress(mosque.address);
+    setShowEditInfoModal(true);
+  };
+
+  // ── نام اور پتہ محفوظ کریں (ماڈل سے) ──
+  const saveNameAddress = () => {
+    if (!editInfoName.trim() || !editInfoAddress.trim()) {
+      setErrorMessage('براہ کرم مسجد کا نام اور پتہ درج کریں۔');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+    setName(editInfoName.trim());
+    setAddress(editInfoAddress.trim());
+    setShowEditInfoModal(false);
+  };
+
   // ── فارم جمع کروائیں ──
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -777,7 +800,7 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                   <MosqueCard
                     key={mosque.id}
                     mosque={mosque}
-                    onEdit={handleEditMosque}
+                    onEdit={handleEditMosqueClick}
                     onDelete={setDeleteConfirmId}
                   />
                 ))}
@@ -792,15 +815,19 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
               </div>
 
               <form onSubmit={handleFormSubmit} className="space-y-4 text-right">
-                <div className="space-y-1.5">
-                  <label className="text-sm text-slate-700 font-bold font-urdu block">مسجد کا نام *</label>
-                  <input type="text" required placeholder="مثال: جامع مسجد مدینہ" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-emerald-400 transition-all text-right font-urdu" dir="rtl" />
-                </div>
+                {!editId && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-sm text-slate-700 font-bold font-urdu block">مسجد کا نام *</label>
+                      <input type="text" required placeholder="مثال: جامع مسجد مدینہ" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-emerald-400 transition-all text-right font-urdu" dir="rtl" />
+                    </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-sm text-slate-700 font-bold font-urdu block">پتہ / ریجن / سیکٹر *</label>
-                  <input type="text" required placeholder="مثال: سیکٹر ایف ٹین، اسلام آباد" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-emerald-400 transition-all text-right font-urdu" dir="rtl" />
-                </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm text-slate-700 font-bold font-urdu block">پتہ / ریجن / سیکٹر *</label>
+                      <input type="text" required placeholder="مثال: سیکٹر ایف ٹین، اسلام آباد" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-emerald-400 transition-all text-right font-urdu" dir="rtl" />
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <div className="flex items-center justify-between gap-2">
@@ -1007,6 +1034,44 @@ export const ImamDashboard: React.FC<ImamDashboardProps> = ({
                 <button type="button" onClick={() => setActivePicker(null)} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold cursor-pointer">منسوخ کریں</button>
                 <button type="button" onClick={saveCustomTime} className="flex-1 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold cursor-pointer">محفوظ کریں</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── نام/پتہ ترمیم موڈل ── */}
+      {showEditInfoModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-3 touch-none overscroll-none select-none animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-[340px] shadow-xl border border-slate-200 p-5 space-y-4 text-right">
+            <div className="flex items-center gap-2 justify-end text-emerald-700 border-b border-slate-100 pb-3">
+              <span className="text-sm font-bold font-urdu">نام اور پتہ تبدیل کریں</span>
+              <Pencil size={16} className="shrink-0 text-emerald-600" />
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-sm text-slate-700 font-bold font-urdu block">مسجد کا نام *</label>
+                <input
+                  type="text"
+                  value={editInfoName}
+                  onChange={(e) => setEditInfoName(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-emerald-400 transition-all text-right font-urdu"
+                  dir="rtl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm text-slate-700 font-bold font-urdu block">پتہ / ریجن / سیکٹر *</label>
+                <input
+                  type="text"
+                  value={editInfoAddress}
+                  onChange={(e) => setEditInfoAddress(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:border-emerald-400 transition-all text-right font-urdu"
+                  dir="rtl"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2.5 pt-1 font-urdu">
+              <button type="button" onClick={() => setShowEditInfoModal(false)} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold cursor-pointer">منسوخ کریں</button>
+              <button type="button" onClick={saveNameAddress} className="flex-1 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-bold cursor-pointer">محفوظ کریں</button>
             </div>
           </div>
         </div>
