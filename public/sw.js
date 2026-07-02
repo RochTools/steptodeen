@@ -30,7 +30,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting(); // Activate immediately
 });
 
-// ── Activate: remove old caches ──────────────────────────────────────────────
+// ── Activate: remove old cache ──────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(keys =>
