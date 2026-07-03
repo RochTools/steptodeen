@@ -221,7 +221,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
                     onClose();
                   }
                 }}
-                className={`bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1.5 ${onGoToSavedHadith && h.chapterKey ? 'cursor-pointer active:scale-95 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all' : ''}`}
+                className={`bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1.5 ${onGoToSavedHadith && h.chapterKey ? 'cursor-pointer active:scale-95 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all' : 'cursor-default'}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
