@@ -84,6 +84,13 @@ class ErrorBoundary extends Component<
 export default function App() {
 
   const [selectedSurahNum, setSelectedSurahNum] = useState<number | null>(null);
+
+  // ── حدیث navigation (UserDashboard سے) ──────────────────────
+  const [pendingHadithNav, setPendingHadithNav] = useState<{
+    bookKey: string; chapterKey: string; chapterName: string;
+    from: number; to: number; hadithNum: number;
+  } | null>(null);
+  const [scrollToHadithNum, setScrollToHadithNum] = useState<number | null>(null);
   const [realtimeDb, setRealtimeDb] = useState<any>(null);
   const [realtimeAuth, setRealtimeAuth] = useState<any>(null);
   const [realFirebaseActive, setRealFirebaseActive] = useState<boolean>(false);
@@ -270,7 +277,13 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               )}
 
               {currentView === 'hadith' && (
-                <HadithView onBack={() => nav.goBack()} />
+                <HadithView
+                  onBack={() => nav.goBack()}
+                  pendingHadithNav={pendingHadithNav}
+                  onPendingHandled={() => setPendingHadithNav(null)}
+                  scrollToHadithNum={scrollToHadithNum}
+                  onScrollHandled={() => setScrollToHadithNum(null)}
+                />
               )}
 
               {currentView === 'namaz' && <NamazView />}
@@ -312,6 +325,15 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                     auth.handleLogoutAll();
                     mosques.setSavedPopupMosques([]);
                     nav.setNavigationHistory(['login-splash']);
+                  }}
+                  onGoToLastSeen={() => {
+                    nav.navigateTo('hadith');
+                    // HadithView خود lastSeen localStorage سے پڑھ کر جائے گا
+                  }}
+                  onGoToSavedHadith={(bookKey, chapterKey, chapterName, from, to, hadithNum) => {
+                    setPendingHadithNav({ bookKey, chapterKey, chapterName, from, to, hadithNum });
+                    setScrollToHadithNum(hadithNum);
+                    nav.navigateTo('hadith');
                   }}
                 />
               )}
