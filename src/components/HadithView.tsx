@@ -152,7 +152,7 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNu
   const [cacheChapters, setCacheChapters] = useState<{ [key: string]: any }>({});
   const [cachePages, setCachePages] = useState<{ [key: string]: any }>({});
 
-  // ── scroll system ─────────────────────────────────────────────
+  // ── scrooll system ─────────────────────────────────────────────
   const hadithRefs = useRef<{ [num: number]: HTMLDivElement | null }>({});
 
   // ── pendingHadithNav: UserDashboard سے آئے تو کتاب+باب+حدیث کھولیں ──
