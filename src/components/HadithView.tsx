@@ -152,7 +152,7 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNu
   const [cacheChapters, setCacheChapters] = useState<{ [key: string]: any }>({});
   const [cachePages, setCachePages] = useState<{ [key: string]: any }>({});
 
-  // ── scrooll system ─────────────────────────────────────────────
+  // ── scroll system ─────────────────────────────────────────────
   const hadithRefs = useRef<{ [num: number]: HTMLDivElement | null }>({});
 
   // ── pendingHadithNav: UserDashboard سے آئے تو کتاب+باب+حدیث کھولیں ──
@@ -360,7 +360,17 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNu
       const isSaved = list.some((h: any) => h.num === hadith.num && h.book === selectedBook.key);
       const updated = isSaved
         ? list.filter((h: any) => !(h.num === hadith.num && h.book === selectedBook.key))
-        : [...list, { num: hadith.num, book: selectedBook.key, bookName: selectedBook.name, ar: hadith.ar, ur: hadith.ur }];
+        : [...list, {
+            num: hadith.num,
+            book: selectedBook.key,
+            bookName: selectedBook.name,
+            chapterKey: selectedChapter?.key || '',
+            chapterName: selectedChapter?.name || '',
+            from: selectedChapter?.from || 0,
+            to: selectedChapter?.to || 0,
+            ar: hadith.ar,
+            ur: hadith.ur
+          }];
       localStorage.setItem('user_saved_hadiths', JSON.stringify(updated));
       setSavedHadithsState(updated);
       window.dispatchEvent(new Event('storage'));
