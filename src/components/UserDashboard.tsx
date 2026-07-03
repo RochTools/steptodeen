@@ -9,12 +9,14 @@ interface UserDashboardProps {
   onClose: () => void;
   onOpenMosque: (mosque: Mosque) => void;
   onGoToLastSeen?: () => void;
+  onGoToSavedHadith?: (bookKey: string, chapterKey: string, chapterName: string, from: number, to: number, hadithNum: number) => void;
 }
 
-export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoToLastSeen }: UserDashboardProps) {
+export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoToLastSeen, onGoToSavedHadith }: UserDashboardProps) {
   const [profileImage, setProfileImage] = useState<string | null>(() => {
     return localStorage.getItem('user_profile_image') || null;
   });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── آخری دیکھی حدیث ─────────────────────────────────────────────
@@ -84,15 +86,15 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center px-6 pt-10 gap-5 pb-8">
+    <div className="min-h-screen bg-white flex flex-col items-center px-6 pt-10 gap-6 pb-8">
 
       {/* Top Row: profile + logout */}
       <div className="w-full flex items-start justify-center relative">
 
         {/* Logout - top right */}
         <button
-          onClick={onLogout}
-          className="absolute right-0 top-0 flex items-center gap-1 px-2.5 py-1.5 bg-red-50 border border-red-200 text-red-500 font-urdu text-xs rounded-lg active:scale-95 transition-all"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="absolute right-0 top-0 flex items-center gap-1 px-2.5 py-1.5 bg-red-50 border border-red-200 text-red-500 font-urdu text-xs font-bold rounded-lg active:scale-95 hover:bg-red-100 transition-all"
         >
           <LogOut size={12} />
           لاگ آؤٹ
@@ -102,7 +104,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
         <div className="relative">
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="w-24 h-24 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+            className="w-24 h-24 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
           >
             {profileImage ? (
               <img src={profileImage} alt="profile" className="w-full h-full object-cover" />
@@ -125,7 +127,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
         <h2 className="text-black font-urdu text-2xl font-black">{userName}</h2>
       </div>
 
-      <div className="w-full border-t border-slate-100"></div>
+      <div className="w-full border-t border-slate-200"></div>
 
       {/* ── تسبیح ڈیٹا ── */}
       <div className="w-full">
@@ -174,7 +176,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
       {/* ── آخری دیکھی حدیث ── */}
       {lastSeenHadith && (
         <>
-          <div className="w-full border-t border-slate-100"></div>
+          <div className="w-full border-t border-slate-200"></div>
           <div className="w-full">
             <h3 className="text-right text-slate-700 font-urdu font-bold text-sm mb-3">⭐ آخری دیکھی حدیث</h3>
             <button
@@ -194,7 +196,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
         </>
       )}
 
-      <div className="w-full border-t border-slate-100"></div>
+      <div className="w-full border-t border-slate-200"></div>
 
       {/* ── محفوظ احادیث ── */}
       <div className="w-full">
@@ -211,9 +213,26 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
         ) : (
           <div className="space-y-2">
             {savedHadiths.map((h, i) => (
-              <div key={i} className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1.5">
+              <div
+                key={i}
+                onClick={() => {
+                  if (onGoToSavedHadith && h.chapterKey) {
+                    onGoToSavedHadith(h.book, h.chapterKey, h.chapterName || '', h.from || 0, h.to || 0, h.num);
+                    onClose();
+                  }
+                }}
+                className={`bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1.5 ${onGoToSavedHadith && h.chapterKey ? 'cursor-pointer active:scale-95 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all' : ''}`}
+              >
                 <div className="flex items-center justify-between">
-                  <button onClick={() => handleRemoveHadith(h.num, h.book)} className="text-[10px] text-red-400 font-bold border border-red-200 bg-red-50 px-2 py-0.5 rounded-lg">✕</button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRemoveHadith(h.num, h.book); }}
+                      className="text-[10px] text-red-400 font-bold border border-red-200 bg-red-50 px-2 py-0.5 rounded-lg"
+                    >✕</button>
+                    {onGoToSavedHadith && h.chapterKey && (
+                      <span className="text-[9px] text-emerald-600 font-urdu border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 rounded-lg">← کھولیں</span>
+                    )}
+                  </div>
                   <div className="text-right">
                     <span className="text-[10px] text-emerald-700 font-urdu font-bold">{h.bookName}</span>
                     <span className="text-[10px] text-slate-400 font-mono mr-1"> #{h.num}</span>
@@ -227,7 +246,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
         )}
       </div>
 
-      <div className="w-full border-t border-slate-100"></div>
+      <div className="w-full border-t border-slate-200"></div>
 
       {/* ── محفوظ مساجد ── */}
       <div className="w-full">
@@ -273,7 +292,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
         )}
       </div>
 
-      <div className="w-full border-t border-slate-100"></div>
+      <div className="w-full border-t border-slate-200"></div>
 
       {/* Future placeholders */}
       <div className="w-full space-y-2 opacity-40">
@@ -290,6 +309,41 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
       >
         ← ایپ پر واپس جائیں
       </button>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center px-6 z-50"
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xs bg-white rounded-2xl p-5 shadow-xl space-y-4"
+          >
+            <div className="text-center space-y-1.5">
+              <div className="w-12 h-12 mx-auto rounded-full bg-red-50 flex items-center justify-center">
+                <LogOut size={20} className="text-red-500" />
+              </div>
+              <h3 className="text-slate-800 font-urdu font-bold text-base">کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟</h3>
+              <p className="text-slate-400 font-urdu text-xs">آپ کو دوبارہ لاگ ان کرنا پڑے گا</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-urdu font-bold text-sm rounded-xl transition-all"
+              >
+                منسوخ کریں
+              </button>
+              <button
+                onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
+                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 active:scale-95 text-white font-urdu font-bold text-sm rounded-xl transition-all"
+              >
+                لاگ آؤٹ کریں
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
