@@ -331,9 +331,11 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                     // HadithView خود lastSeen localStorage سے پڑھ کر جائے گا
                   }}
                   onGoToSavedHadith={(bookKey, chapterKey, chapterName, from, to, hadithNum) => {
-                    setPendingHadithNav({ bookKey, chapterKey, chapterName, from, to, hadithNum });
-                    setScrollToHadithNum(hadithNum);
                     nav.navigateTo('hadith');
+                    setTimeout(() => {
+                      setPendingHadithNav({ bookKey, chapterKey, chapterName, from, to, hadithNum });
+                      setScrollToHadithNum(hadithNum);
+                    }, 120);
                   }}
                 />
               )}
