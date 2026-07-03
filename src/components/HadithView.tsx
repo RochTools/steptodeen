@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, AlertCircle, RefreshCw, BookOpen } from 'lucide-react';
 import { HadithBook, Hadith } from '../types';
 
@@ -113,9 +113,16 @@ const HADITH_BOOKS: HadithBook[] = [
 
 interface HadithViewProps {
   onBack?: () => void;
+  scrollToHadithNum?: number | null;
+  onScrollHandled?: () => void;
+  pendingHadithNav?: {
+    bookKey: string; chapterKey: string; chapterName: string;
+    from: number; to: number; hadithNum: number;
+  } | null;
+  onPendingHandled?: () => void;
 }
 
-export const HadithView: React.FC<HadithViewProps> = ({ onBack }) => {
+export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNum, onScrollHandled, pendingHadithNav, onPendingHandled }) => {
   const [currentScreen, setCurrentScreen] = useState<'books' | 'chapters' | 'reader'>('books');
   const [selectedBook, setSelectedBook] = useState<HadithBook | null>(null);
   const [chapters, setChapters] = useState<{ [key: string]: any } | null>(null);
@@ -144,6 +151,49 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack }) => {
 
   const [cacheChapters, setCacheChapters] = useState<{ [key: string]: any }>({});
   const [cachePages, setCachePages] = useState<{ [key: string]: any }>({});
+
+  // ── scroll system ─────────────────────────────────────────────
+  const hadithRefs = useRef<{ [num: number]: HTMLDivElement | null }>({});
+
+  // ── pendingHadithNav: UserDashboard سے آئے تو کتاب+باب+حدیث کھولیں ──
+  const pendingHadithNavRef = useRef(pendingHadithNav);
+  pendingHadithNavRef.current = pendingHadithNav;
+
+  useEffect(() => {
+    const nav = pendingHadithNavRef.current;
+    if (!nav) return;
+    const book = HADITH_BOOKS.find(b => b.key === nav.bookKey);
+    if (!book) return;
+    // تھوڑی دیر بعد call کریں تاکہ handleOpenReader define ہو چکا ہو
+    const t = setTimeout(() => {
+      handleOpenReader(nav.chapterKey, nav.chapterName, nav.from, nav.to, book);
+      onPendingHandled?.();
+    }, 50);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingHadithNav]);
+
+  // ── scrollToHadithNum آنے پر صحیح page پر جا کر scroll کریں ──
+  useEffect(() => {
+    if (!scrollToHadithNum || currentScreen !== 'reader' || hadiths.length === 0 || loading) return;
+
+    const idx = hadiths.findIndex(h => h.num === scrollToHadithNum);
+    if (idx === -1) return;
+
+    const targetPage = Math.ceil((idx + 1) / perPage);
+    setPage(targetPage);
+
+    setTimeout(() => {
+      const el = hadithRefs.current[scrollToHadithNum];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.transition = 'box-shadow 0.3s ease';
+        el.style.boxShadow = '0 0 0 3px #059669';
+        setTimeout(() => { el.style.boxShadow = ''; }, 1800);
+      }
+      onScrollHandled?.();
+    }, 400);
+  }, [scrollToHadithNum, currentScreen, hadiths, loading]);
 
   // Android back button — currentScreen کے حساب سے
   useEffect(() => {
@@ -511,7 +561,12 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack }) => {
               const gradeInfo = getGradeInfo(hadith.grades);
 
               return (
-                <div key={hadith.num} className="bg-white rounded-lg overflow-hidden text-right" style={{boxShadow: '0 4px 18px 0 rgba(0,0,0,0.10), 0 1.5px 5px 0 rgba(0,0,0,0.07)'}}>
+                <div
+                  key={hadith.num}
+                  ref={el => { hadithRefs.current[hadith.num] = el; }}
+                  className="bg-white rounded-lg overflow-hidden text-right"
+                  style={{boxShadow: '0 4px 18px 0 rgba(0,0,0,0.10), 0 1.5px 5px 0 rgba(0,0,0,0.07)'}}
+                >
                   <div className="bg-emerald-50 border-b border-slate-100 p-2 px-3 flex justify-between items-center text-emerald-900 text-[10px] font-bold">
                     <div className="flex items-center gap-1.5">
                       <span className="font-mono bg-white text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg">{hadith.num}</span>
