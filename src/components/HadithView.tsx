@@ -155,27 +155,63 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNu
   // ── scroll system ─────────────────────────────────────────────
   const hadithRefs = useRef<{ [num: number]: HTMLDivElement | null }>({});
 
-  // ── pendingHadithNav: UserDashboard سے آئے تو کتاب+باب+حدیث کھولیں ──
+  // ── pendingHadithNav: mount ہوتے ہی initial screen reader پر لے جائیں ──
   const pendingHadithNavRef = useRef(pendingHadithNav);
-  pendingHadithNavRef.current = pendingHadithNav;
 
   useEffect(() => {
     const nav = pendingHadithNavRef.current;
     if (!nav) return;
+
     const book = HADITH_BOOKS.find(b => b.key === nav.bookKey);
     if (!book) return;
-    // تھوڑی دیر بعد call کریں تاکہ handleOpenReader define ہو چکا ہو
-    const t = setTimeout(() => {
-      handleOpenReader(nav.chapterKey, nav.chapterName, nav.from, nav.to, book);
-      onPendingHandled?.();
-    }, 50);
-    return () => clearTimeout(t);
+
+    // براہ راست state set کریں — handleOpenReader کا انتظار نہیں
+    setSelectedBook(book);
+    setChapters(cacheChapters[book.key] || null);
+    setSelectedChapter({ key: nav.chapterKey, name: nav.chapterName, from: nav.from, to: nav.to });
+    setCurrentScreen('reader');
+    setPage(1);
+    setLoading(true);
+    setErrorObj(null);
+    setSearchQuery('');
+    setSearchResult(null);
+
+    // data fetch کریں
+    const cacheKey = `${book.key}_sec_${nav.chapterKey}`;
+    if (cachePages[cacheKey]) {
+      setHadiths(cachePages[cacheKey]);
+      setLoading(false);
+    } else {
+      Promise.all([
+        fetch(`https://cdn.jsdelivr.net/gh/faysal-ahmad-ridoy/hadith-bd@main/ar/${book.key}/${nav.chapterKey}.json`).then(r => r.json()),
+        fetch(`https://cdn.jsdelivr.net/gh/faysal-ahmad-ridoy/hadith-bd@main/ur/${book.key}/${nav.chapterKey}.json`).then(r => r.json())
+      ]).then(([dataAr, dataUr]) => {
+        const arHadiths = dataAr.hadiths || [];
+        const urHadiths = dataUr.hadiths || [];
+        const urMap: { [key: string]: string } = {};
+        urHadiths.forEach((h: any) => { urMap[h.hadithnumber] = h.text || ''; });
+        const merged: Hadith[] = arHadiths.map((h: any) => ({
+          num: h.hadithnumber,
+          ar: h.text || '',
+          ur: urMap[h.hadithnumber] || ''
+        }));
+        setCachePages(prev => ({ ...prev, [cacheKey]: merged }));
+        setHadiths(merged);
+        setLoading(false);
+      }).catch(() => {
+        setErrorObj({ chapterKey: nav.chapterKey, chapterName: nav.chapterName, from: nav.from, to: nav.to });
+        setLoading(false);
+      });
+    }
+
+    onPendingHandled?.();
+  // صرف mount پر ایک بار چلے
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingHadithNav]);
+  }, []);
 
   // ── scrollToHadithNum آنے پر صحیح page پر جا کر scroll کریں ──
   useEffect(() => {
-    if (!scrollToHadithNum || currentScreen !== 'reader' || hadiths.length === 0 || loading) return;
+    if (!scrollToHadithNum || currentScreen !== 'reader' || loading || hadiths.length === 0) return;
 
     const idx = hadiths.findIndex(h => h.num === scrollToHadithNum);
     if (idx === -1) return;
@@ -193,7 +229,8 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNu
       }
       onScrollHandled?.();
     }, 400);
-  }, [scrollToHadithNum, currentScreen, hadiths, loading]);
+  // loading false ہوتے ہی چلے — یہی اہم trigger ہے
+  }, [scrollToHadithNum, currentScreen, loading]);
 
   // Android back button — currentScreen کے حساب سے
   useEffect(() => {
