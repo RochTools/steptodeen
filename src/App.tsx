@@ -278,6 +278,7 @@ const handleSelectSurah = useCallback((surahNum: number) => {
 
               {currentView === 'hadith' && (
                 <HadithView
+                  key={pendingHadithNav ? `nav-${pendingHadithNav.hadithNum}` : 'default'}
                   onBack={() => nav.goBack()}
                   pendingHadithNav={pendingHadithNav}
                   onPendingHandled={() => setPendingHadithNav(null)}
@@ -331,11 +332,9 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                     // HadithView خود lastSeen localStorage سے پڑھ کر جائے گا
                   }}
                   onGoToSavedHadith={(bookKey, chapterKey, chapterName, from, to, hadithNum) => {
+                    setPendingHadithNav({ bookKey, chapterKey, chapterName, from, to, hadithNum });
+                    setScrollToHadithNum(hadithNum);
                     nav.navigateTo('hadith');
-                    setTimeout(() => {
-                      setPendingHadithNav({ bookKey, chapterKey, chapterName, from, to, hadithNum });
-                      setScrollToHadithNum(hadithNum);
-                    }, 120);
                   }}
                 />
               )}
