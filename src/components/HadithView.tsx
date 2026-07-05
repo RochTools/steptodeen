@@ -155,17 +155,20 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNu
   // ── scroll system ─────────────────────────────────────────────
   const hadithRefs = useRef<{ [num: number]: HTMLDivElement | null }>({});
 
-  // ── pendingHadithNav: mount ہوتے ہی initial screen reader پر لے جائیں ──
-  const pendingHadithNavRef = useRef(pendingHadithNav);
-
+  // ── pendingHadithNav: reactive — جب بھی nav آئے reader پر لے جائیں ──
+  // FIX 1: [] کی بجائے [pendingHadithNav] — remount کے بغیر کام کرے
+  // FIX 2: onPendingHandled() پہلے — key نہ ہونے کی وجہ سے remount نہیں ہوگا
+  // FIX 3: fawazahmed0 API — handleOpenReader جیسا ہی، حدیث نمبر match کریں گے
   useEffect(() => {
-    const nav = pendingHadithNavRef.current;
-    if (!nav) return;
+    if (!pendingHadithNav) return;
 
+    const nav = pendingHadithNav;
     const book = HADITH_BOOKS.find(b => b.key === nav.bookKey);
     if (!book) return;
 
-    // براہ راست state set کریں — handleOpenReader کا انتظار نہیں
+    // فوری صاف کریں — key prop نہیں ہے تو remount نہیں ہوگا، state محفوظ رہے گا
+    onPendingHandled?.();
+
     setSelectedBook(book);
     setChapters(cacheChapters[book.key] || null);
     setSelectedChapter({ key: nav.chapterKey, name: nav.chapterName, from: nav.from, to: nav.to });
@@ -176,40 +179,48 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNu
     setSearchQuery('');
     setSearchResult(null);
 
-    // data fetch کریں
     const cacheKey = `${book.key}_sec_${nav.chapterKey}`;
+
     if (cachePages[cacheKey]) {
-      setHadiths(cachePages[cacheKey]);
+      const [dataAr, dataUr] = cachePages[cacheKey];
+      const arHadiths = dataAr.hadiths || [];
+      const urHadiths = dataUr.hadiths || [];
+      const urMap: { [key: string]: string } = {};
+      urHadiths.forEach((h: any) => { urMap[h.hadithnumber] = h.text || ''; });
+      const parsed: Hadith[] = arHadiths.map((h: any) => ({
+        num: h.hadithnumber, ar: h.text || '', ur: urMap[h.hadithnumber] || '', grades: h.grades || []
+      }));
+      setHadiths(parsed);
       setLoading(false);
-    } else {
-      Promise.all([
-        fetch(`https://cdn.jsdelivr.net/gh/faysal-ahmad-ridoy/hadith-bd@main/ar/${book.key}/${nav.chapterKey}.json`).then(r => r.json()),
-        fetch(`https://cdn.jsdelivr.net/gh/faysal-ahmad-ridoy/hadith-bd@main/ur/${book.key}/${nav.chapterKey}.json`).then(r => r.json())
-      ]).then(([dataAr, dataUr]) => {
-        const arHadiths = dataAr.hadiths || [];
-        const urHadiths = dataUr.hadiths || [];
-        const urMap: { [key: string]: string } = {};
-        urHadiths.forEach((h: any) => { urMap[h.hadithnumber] = h.text || ''; });
-        const merged: Hadith[] = arHadiths.map((h: any) => ({
-          num: h.hadithnumber,
-          ar: h.text || '',
-          ur: urMap[h.hadithnumber] || ''
-        }));
-        setCachePages(prev => ({ ...prev, [cacheKey]: merged }));
-        setHadiths(merged);
-        setLoading(false);
-      }).catch(() => {
-        setErrorObj({ chapterKey: nav.chapterKey, chapterName: nav.chapterName, from: nav.from, to: nav.to });
-        setLoading(false);
-      });
+      return;
     }
 
-    onPendingHandled?.();
-  // صرف mount پر ایک بار چلے
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // handleOpenReader جیسا ہی URL — حدیث نمبر match کریں گے
+    Promise.all([
+      fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-${book.key}/sections/${nav.chapterKey}.min.json`).then(r => r.json()),
+      fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-${book.key}/sections/${nav.chapterKey}.min.json`).then(r => r.json())
+    ]).then(([dataAr, dataUr]) => {
+      setCachePages(prev => ({ ...prev, [cacheKey]: [dataAr, dataUr] }));
+      const arHadiths = dataAr.hadiths || [];
+      const urHadiths = dataUr.hadiths || [];
+      const urMap: { [key: string]: string } = {};
+      urHadiths.forEach((h: any) => { urMap[h.hadithnumber] = h.text || ''; });
+      const parsed: Hadith[] = arHadiths.map((h: any) => ({
+        num: h.hadithnumber, ar: h.text || '', ur: urMap[h.hadithnumber] || '', grades: h.grades || []
+      }));
+      setHadiths(parsed);
+      setLoading(false);
+    }).catch(() => {
+      setErrorObj('حدیثِ مبارکہ لوڈ کرنے میں ناکامی ہوئی۔ برائے مہربانی انٹرنیٹ کنکشن چیک کریں۔');
+      setLoading(false);
+    });
 
-  // ── scrollToHadithNum آنے پر صحیح page پر جا کر scroll کریں ──
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingHadithNav]);
+
+  // ── scroll + highlight: loading false ہوتے ہی چلے ──
+  // FIX 4: timeout 600ms — page re-render کے لیے کافی وقت
+  // FIX 5: background + border highlight — واضح اور smooth
   useEffect(() => {
     if (!scrollToHadithNum || currentScreen !== 'reader' || loading || hadiths.length === 0) return;
 
@@ -223,13 +234,16 @@ export const HadithView: React.FC<HadithViewProps> = ({ onBack, scrollToHadithNu
       const el = hadithRefs.current[scrollToHadithNum];
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.style.transition = 'box-shadow 0.3s ease';
+        el.style.transition = 'background-color 0.4s ease, box-shadow 0.4s ease';
+        el.style.backgroundColor = '#ecfdf5';
         el.style.boxShadow = '0 0 0 3px #059669';
-        setTimeout(() => { el.style.boxShadow = ''; }, 1800);
+        setTimeout(() => {
+          el.style.backgroundColor = '';
+          el.style.boxShadow = '';
+        }, 2500);
       }
       onScrollHandled?.();
-    }, 400);
-  // loading false ہوتے ہی چلے — یہی اہم trigger ہے
+    }, 600);
   }, [scrollToHadithNum, currentScreen, loading]);
 
   // Android back button — currentScreen کے حساب سے
