@@ -278,7 +278,6 @@ const handleSelectSurah = useCallback((surahNum: number) => {
 
               {currentView === 'hadith' && (
                 <HadithView
-                  key={pendingHadithNav ? `nav-${pendingHadithNav.hadithNum}` : 'default'}
                   onBack={() => nav.goBack()}
                   pendingHadithNav={pendingHadithNav}
                   onPendingHandled={() => setPendingHadithNav(null)}
