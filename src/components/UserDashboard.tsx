@@ -180,7 +180,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
           <div className="w-full">
             <h3 className="text-right text-slate-700 font-urdu font-bold text-sm mb-3">⭐ آخری دیکھی حدیث</h3>
             <button
-              onClick={() => { if (onGoToLastSeen) { onGoToLastSeen(); onClose(); } }}
+              onClick={() => { if (onGoToLastSeen) { onGoToLastSeen(); } }}
               className="w-full bg-amber-50 border border-amber-200 rounded-xl p-3 text-right hover:bg-amber-100 active:scale-95 transition-all"
             >
               <div className="flex items-center justify-between mb-1.5">
@@ -218,7 +218,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
                 onClick={() => {
                   if (onGoToSavedHadith && h.chapterKey) {
                     onGoToSavedHadith(h.book, h.chapterKey, h.chapterName || '', h.from || 0, h.to || 0, h.num);
-                    onClose();
+                    // onClose() نہ لگائیں — یہ goBack() کرتا ہے جو navigateTo('hadith') کو cancel کر دیتا ہے
                   }
                 }}
                 className={`bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1.5 ${onGoToSavedHadith && h.chapterKey ? 'cursor-pointer active:scale-95 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all' : 'cursor-default'}`}
