@@ -8,11 +8,10 @@ interface UserDashboardProps {
   onLogout: () => void;
   onClose: () => void;
   onOpenMosque: (mosque: Mosque) => void;
-  onGoToLastSeen?: () => void;
   onGoToSavedHadith?: (bookKey: string, chapterKey: string, chapterName: string, from: number, to: number, hadithNum: number) => void;
 }
 
-export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoToLastSeen, onGoToSavedHadith }: UserDashboardProps) {
+export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoToSavedHadith }: UserDashboardProps) {
   const [profileImage, setProfileImage] = useState<string | null>(() => {
     return localStorage.getItem('user_profile_image') || null;
   });
@@ -173,44 +172,50 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
         )}
       </div>
 
-      {/* ── آخری دیکھی حدیث ── */}
-      {lastSeenHadith && (
-        <>
-          <div className="w-full border-t border-slate-200"></div>
-          <div className="w-full">
-            <h3 className="text-right text-slate-700 font-urdu font-bold text-sm mb-3">⭐ آخری دیکھی حدیث</h3>
-            <button
-              onClick={() => { if (onGoToLastSeen) { onGoToLastSeen(); } }}
-              className="w-full bg-amber-50 border border-amber-200 rounded-xl p-3 text-right hover:bg-amber-100 active:scale-95 transition-all"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-amber-600 text-[10px] font-bold font-mono">← واپس جائیں</span>
-                <div>
-                  <span className="text-[10px] text-amber-700 font-urdu font-bold">{lastSeenHadith.bookName}</span>
-                  <span className="text-[10px] text-amber-500 font-mono mr-1"> #{lastSeenHadith.hadithNum}</span>
-                </div>
-              </div>
-              <p className="text-[10px] text-amber-600 font-urdu">{lastSeenHadith.chapterName}</p>
-            </button>
-          </div>
-        </>
-      )}
+      {/* آخری دیکھی حدیث section ہٹا دیا — اب محفوظ احادیث کے اندر ہے */}
 
       <div className="w-full border-t border-slate-200"></div>
 
-      {/* ── محفوظ احادیث ── */}
+      {/* ── محفوظ احادیث + آخری دیکھی حدیث ── */}
       <div className="w-full">
         <h3 className="text-right text-slate-700 font-urdu font-bold text-sm mb-3">
           📚 محفوظ احادیث
           <span className="text-slate-400 font-normal text-xs mr-1">({savedHadiths.length})</span>
         </h3>
 
-        {savedHadiths.length === 0 ? (
+        {/* آخری دیکھی حدیث card — onGoToSavedHadith سے scroll بھی کرے گا */}
+        {lastSeenHadith && onGoToSavedHadith && (
+          <div
+            onClick={() => {
+              onGoToSavedHadith(
+                lastSeenHadith.bookKey,
+                lastSeenHadith.chapterKey,
+                lastSeenHadith.chapterName,
+                lastSeenHadith.from || 0,
+                lastSeenHadith.to || 0,
+                lastSeenHadith.hadithNum
+              );
+            }}
+            className="mb-2 bg-amber-50 border border-amber-200 rounded-xl p-3 cursor-pointer active:scale-95 hover:bg-amber-100 transition-all"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[9px] text-amber-600 font-urdu border border-amber-200 bg-amber-100 px-1.5 py-0.5 rounded-lg">← کھولیں</span>
+              <div className="text-right">
+                <span className="text-[10px] text-amber-700 font-urdu font-bold">{lastSeenHadith.bookName}</span>
+                <span className="text-[10px] text-amber-500 font-mono mr-1"> #{lastSeenHadith.hadithNum}</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-amber-600 font-urdu text-right">⭐ آخری دیکھی حدیث</p>
+            <p className="text-[10px] text-amber-400 font-urdu text-right mt-0.5">{lastSeenHadith.chapterName}</p>
+          </div>
+        )}
+
+        {!lastSeenHadith && savedHadiths.length === 0 ? (
           <div className="text-center py-5 bg-slate-50 rounded-2xl border border-slate-100">
             <p className="text-slate-400 font-urdu text-xs">ابھی کوئی حدیث محفوظ نہیں</p>
             <p className="text-slate-300 font-urdu text-[10px] mt-1">حدیث پر Save بٹن دبائیں</p>
           </div>
-        ) : (
+        ) : savedHadiths.length > 0 ? (
           <div className="space-y-2">
             {savedHadiths.map((h, i) => (
               <div
@@ -243,7 +248,7 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="w-full border-t border-slate-200"></div>
