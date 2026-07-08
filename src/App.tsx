@@ -326,10 +326,6 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                     mosques.setSavedPopupMosques([]);
                     nav.setNavigationHistory(['login-splash']);
                   }}
-                  onGoToLastSeen={() => {
-                    nav.navigateTo('hadith');
-                    // HadithView خود lastSeen localStorage سے پڑھ کر جائے گا
-                  }}
                   onGoToSavedHadith={(bookKey, chapterKey, chapterName, from, to, hadithNum) => {
                     setPendingHadithNav({ bookKey, chapterKey, chapterName, from, to, hadithNum });
                     setScrollToHadithNum(hadithNum);
