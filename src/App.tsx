@@ -2,6 +2,7 @@ import React, { Component, Suspense, lazy, useCallback, useEffect, useRef, useSt
 import { initializeFirebaseAtRuntime, subscribeToAuthState } from './firebase';
 import { onSnapshot, collection, doc, getDoc } from 'firebase/firestore';
 import { initFCM, listenForegroundMessages } from './utils/fcm';
+import { requestNotificationPermission, scheduleAllPrayerNotifications } from './utils/notifications';
 
 // ============ HOOKS ============
 import { useAuth } from './hooks/useAuth';
@@ -124,11 +125,29 @@ const handleSelectSurah = useCallback((surahNum: number) => {
       unsubscribe = listenForegroundMessages();
     }
 
+    // ── نماز notifications setup ──────────────────────────────
+    const setupPrayerNotifications = async () => {
+      const granted = await requestNotificationPermission();
+      if (!granted || !isMountedLocal) return;
+
+      // prayer.prayerTimes میں اوقات ہیں تو schedule کریں
+      if (prayer.prayerTimes) {
+        scheduleAllPrayerNotifications({
+          fajr:    prayer.prayerTimes.fajr,
+          zuhr:    prayer.prayerTimes.zuhr,
+          asr:     prayer.prayerTimes.asr,
+          maghrib: prayer.prayerTimes.maghrib,
+          isha:    prayer.prayerTimes.isha,
+        });
+      }
+    };
+    setupPrayerNotifications();
+
     return () => {
       isMountedLocal = false;
       if (unsubscribe) unsubscribe();
     };
-  }, [auth.isAnyUser, auth.isAuthenticated, auth.authUid]);
+  }, [auth.isAnyUser, auth.isAuthenticated, auth.authUid, prayer.prayerTimes]);
 
   // ============ FIREBASE SETUP ============
   useEffect(() => {
