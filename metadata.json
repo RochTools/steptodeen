@@ -1,5 +1,5 @@
 {
-  "name": "StepToDeen",
+  "name": "StepTuDeen",
   "description": "An Islamic companion application featuring Quran, Hadith, local Mosque finder with real-time jamaat/Jumah timings managed by Imams, and Masnoon prayers.",
   "requestFramePermissions": [
     "geolocation",
