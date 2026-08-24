@@ -183,6 +183,19 @@ function pad3(value: number) {
   return String(value).padStart(3, '0');
 }
 
+function disposeAudio(audio: HTMLAudioElement | null) {
+  if (!audio) return;
+  // Removing src can emit an error event in some mobile browsers. Detach every
+  // handler first so an old track cannot mark the new, already-playing track as failed.
+  audio.onplay = null;
+  audio.onpause = null;
+  audio.onended = null;
+  audio.onerror = null;
+  audio.pause();
+  audio.removeAttribute('src');
+  audio.load();
+}
+
 function readLastSeen(): LastSeen | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -410,7 +423,7 @@ export const QuranView: React.FC<QuranViewProps> = () => {
 
   useEffect(() => {
     return () => {
-      audioRef.current?.pause();
+      disposeAudio(audioRef.current);
       audioRef.current = null;
     };
   }, []);
@@ -436,7 +449,7 @@ export const QuranView: React.FC<QuranViewProps> = () => {
   };
 
   const closeReader = () => {
-    audioRef.current?.pause();
+    disposeAudio(audioRef.current);
     audioRef.current = null;
     audioStateRef.current = null;
     setAudioState(null);
@@ -505,20 +518,24 @@ export const QuranView: React.FC<QuranViewProps> = () => {
   };
 
   const playTrack = (state: AudioState) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
+    disposeAudio(audioRef.current);
+    audioRef.current = null;
+
     const audio = new Audio(`${AUDIO_BASE}${pad3(state.surah)}${pad3(state.ayah)}.mp3`);
     audio.preload = 'auto';
     audioRef.current = audio;
     updateAudio({ ...state, status: 'loading' });
 
-    audio.onplay = () => updateAudio({ ...audioStateRef.current!, status: 'playing' });
+    audio.onplay = () => {
+      if (audioRef.current !== audio || !audioStateRef.current) return;
+      updateAudio({ ...audioStateRef.current, status: 'playing' });
+    };
     audio.onpause = () => {
-      if (!audio.ended && audioStateRef.current) updateAudio({ ...audioStateRef.current, status: 'paused' });
+      if (audioRef.current !== audio || audio.ended || !audioStateRef.current) return;
+      updateAudio({ ...audioStateRef.current, status: 'paused' });
     };
     audio.onended = () => {
+      if (audioRef.current !== audio) return;
       const current = audioStateRef.current;
       if (!current) return;
       if (current.mode === 'surah' && current.ayah < current.total) {
@@ -528,9 +545,14 @@ export const QuranView: React.FC<QuranViewProps> = () => {
       }
     };
     audio.onerror = () => {
-      if (audioStateRef.current) updateAudio({ ...audioStateRef.current, status: 'error' });
+      // Ignore stale errors fired by a track that has already been replaced.
+      if (audioRef.current !== audio || !audioStateRef.current) return;
+      updateAudio({ ...audioStateRef.current, status: 'error' });
     };
-    audio.play().catch(() => updateAudio({ ...state, status: 'paused' }));
+
+    audio.play().catch(() => {
+      if (audioRef.current === audio) updateAudio({ ...state, status: 'paused' });
+    });
   };
 
   const startAudio = (mode: AudioMode) => {
@@ -554,8 +576,7 @@ export const QuranView: React.FC<QuranViewProps> = () => {
   };
 
   const stopAudio = () => {
-    audioRef.current?.pause();
-    if (audioRef.current) audioRef.current.src = '';
+    disposeAudio(audioRef.current);
     audioRef.current = null;
     audioStateRef.current = null;
     setAudioState(null);
@@ -685,14 +706,16 @@ export const QuranView: React.FC<QuranViewProps> = () => {
                     {verses.map((verse, index) => {
                       const ayah = verse.id || index + 1;
                       const saved = lastSeen?.surah === selectedSurah && lastSeen?.ayah === ayah;
-                      const playing = audioState?.surah === selectedSurah && audioState?.ayah === ayah && audioState.status === 'playing';
+                      const isCurrentAudio = audioState?.surah === selectedSurah && audioState?.ayah === ayah;
+                      const playing = isCurrentAudio && audioState?.status === 'playing';
+                      const loadingAudio = isCurrentAudio && audioState?.status === 'loading';
                       return (
                         <article id={`app-ayah-${selectedSurah}-${ayah}`} key={ayah} className={`border-b border-slate-100 py-4 transition ${playing ? 'rounded-xl bg-[#f0f7f1] px-3' : ''}`}>
                           <div className="mb-2 flex items-center justify-between gap-2">
                             <button onClick={() => saveLastSeen(ayah)} className="rounded-full bg-[#f0f7f1] px-2.5 py-1 text-[11px] font-bold text-[#14532d]">Ayah {ayah}</button>
                             <div className="flex items-center gap-2">
                               <button onClick={() => saveLastSeen(ayah)} className={`flex h-8 w-8 items-center justify-center rounded-full border ${saved ? 'border-[#14532d] bg-[#14532d] text-white' : 'border-[#d8e4da] text-slate-500'}`} aria-label="Save last seen"><Bookmark size={14} fill={saved ? 'currentColor' : 'none'} /></button>
-                              <button onClick={() => setAudioChoiceAyah(ayah)} className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold ${playing ? 'border-[#14532d] bg-[#14532d] text-white' : 'border-[#d8e4da] bg-[#f0f7f1] text-[#14532d]'}`}><Volume2 size={14} /> {playing ? 'Playing' : 'Listen'}</button>
+                              <button onClick={() => setAudioChoiceAyah(ayah)} className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold ${playing ? 'border-[#14532d] bg-[#14532d] text-white' : 'border-[#d8e4da] bg-[#f0f7f1] text-[#14532d]'}`}><Volume2 size={14} /> {loadingAudio ? 'Loading' : playing ? 'Playing' : 'Listen'}</button>
                             </div>
                           </div>
                           <div className="quran-hafs mb-2 text-right text-[29px] leading-[2.15]" dir="rtl">{verse.text}</div>
