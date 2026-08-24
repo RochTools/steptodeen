@@ -626,7 +626,7 @@ export function LoginChoiceView({
               <path d="M9 14h6v7H9z" />
             </svg>
           </div>
-          <h1 className="text-black text-3xl font-black">StepToDeen</h1>
+          <h1 className="text-black text-3xl font-black">StepTuDeen</h1>
           <p className="text-slate-500 text-sm text-center">Your Islamic Digital Companion</p>
         </div>
 
@@ -724,7 +724,7 @@ export function LoginChoiceView({
           ) : imamOtpStep === 'forgot-email' ? (
             <>
               <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
-                <p className="text-rose-800 text-sm font-bold">🔑 Reset Imam Password</p>
+                <p className="text-rose-800 text-sm font-bold">Reset Imam Password</p>
                 <p className="text-rose-600 text-xs mt-1">Enter your email — we'll send an OTP to verify.</p>
               </div>
               <div className="space-y-1.5">
@@ -1231,7 +1231,7 @@ export function LoginChoiceView({
         )}
 
       </div>
-      <p className="text-slate-300 text-xs text-center max-w-xs" dir="ltr">Your information is stored securely in Firebase.</p>
+      <p className="text-slate-300 text-xs text-center max-w-xs" dir="ltr">Your information is stored securely in detabase.</p>
     </div>
   );
 }
