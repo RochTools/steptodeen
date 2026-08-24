@@ -1,8 +1,8 @@
 {
-  "id": "com.steptodeen.app",
-  "name": "StepToDeen - اسلامی راہنما",
-  "short_name": "StepToDeen",
-  "description": "اسلامی راہنمائی کا ڈیجیٹل ساتھی — نماز اوقات، قرآن، تسبیح",
+  "id": "com.steptudeen.app",
+  "name": "StepTuDeen",
+  "short_name": "StepTuDeen",
+  "description": "Quran (11 languages), Hadith books, Tasbih, Qibla direction, Prayer & Duas, Masjid Finder — all in one app.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,8 +10,8 @@
   "background_color": "#0c2f21",
   "theme_color": "#0c2f21",
   "orientation": "portrait-primary",
-  "lang": "ur",
-  "dir": "rtl",
+  "lang": "en",
+  "dir": "ltr",
   "prefer_related_applications": false,
   "related_applications": [],
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
@@ -40,14 +40,14 @@
   ],
   "shortcuts": [
     {
-      "name": "نماز اوقات",
-      "short_name": "نماز",
+      "name": "Prayer Times",
+      "short_name": "Prayer",
       "url": "/",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "تسبیح کاؤنٹر",
-      "short_name": "تسبیح",
+      "name": "Tasbih Counter",
+      "short_name": "Tasbih",
       "url": "/",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
