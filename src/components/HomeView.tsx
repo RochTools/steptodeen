@@ -400,19 +400,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
         }
       `}</style>
 
-      {/* ═══════════ TOP BANNER ═══════════ */}
-      <div
-        className="relative text-white overflow-hidden"
-        style={{
-          backgroundImage: "url('/mosque-bg.jpg')",
-          // Fit the image to the banner width instead of cropping/zooming it with `cover`.
-          backgroundSize: '100% auto',
-          backgroundPosition: 'center top',
-          backgroundRepeat: 'no-repeat',
-          backgroundColor: '#123c2f',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/70 pointer-events-none" />
+      {/* ═══════════ TOP BANNER — CSS Islamic pattern, no image ═══════════ */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#071f1b] via-[#0d4a3c] to-[#123c2f] text-white">
+        {/* Soft light and gold glow */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 12% 8%, rgba(231,198,107,.20), transparent 34%), radial-gradient(circle at 92% 5%, rgba(52,211,153,.15), transparent 30%), linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.28))',
+          }}
+        />
+
+        {/* Repeating geometric Islamic motif */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.14]"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23e7c66b' stroke-width='1'%3E%3Cpath d='M36 8l7 14 14 7-14 7-7 14-7-14-14-7 14-7z'/%3E%3Ccircle cx='36' cy='29' r='6'/%3E%3Cpath d='M0 0l18 18M72 0L54 18M0 72l18-18M72 72L54 54'/%3E%3C/g%3E%3C/svg%3E\")",
+            backgroundSize: '72px 72px',
+          }}
+        />
+
+        {/* Decorative corner rings */}
+        <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full border border-amber-200/15" />
+        <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full border border-emerald-200/10" />
+        <div className="pointer-events-none absolute -left-16 top-20 h-36 w-36 rounded-full border border-amber-200/10" />
 
         {/* Header Row */}
         <div className="relative z-10 flex flex-row-reverse items-start justify-between px-4 pt-4 mb-3">
@@ -649,57 +661,39 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* گرڈ کارڈز */}
           <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
             <div onClick={() => onNavigate('quran')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-1 flex items-center justify-center gap-2 text-emerald-700" dir="rtl">
-                <BookOpen size={15} strokeWidth={2.2} className="shrink-0" />
-                <span className="home-card-urdu-title text-[19px]">القرآن الكريم</span>
-              </div>
+              <BookOpen size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-emerald-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-emerald-700" dir="rtl">القرآن الكريم</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">Quran</span>
-              <span className="mt-0.5 text-[8.5px] text-slate-400">114 Makki and Madani Surahs</span>
             </div>
 
             <div onClick={() => onNavigate('hadith')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-1 flex items-center justify-center gap-2 text-blue-700" dir="rtl">
-                <Scroll size={15} strokeWidth={2.2} className="shrink-0" />
-                <span className="home-card-urdu-title text-[19px]">الحديث الشريف</span>
-              </div>
+              <Scroll size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-blue-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-blue-700" dir="rtl">الحديث الشريف</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-700">Hadith</span>
-              <span className="mt-0.5 text-[8.5px] text-slate-400">Authentic Hadith collections</span>
             </div>
 
             <div onClick={() => onNavigate('namaz')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-1 flex items-center justify-center gap-2 text-indigo-700" dir="rtl">
-                <User size={15} strokeWidth={2.2} className="shrink-0" />
-                <span className="home-card-urdu-title text-[19px]">نماز کا طریقہ</span>
-              </div>
+              <User size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-indigo-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-indigo-700" dir="rtl">نماز کا طریقہ</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-indigo-700">Prayer</span>
-              <span className="mt-0.5 text-[8.5px] text-slate-400">Step-by-step prayer guide</span>
             </div>
 
             <div onClick={() => onNavigate('duas')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-1 flex items-center justify-center gap-2 text-rose-700" dir="rtl">
-                <Heart size={15} strokeWidth={2.2} className="shrink-0" />
-                <span className="home-card-urdu-title text-[19px]">مسنون دعائیں</span>
-              </div>
+              <Heart size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-rose-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-rose-700" dir="rtl">مسنون دعائیں</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-rose-700">Duas</span>
-              <span className="mt-0.5 text-[8.5px] text-slate-400">Daily supplications and adhkar</span>
             </div>
 
             <div onClick={() => onNavigate('tasbih')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-1 flex items-center justify-center gap-2 text-amber-700" dir="rtl">
-                <CircleDot size={15} strokeWidth={2.2} className="shrink-0" />
-                <span className="home-card-urdu-title text-[19px]">تسبیح کاؤنٹر</span>
-              </div>
+              <CircleDot size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-amber-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-amber-700" dir="rtl">تسبیح کاؤنٹر</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-700">Tasbih</span>
-              <span className="mt-0.5 text-[8.5px] text-slate-400">Count your daily dhikr</span>
             </div>
 
             <div onClick={() => onNavigate('qibla')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-1 flex items-center justify-center gap-2 text-teal-700" dir="rtl">
-                <Compass size={15} strokeWidth={2.2} className="shrink-0" />
-                <span className="home-card-urdu-title text-[19px]">قبلہ رخ سمت</span>
-              </div>
+              <Compass size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-teal-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-teal-700" dir="rtl">قبلہ رخ سمت</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-teal-700">Qibla</span>
-              <span className="mt-0.5 text-[8.5px] text-slate-400">Find the accurate Qibla direction</span>
             </div>
           </div>
 
