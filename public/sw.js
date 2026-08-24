@@ -1,7 +1,7 @@
 // StepToDeen Service Worker — Optimized v3
-const CACHE_NAME = "steptodeen-v3";
-const STATIC_CACHE = "steptodeen-static-v3";
-const IMG_CACHE = "steptodeen-images-v3";
+const CACHE_NAME = "steptudeen-v3";
+const STATIC_CACHE = "steptudeen-static-v4";
+const IMG_CACHE = "steptudeen-images-v4";
 
 // FIX: Pre-cache these on install so first load is fast
 const PRECACHE_URLS = [
@@ -100,11 +100,11 @@ self.addEventListener('fetch', (event) => {
 // ── Push Notifications ────────────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
-  event.waitUntil(self.registration.showNotification(data.title || 'StepToDeen 🕌', {
-    body: data.body || 'نماز کا وقت ہو گیا',
+  event.waitUntil(self.registration.showNotification(data.title || 'StepTuDeen', {
+    body: data.body || 'namaz ka waqt ho gaya hai',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    dir: 'rtl', lang: 'ur',
+    dir: 'ltr', lang: 'en',
     vibrate: [200, 100, 200],
     data: data.url || '/'
   }));
