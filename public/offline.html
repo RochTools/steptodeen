@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ur" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StepToDeen - آف لائن</title>
+  <title>StepTuDeen · offline</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -20,7 +20,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
       color: #1e293b;
       padding: 1.5rem;
       text-align: center;
@@ -37,6 +37,7 @@
       font-weight: 900;
       color: #0c2f21;
       line-height: 1;
+      letter-spacing: -0.3px;
     }
 
     .divider {
@@ -67,7 +68,11 @@
       50% { opacity: 0.4; transform: scale(0.8); }
     }
 
-    .status-text { font-size: 0.78rem; color: #f87171; }
+    .status-text {
+      font-size: 0.78rem;
+      color: #f87171;
+      font-weight: 500;
+    }
 
     .card {
       background: #f8fafc;
@@ -83,9 +88,14 @@
       color: #0c2f21;
       line-height: 2;
       margin-bottom: 0.3rem;
+      font-weight: 500;
     }
 
-    .ayat-ref { font-size: 0.68rem; color: #64748b; }
+    .ayat-ref {
+      font-size: 0.68rem;
+      color: #64748b;
+      letter-spacing: 0.2px;
+    }
 
     .subtitle {
       font-size: 0.8rem;
@@ -106,46 +116,45 @@
       width: 100%;
       max-width: 300px;
       transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(12, 47, 33, 0.15);
     }
 
     button:active { transform: scale(0.97); }
+    button:hover { background: #124433; }
   </style>
 </head>
 <body>
 
+  <!-- offline icon (WiFi with cross) -->
   <svg class="offline-icon" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <!-- WiFi arc outer -->
     <path d="M10 30 Q40 5 70 30" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <!-- WiFi arc mid -->
     <path d="M20 42 Q40 25 60 42" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <!-- WiFi arc inner -->
     <path d="M30 54 Q40 46 50 54" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <!-- Center dot -->
     <circle cx="40" cy="64" r="4" fill="#94a3b8"/>
-    <!-- X cross (offline indicator) -->
     <circle cx="62" cy="18" r="13" fill="#fee2e2"/>
     <line x1="56" y1="12" x2="68" y2="24" stroke="#f87171" stroke-width="3" stroke-linecap="round"/>
     <line x1="68" y1="12" x2="56" y2="24" stroke="#f87171" stroke-width="3" stroke-linecap="round"/>
   </svg>
-  <div class="app-name">StepToDeen</div>
+
+  <div class="app-name">StepTuDeen</div>
   <div class="divider"></div>
 
   <div class="status">
     <div class="dot"></div>
-    <span class="status-text">انٹرنیٹ کنکشن نہیں ہے</span>
+    <span class="status-text">No internet connection</span>
   </div>
 
   <div class="card">
-    <div class="ayat">وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ</div>
-    <div class="ayat-ref">صبر اور نماز سے مدد لو — البقرہ: 45</div>
+    <div class="ayat">“And seek help through patience and prayer”</div>
+    <div class="ayat-ref">— Surah Al-Baqarah (2:45)</div>
   </div>
 
   <p class="subtitle">
-    آپ آف لائن ہیں<br/>
-    انٹرنیٹ آنے پر ایپ خود بخود اپڈیٹ ہو جائے گی
+    You are offline.<br />
+    The app will update automatically when you are back online.
   </p>
 
-  <button onclick="window.location.href='/'">دوبارہ کوشش کریں</button>
+  <button onclick="window.location.href='/'">try again</button>
 
 </body>
 </html>
