@@ -315,7 +315,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
     <div className="pb-16 animate-fadeIn bg-slate-50">
 
       {/* ═══════════ TOP BANNER ═══════════ */}
-      <div className="relative text-white overflow-hidden" style={{ backgroundImage: "url('/mosque-bg.jpg')", backgroundSize: 'cover', backgroundPosition: 'center 30%' }}>
+      <div
+        className="relative text-white overflow-hidden"
+        style={{
+          backgroundImage: "url('/mosque-bg.jpg')",
+          // Fit the image to the banner width instead of cropping/zooming it with `cover`.
+          backgroundSize: '100% auto',
+          backgroundPosition: 'center top',
+          backgroundRepeat: 'no-repeat',
+          backgroundColor: '#123c2f',
+        }}
+      >
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/70 pointer-events-none" />
 
         {/* Header Row */}
