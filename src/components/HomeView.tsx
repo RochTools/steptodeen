@@ -668,88 +668,79 @@ export const HomeView: React.FC<HomeViewProps> = ({
             )}
           </div>
 
-          {/* گرڈ کارڈز */}
+          {/* Main features and individual Hadith books — one equal square grid */}
           <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
-            <div onClick={() => onNavigate('quran')} className="relative col-span-2 bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <button type="button" onClick={() => onNavigate('quran')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
               <BookOpen size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-emerald-700" />
               <span className="home-card-urdu-title mb-1 text-[17px] text-emerald-700" dir="rtl">القرآن الكريم</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">Quran</span>
-            </div>
+            </button>
 
-            <div onClick={() => onNavigate('namaz')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <button type="button" onClick={() => onNavigate('namaz')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
               <User size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-indigo-700" />
               <span className="home-card-urdu-title mb-1 text-[17px] text-indigo-700" dir="rtl">نماز کا طریقہ</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-indigo-700">Prayer</span>
-            </div>
+            </button>
 
-            <div onClick={() => onNavigate('duas')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <button type="button" onClick={() => onNavigate('duas')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
               <Heart size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-rose-700" />
               <span className="home-card-urdu-title mb-1 text-[17px] text-rose-700" dir="rtl">مسنون دعائیں</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-rose-700">Duas</span>
-            </div>
+            </button>
 
-            <div onClick={() => onNavigate('tasbih')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <button type="button" onClick={() => onNavigate('tasbih')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
               <CircleDot size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-amber-700" />
               <span className="home-card-urdu-title mb-1 text-[17px] text-amber-700" dir="rtl">تسبیح کاؤنٹر</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-700">Tasbih</span>
-            </div>
+            </button>
 
-            <div onClick={() => onNavigate('qibla')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
+            <button type="button" onClick={() => onNavigate('qibla')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
               <Compass size={18} strokeWidth={2.1} className="mb-2 shrink-0 text-teal-700" />
               <span className="home-card-urdu-title mb-1 text-[17px] text-teal-700" dir="rtl">قبلہ رخ سمت</span>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-teal-700">Qibla</span>
-            </div>
-          </div>
+            </button>
 
-          {/* Individual Hadith book cards */}
-          <div className="mx-4 mt-1">
-            <div className="mb-2 text-center">
-              <div className="home-card-urdu-title text-[17px] font-bold text-slate-700" dir="rtl">کتبِ حدیث</div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">Hadith Collections</div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => openHadithBook('bukhari')} className="flex min-h-[108px] flex-col items-center justify-center rounded-lg bg-white p-3 text-center shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98]">
-                <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-emerald-700" />
-                <span className="home-card-urdu-title text-[17px] text-emerald-700" dir="rtl">صحیح بخاری</span>
-                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-700">Sahih Bukhari</span>
-              </button>
+            <button type="button" onClick={() => openHadithBook('bukhari')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
+              <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-emerald-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-emerald-700" dir="rtl">صحیح بخاری</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-700">Sahih Bukhari</span>
+            </button>
 
-              <button type="button" onClick={() => openHadithBook('muslim')} className="flex min-h-[108px] flex-col items-center justify-center rounded-lg bg-white p-3 text-center shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98]">
-                <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-blue-700" />
-                <span className="home-card-urdu-title text-[17px] text-blue-700" dir="rtl">صحیح مسلم</span>
-                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-blue-700">Sahih Muslim</span>
-              </button>
+            <button type="button" onClick={() => openHadithBook('muslim')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
+              <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-blue-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-blue-700" dir="rtl">صحیح مسلم</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-blue-700">Sahih Muslim</span>
+            </button>
 
-              <button type="button" onClick={() => openHadithBook('abudawud')} className="flex min-h-[108px] flex-col items-center justify-center rounded-lg bg-white p-3 text-center shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98]">
-                <Scroll size={18} strokeWidth={2.1} className="mb-2 text-indigo-700" />
-                <span className="home-card-urdu-title text-[17px] text-indigo-700" dir="rtl">سنن ابو داود</span>
-                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-indigo-700">Sunan Abu Dawud</span>
-              </button>
+            <button type="button" onClick={() => openHadithBook('abudawud')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
+              <Scroll size={18} strokeWidth={2.1} className="mb-2 text-indigo-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-indigo-700" dir="rtl">سنن ابو داود</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-indigo-700">Sunan Abu Dawud</span>
+            </button>
 
-              <button type="button" onClick={() => openHadithBook('tirmidhi')} className="flex min-h-[108px] flex-col items-center justify-center rounded-lg bg-white p-3 text-center shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98]">
-                <Scroll size={18} strokeWidth={2.1} className="mb-2 text-amber-700" />
-                <span className="home-card-urdu-title text-[17px] text-amber-700" dir="rtl">جامع ترمذی</span>
-                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-700">Jami at-Tirmidhi</span>
-              </button>
+            <button type="button" onClick={() => openHadithBook('tirmidhi')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
+              <Scroll size={18} strokeWidth={2.1} className="mb-2 text-amber-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-amber-700" dir="rtl">جامع ترمذی</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-amber-700">Jami at-Tirmidhi</span>
+            </button>
 
-              <button type="button" onClick={() => openHadithBook('nasai')} className="flex min-h-[108px] flex-col items-center justify-center rounded-lg bg-white p-3 text-center shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98]">
-                <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-teal-700" />
-                <span className="home-card-urdu-title text-[17px] text-teal-700" dir="rtl">سنن نسائی</span>
-                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-teal-700">Sunan an-Nasai</span>
-              </button>
+            <button type="button" onClick={() => openHadithBook('nasai')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
+              <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-teal-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-teal-700" dir="rtl">سنن نسائی</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-teal-700">Sunan an-Nasai</span>
+            </button>
 
-              <button type="button" onClick={() => openHadithBook('ibnmajah')} className="flex min-h-[108px] flex-col items-center justify-center rounded-lg bg-white p-3 text-center shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98]">
-                <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-rose-700" />
-                <span className="home-card-urdu-title text-[17px] text-rose-700" dir="rtl">سنن ابن ماجہ</span>
-                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-rose-700">Sunan Ibn Majah</span>
-              </button>
+            <button type="button" onClick={() => openHadithBook('ibnmajah')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
+              <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-rose-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-rose-700" dir="rtl">سنن ابن ماجہ</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-rose-700">Sunan Ibn Majah</span>
+            </button>
 
-              <button type="button" onClick={() => openHadithBook('malik')} className="col-span-2 flex min-h-[96px] flex-col items-center justify-center rounded-lg bg-white p-3 text-center shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.99]">
-                <BookOpen size={18} strokeWidth={2.1} className="mb-1.5 text-cyan-700" />
-                <span className="home-card-urdu-title text-[17px] text-cyan-700" dir="rtl">موطا امام مالک</span>
-                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-cyan-700">Muwatta Imam Malik</span>
-              </button>
-            </div>
+            <button type="button" onClick={() => openHadithBook('malik')} className="relative aspect-square rounded-lg bg-white p-3 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] transition-all active:scale-[0.98] flex flex-col items-center justify-center text-center">
+              <BookOpen size={18} strokeWidth={2.1} className="mb-2 text-cyan-700" />
+              <span className="home-card-urdu-title mb-1 text-[17px] text-cyan-700" dir="rtl">موطا امام مالک</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-cyan-700">Muwatta Imam Malik</span>
+            </button>
           </div>
 
           {/* آیتِ روز */}
