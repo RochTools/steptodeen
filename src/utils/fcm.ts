@@ -55,10 +55,10 @@ export function listenForegroundMessages() {
     onMessage(messaging, (payload) => {
       const { title, body } = payload.notification || {};
       if (Notification.permission === 'granted') {
-        new Notification(title || 'StepToDeen', {
-          body: body || 'نماز کا وقت ہو گیا',
+        new Notification(title || 'StepTuDeen', {
+          body: body || 'namaz ka waqt ho gaya hi',
           icon: '/icon-192.png',
-          dir: 'rtl',
+          dir: 'ltr',
           lang: 'ur'
         } as any);
       }
