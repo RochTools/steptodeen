@@ -35,6 +35,10 @@ const SURAH_NAMES_UR = [
   'النصر','المسد','الاخلاص','الفلق','الناس'
 ];
 
+const QURAN_CDN = 'https://cdn.jsdelivr.net/gh/RochTools/quran-api@main/Quran/';
+const QURAN_FALLBACK = 'https://raw.githubusercontent.com/RochTools/quran-api/main/Quran/';
+const QURAN_SEARCH_TARGET_KEY = 'steptudeen_app_quran_search_target';
+
 const formatTo12Hour = (time24: string) => {
   if (!time24) return '';
   const [hStr, mStr] = time24.split(':');
@@ -49,13 +53,13 @@ const formatTo12Hour = (time24: string) => {
 };
 
 const SECTIONS = [
-  { icon: '📖', title: 'قرآن مجید', subtitle: '۱۱۴ سورتیں', type: 'سیکشن', nav: 'quran' },
-  { icon: '📜', title: 'احادیث شریفہ', subtitle: 'صحیح بخاری و مسلم', type: 'سیکشن', nav: 'hadith' },
-  { icon: '🤲', title: 'نماز کا طریقہ', subtitle: 'ترجمہ اور طریقہ', type: 'سیکشن', nav: 'namaz' },
-  { icon: '💚', title: 'مسنون دعائیں', subtitle: 'روزمرہ اذکار', type: 'سیکشن', nav: 'duas' },
-  { icon: '📿', title: 'تسبیح کاؤنٹر', subtitle: 'ذکر الٰہی', type: 'سیکشن', nav: 'tasbih' },
-  { icon: '🧭', title: 'قبلہ رخ', subtitle: 'سمت معلوم کریں', type: 'سیکشن', nav: 'qibla' },
-  { icon: '🕌', title: 'قریبی مساجد', subtitle: 'جمعہ کے اوقات', type: 'سیکشن', nav: 'mosques' },
+  { icon: '', title: 'قرآن مجید', subtitle: '۱۱۴ سورتیں', type: 'سیکشن', nav: 'quran' },
+  { icon: '', title: 'احادیث شریفہ', subtitle: 'صحیح بخاری و مسلم', type: 'سیکشن', nav: 'hadith' },
+  { icon: '', title: 'نماز کا طریقہ', subtitle: 'ترجمہ اور طریقہ', type: 'سیکشن', nav: 'namaz' },
+  { icon: '', title: 'مسنون دعائیں', subtitle: 'روزمرہ اذکار', type: 'سیکشن', nav: 'duas' },
+  { icon: '', title: 'تسبیح کاؤنٹر', subtitle: 'ذکر الٰہی', type: 'سیکشن', nav: 'tasbih' },
+  { icon: '', title: 'قبلہ رخ', subtitle: 'سمت معلوم کریں', type: 'سیکشن', nav: 'qibla' },
+  { icon: '', title: 'قریبی مساجد', subtitle: 'جمعہ کے اوقات', type: 'سیکشن', nav: 'mosques' },
 ];
 
 const SURAH_MAP: { [key: string]: number } = {
@@ -166,49 +170,116 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [searchResults, setSearchResults] = useState<{ icon: string; title: string; subtitle?: string; type: string; action: () => void }[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const parseSurahAyah = (q: string): { surah: number; ayah: number } | null => {
-    const text = q.toLowerCase().trim();
-    let surahNum = 0;
-    let ayahNum = 0;
-    const numMatch = text.match(/^(\d+)[:\s]+(\d+)$/);
-    if (numMatch) return { surah: parseInt(numMatch[1]), ayah: parseInt(numMatch[2]) };
-    const ayahMatch = text.match(/(?:آیت|ayat|ayah|verse|:)\s*(\d+)/i);
-    if (ayahMatch) ayahNum = parseInt(ayahMatch[1]);
-    for (const [key, num] of Object.entries(SURAH_MAP)) {
-      if (text.includes(key.toLowerCase())) { surahNum = num; break; }
+  const parseSurahAyah = (query: string): { surah: number; ayah?: number } | null => {
+    const normalizedDigits = query
+      .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+    const text = normalizedDigits.toLowerCase().trim();
+    if (!text) return null;
+
+    // Direct forms: 2:255 or 2 255
+    const directAyah = text.match(/^(\d+)[:\s]+(\d+)$/);
+    if (directAyah) {
+      const surah = Number(directAyah[1]);
+      const ayah = Number(directAyah[2]);
+      return surah >= 1 && surah <= 114 && ayah >= 1 ? { surah, ayah } : null;
     }
-    if (surahNum && ayahNum) return { surah: surahNum, ayah: ayahNum };
-    return null;
+
+    // A single number from 1-114 means a Surah number.
+    if (/^\d+$/.test(text)) {
+      const surah = Number(text);
+      return surah >= 1 && surah <= 114 ? { surah } : null;
+    }
+
+    const ayahMatch = text.match(/(?:آیت|ايت|ayat|ayah|verse|:)\s*(?:نمبر|number|no\.?)?\s*(\d+)/i);
+    const ayah = ayahMatch ? Number(ayahMatch[1]) : undefined;
+    let surah = 0;
+
+    // Prefer the longest matching alias so short keys do not win first.
+    const aliases = Object.entries(SURAH_MAP).sort((a, b) => b[0].length - a[0].length);
+    for (const [alias, number] of aliases) {
+      if (text.includes(alias.toLowerCase())) {
+        surah = number;
+        break;
+      }
+    }
+
+    if (!surah) return null;
+    return ayah && ayah > 0 ? { surah, ayah } : { surah };
+  };
+
+  const saveQuranSearchTarget = (target: { surah: number; ayah?: number }) => {
+    localStorage.setItem(QURAN_SEARCH_TARGET_KEY, JSON.stringify(target));
+    onNavigate('quran');
+  };
+
+  const fetchQuranSurah = async (surah: number) => {
+    const savedLanguage = localStorage.getItem('steptudeen_app_quran_language') || 'ur';
+    const request = async (url: string) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    };
+    try {
+      return await request(`${QURAN_CDN}${savedLanguage}/${surah}.json`);
+    } catch {
+      return request(`${QURAN_FALLBACK}${savedLanguage}/${surah}.json`);
+    }
   };
 
   const handleSearch = async () => {
-    const q = searchQuery.trim();
-    if (!q) return;
+    const query = searchQuery.trim();
+    if (!query) return;
+
     const localResults = SECTIONS
-      .filter(s => s.title.includes(q) || (s.subtitle || '').includes(q))
-      .map(s => ({ icon: s.icon, title: s.title, subtitle: s.subtitle, type: s.type, action: () => onNavigate(s.nav) }));
+      .filter(section => section.title.includes(query) || (section.subtitle || '').includes(query))
+      .map(section => ({ icon: section.icon, title: section.title, subtitle: section.subtitle, type: section.type, action: () => onNavigate(section.nav) }));
     const mosqueResults = nearbyMosques
-      .filter(m => m.name.includes(q))
+      .filter(mosque => mosque.name.includes(query))
       .slice(0, 2)
-      .map(m => ({ icon: '🕌', title: m.name, subtitle: `جمعہ: ${m.jumah}`, type: 'مسجد', action: () => onOpenMosque(m) }));
+      .map(mosque => ({ icon: '', title: mosque.name, subtitle: `جمعہ: ${mosque.jumah}`, type: 'مسجد', action: () => onOpenMosque(mosque) }));
+
     setSearchResults([...localResults, ...mosqueResults]);
-    const parsed = parseSurahAyah(q);
-    if (parsed) {
-      setIsSearching(true);
-      try {
-        const res = await fetch(`https://api.alquran.cloud/v1/ayah/${parsed.surah}:${parsed.ayah}/editions/quran-uthmani,ur.jalandhry`);
-        const json = await res.json();
-        if (json.code === 200 && json.data?.length >= 2) {
-          const ayahResult = {
-            icon: '✨',
-            title: json.data[0].text.substring(0, 50) + '...',
-            subtitle: json.data[1].text.substring(0, 60) + '...',
-            type: 'آیت',
-            action: () => onNavigate('quran'),
-          };
-          setSearchResults(prev => [ayahResult, ...prev]);
-        }
-      } catch { }
+    const parsed = parseSurahAyah(query);
+    if (!parsed) return;
+
+    // Surah-only search does not need a network request.
+    if (!parsed.ayah) {
+      const surahResult = {
+        icon: '',
+        title: `سورۃ ${SURAH_NAMES_UR[parsed.surah - 1]}`,
+        subtitle: `Surah ${parsed.surah} — open complete Surah`,
+        type: 'Surah',
+        action: () => saveQuranSearchTarget(parsed),
+      };
+      setSearchResults(previous => [surahResult, ...previous]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const data = await fetchQuranSurah(parsed.surah);
+      const verses = Array.isArray(data?.verses) ? data.verses : [];
+      const verse = verses.find((item: any) => Number(item.id) === parsed.ayah) || verses[parsed.ayah - 1];
+      if (!verse) throw new Error('Ayah not found');
+
+      const ayahResult = {
+        icon: '',
+        title: String(verse.text || '').slice(0, 70) + (String(verse.text || '').length > 70 ? '...' : ''),
+        subtitle: String(verse.translation || '').slice(0, 90) + (String(verse.translation || '').length > 90 ? '...' : ''),
+        type: 'Ayah',
+        action: () => saveQuranSearchTarget(parsed),
+      };
+      setSearchResults(previous => [ayahResult, ...previous]);
+    } catch {
+      setSearchResults(previous => [{
+        icon: '',
+        title: 'آیت لوڈ نہیں ہو سکی',
+        subtitle: 'اپنا انٹرنیٹ کنکشن چیک کرکے دوبارہ کوشش کریں',
+        type: 'Error',
+        action: () => undefined,
+      }, ...previous]);
+    } finally {
       setIsSearching(false);
     }
   };
@@ -221,7 +292,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     const mosques = nearbyMosques
       .filter(m => m.name.includes(searchQuery))
       .slice(0, 2)
-      .map(m => ({ icon: '🕌', title: m.name, subtitle: `جمعہ: ${m.jumah}`, type: 'مسجد', action: () => onOpenMosque(m) }));
+      .map(m => ({ icon: '', title: m.name, subtitle: `جمعہ: ${m.jumah}`, type: 'مسجد', action: () => onOpenMosque(m) }));
     setSearchResults([...local, ...mosques]);
   }, [searchQuery, nearbyMosques, onNavigate, onOpenMosque]);
 
@@ -454,7 +525,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
                 {searchResults.map((result, i) => (
                   <div key={i} onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }} className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors">
-                    <span className="text-lg shrink-0">{result.icon}</span>
+                    {result.icon && <span className="text-lg shrink-0">{result.icon}</span>}
                     <div className="flex-1 text-right">
                       <div className="text-[12px] font-urdu font-bold text-slate-800">{result.title}</div>
                       {result.subtitle && <div className="text-[10px] text-slate-400 font-urdu">{result.subtitle}</div>}

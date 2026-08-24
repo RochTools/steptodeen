@@ -98,6 +98,7 @@ const AUDIO_BASE = 'https://everyayah.com/data/Alafasy_128kbps/';
 const LANGUAGE_KEY = 'steptudeen_app_quran_language';
 const TAFSIR_KEY = 'steptudeen_app_quran_tafsir';
 const LAST_SEEN_KEY = 'steptudeen_app_quran_last_seen';
+const SEARCH_TARGET_KEY = 'steptudeen_app_quran_search_target';
 
 const QURAN_LANGUAGES: QuranLanguage[] = [
   { code: 'ur', native: 'اردو', english: 'Urdu', dir: 'rtl' },
@@ -291,7 +292,7 @@ export const QuranView: React.FC<QuranViewProps> = () => {
 
   const [lastSeen, setLastSeen] = useState<LastSeen | null>(() => readLastSeen());
   const [toast, setToast] = useState('');
-  const pendingLastSeen = useRef<LastSeen | null>(null);
+  const pendingAyahTarget = useRef<{ surah: number; ayah: number } | null>(null);
   const readerScrollRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -316,6 +317,24 @@ export const QuranView: React.FC<QuranViewProps> = () => {
     };
     document.addEventListener('mousedown', closeMenu);
     return () => document.removeEventListener('mousedown', closeMenu);
+  }, []);
+
+  useEffect(() => {
+    // HomeView stores the requested Surah/Ayah immediately before navigating here.
+    // Consume it once, open the Surah, then let the existing scroll/highlight effect run.
+    try {
+      const raw = localStorage.getItem(SEARCH_TARGET_KEY);
+      localStorage.removeItem(SEARCH_TARGET_KEY);
+      if (!raw) return;
+      const target = JSON.parse(raw) as { surah?: number; ayah?: number };
+      const surah = Number(target.surah);
+      const ayah = Number(target.ayah);
+      if (!Number.isInteger(surah) || surah < 1 || surah > 114) return;
+      if (Number.isInteger(ayah) && ayah > 0) pendingAyahTarget.current = { surah, ayah };
+      setSelectedSurah(surah);
+    } catch {
+      localStorage.removeItem(SEARCH_TARGET_KEY);
+    }
   }, []);
 
   useEffect(() => {
@@ -390,10 +409,10 @@ export const QuranView: React.FC<QuranViewProps> = () => {
   }, [selectedSurah, language, retryToken]);
 
   useEffect(() => {
-    if (!surahData || !pendingLastSeen.current || !selectedSurah) return;
-    const pending = pendingLastSeen.current;
+    if (!surahData || !pendingAyahTarget.current || !selectedSurah) return;
+    const pending = pendingAyahTarget.current;
     if (pending.surah !== selectedSurah) return;
-    pendingLastSeen.current = null;
+    pendingAyahTarget.current = null;
     const timer = window.setTimeout(() => {
       const target = document.getElementById(`app-ayah-${pending.surah}-${pending.ayah}`);
       const scroller = readerScrollRef.current;
@@ -508,7 +527,7 @@ export const QuranView: React.FC<QuranViewProps> = () => {
       setToast('No last seen ayah has been saved yet.');
       return;
     }
-    pendingLastSeen.current = lastSeen;
+    pendingAyahTarget.current = lastSeen;
     setSelectedSurah(lastSeen.surah);
   };
 
