@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, LogIn, Compass, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, BookOpen, CircleDot, Compass, Heart, LogIn, MapPin, Scroll, User } from 'lucide-react';
 import { Mosque } from '../types';
 
 interface HomeViewProps {
@@ -389,6 +389,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   return (
     <div className="pb-16 animate-fadeIn bg-slate-50">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@500;700&display=swap');
+        .home-card-urdu-title {
+          font-family: 'Noto Nastaliq Urdu', 'Noto Naskh Arabic', serif;
+          font-weight: 700;
+          line-height: 1.9;
+          text-rendering: optimizeLegibility;
+          -webkit-font-smoothing: antialiased;
+        }
+      `}</style>
 
       {/* ═══════════ TOP BANNER ═══════════ */}
       <div
@@ -639,37 +649,55 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* گرڈ کارڈز */}
           <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
             <div onClick={() => onNavigate('quran')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <span className="mb-1 font-amiri text-[21px] font-bold leading-relaxed tracking-normal text-emerald-700" dir="rtl">قرآن مجید</span>
+              <div className="mb-1 flex items-center justify-center gap-2 text-emerald-700" dir="rtl">
+                <BookOpen size={15} strokeWidth={2.2} className="shrink-0" />
+                <span className="home-card-urdu-title text-[19px]">القرآن الكريم</span>
+              </div>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">Quran</span>
               <span className="mt-0.5 text-[8.5px] text-slate-400">114 Makki and Madani Surahs</span>
             </div>
 
             <div onClick={() => onNavigate('hadith')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <span className="mb-1 font-amiri text-[21px] font-bold leading-relaxed tracking-normal text-blue-700" dir="rtl">احادیث شریفہ</span>
+              <div className="mb-1 flex items-center justify-center gap-2 text-blue-700" dir="rtl">
+                <Scroll size={15} strokeWidth={2.2} className="shrink-0" />
+                <span className="home-card-urdu-title text-[19px]">الحديث الشريف</span>
+              </div>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-700">Hadith</span>
               <span className="mt-0.5 text-[8.5px] text-slate-400">Authentic Hadith collections</span>
             </div>
 
             <div onClick={() => onNavigate('namaz')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <span className="mb-1 font-amiri text-[21px] font-bold leading-relaxed tracking-normal text-indigo-700" dir="rtl">نماز کا طریقہ</span>
+              <div className="mb-1 flex items-center justify-center gap-2 text-indigo-700" dir="rtl">
+                <User size={15} strokeWidth={2.2} className="shrink-0" />
+                <span className="home-card-urdu-title text-[19px]">نماز کا طریقہ</span>
+              </div>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-indigo-700">Prayer</span>
               <span className="mt-0.5 text-[8.5px] text-slate-400">Step-by-step prayer guide</span>
             </div>
 
             <div onClick={() => onNavigate('duas')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <span className="mb-1 font-amiri text-[21px] font-bold leading-relaxed tracking-normal text-rose-700" dir="rtl">مسنون دعائیں</span>
+              <div className="mb-1 flex items-center justify-center gap-2 text-rose-700" dir="rtl">
+                <Heart size={15} strokeWidth={2.2} className="shrink-0" />
+                <span className="home-card-urdu-title text-[19px]">مسنون دعائیں</span>
+              </div>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-rose-700">Duas</span>
               <span className="mt-0.5 text-[8.5px] text-slate-400">Daily supplications and adhkar</span>
             </div>
 
             <div onClick={() => onNavigate('tasbih')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <span className="mb-1 font-amiri text-[21px] font-bold leading-relaxed tracking-normal text-amber-700" dir="rtl">تسبیح کاؤنٹر</span>
+              <div className="mb-1 flex items-center justify-center gap-2 text-amber-700" dir="rtl">
+                <CircleDot size={15} strokeWidth={2.2} className="shrink-0" />
+                <span className="home-card-urdu-title text-[19px]">تسبیح کاؤنٹر</span>
+              </div>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-700">Tasbih</span>
               <span className="mt-0.5 text-[8.5px] text-slate-400">Count your daily dhikr</span>
             </div>
 
             <div onClick={() => onNavigate('qibla')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <span className="mb-1 font-amiri text-[21px] font-bold leading-relaxed tracking-normal text-teal-700" dir="rtl">قبلہ رخ سمت</span>
+              <div className="mb-1 flex items-center justify-center gap-2 text-teal-700" dir="rtl">
+                <Compass size={15} strokeWidth={2.2} className="shrink-0" />
+                <span className="home-card-urdu-title text-[19px]">قبلہ رخ سمت</span>
+              </div>
               <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-teal-700">Qibla</span>
               <span className="mt-0.5 text-[8.5px] text-slate-400">Find the accurate Qibla direction</span>
             </div>
