@@ -405,7 +405,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/70 pointer-events-none" />
 
         {/* Header Row */}
-        <div className="relative z-10 flex items-start justify-between px-4 pt-4 mb-3">
+        <div className="relative z-10 flex flex-row-reverse items-start justify-between px-4 pt-4 mb-3">
           <div className="flex flex-col gap-1.5">
             {isAuthenticated ? (
               <button type="button" onClick={() => onNavigate('imam-login')} className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/25 backdrop-blur-sm border border-amber-400/40 text-amber-200 font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
@@ -423,16 +423,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 Log in
               </button>
             )}
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
-              </span>
-              <span className="text-[10px] text-amber-100 font-medium drop-shadow">{getNextPrayerCountdown()}</span>
-            </div>
           </div>
 
-          <div className="text-right">
+          <div className="text-left">
             <div className="h-7" style={{ opacity: dateVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
               {dateSlot === 0 ? (
                 <div className="text-[12px] font-urdu font-bold text-amber-300 leading-tight">{todayDate || '—'}</div>
@@ -470,11 +463,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </div>
               );
             })()}
+            <div className="mt-1.5 flex max-w-[210px] items-center gap-1.5">
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-400" />
+              </span>
+              <span className="text-[9px] font-medium leading-tight text-amber-100 drop-shadow">{getNextPrayerCountdown()}</span>
+            </div>
           </div>
         </div>
 
-        {/* سرچ بار + تھری ڈاٹ بٹن */}
-        <div className="relative z-10 px-4 mb-3 flex items-center gap-2 w-full">
+        {/* Search bar and three-dot button */}
+        <div className="relative z-10 px-4 mb-3 flex flex-row-reverse items-center gap-2 w-full">
 
           {/* تھری ڈاٹ بٹن */}
           <div className="shrink-0">
@@ -639,51 +639,39 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* گرڈ کارڈز */}
           <div className="mx-4 grid grid-cols-2 gap-3 pb-1">
             <div onClick={() => onNavigate('quran')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-2 flex h-12 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-900 to-emerald-600 shadow-md ring-1 ring-emerald-500/30">
-                <span className="text-[11px] font-bold tracking-wide text-amber-200">Quran</span>
-              </div>
-              <span className="text-xs font-bold text-slate-800 font-urdu">قرآن مجید</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">114 Makki and Madani Surahs</span>
+              <span className="mb-1 font-urdu text-[20px] font-bold leading-relaxed text-emerald-700" dir="rtl">قرآن مجید</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">Quran</span>
+              <span className="mt-0.5 text-[8.5px] text-slate-400">114 Makki and Madani Surahs</span>
             </div>
 
             <div onClick={() => onNavigate('hadith')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-2 flex h-12 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-blue-900 to-blue-600 shadow-md ring-1 ring-blue-500/30">
-                <span className="text-[11px] font-bold tracking-wide text-amber-200">Hadith</span>
-              </div>
-              <span className="text-xs font-bold text-slate-800 font-urdu">احادیث شریفہ</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">Authentic Hadith collections</span>
+              <span className="mb-1 font-urdu text-[20px] font-bold leading-relaxed text-blue-700" dir="rtl">احادیث شریفہ</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-700">Hadith</span>
+              <span className="mt-0.5 text-[8.5px] text-slate-400">Authentic Hadith collections</span>
             </div>
 
             <div onClick={() => onNavigate('namaz')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-2 flex h-12 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-900 to-indigo-500 shadow-md ring-1 ring-indigo-400/30">
-                <span className="text-[11px] font-bold tracking-wide text-white">Prayer</span>
-              </div>
-              <span className="text-xs font-bold text-slate-800 font-urdu">نماز کا طریقہ</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">Step-by-step prayer guide</span>
+              <span className="mb-1 font-urdu text-[20px] font-bold leading-relaxed text-indigo-700" dir="rtl">نماز کا طریقہ</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-indigo-700">Prayer</span>
+              <span className="mt-0.5 text-[8.5px] text-slate-400">Step-by-step prayer guide</span>
             </div>
 
             <div onClick={() => onNavigate('duas')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-2 flex h-12 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-rose-800 to-rose-500 shadow-md ring-1 ring-rose-400/30">
-                <span className="text-[11px] font-bold tracking-wide text-white">Duas</span>
-              </div>
-              <span className="text-xs font-bold text-slate-800 font-urdu">مسنون دعائیں</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">Daily supplications and adhkar</span>
+              <span className="mb-1 font-urdu text-[20px] font-bold leading-relaxed text-rose-700" dir="rtl">مسنون دعائیں</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-rose-700">Duas</span>
+              <span className="mt-0.5 text-[8.5px] text-slate-400">Daily supplications and adhkar</span>
             </div>
 
             <div onClick={() => onNavigate('tasbih')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-2 flex h-12 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-300 shadow-md ring-1 ring-amber-400/40">
-                <span className="text-[11px] font-bold tracking-wide text-amber-950">Tasbih</span>
-              </div>
-              <span className="text-xs font-bold text-slate-800 font-urdu">تسبیح کاؤنٹر</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">Count your daily dhikr</span>
+              <span className="mb-1 font-urdu text-[20px] font-bold leading-relaxed text-amber-700" dir="rtl">تسبیح کاؤنٹر</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-700">Tasbih</span>
+              <span className="mt-0.5 text-[8.5px] text-slate-400">Count your daily dhikr</span>
             </div>
 
             <div onClick={() => onNavigate('qibla')} className="relative bg-white p-4 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="mb-2 flex h-12 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-teal-900 to-teal-500 shadow-md ring-1 ring-teal-400/30">
-                <span className="text-[11px] font-bold tracking-wide text-amber-100">Qibla</span>
-              </div>
-              <span className="text-xs font-bold text-slate-800 font-urdu">قبلہ رخ سمت</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">Find the accurate Qibla direction</span>
+              <span className="mb-1 font-urdu text-[20px] font-bold leading-relaxed text-teal-700" dir="rtl">قبلہ رخ سمت</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-teal-700">Qibla</span>
+              <span className="mt-0.5 text-[8.5px] text-slate-400">Find the accurate Qibla direction</span>
             </div>
           </div>
 
