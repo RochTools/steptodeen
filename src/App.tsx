@@ -1,4 +1,4 @@
-import React, { Component, Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { initializeFirebaseAtRuntime, subscribeToAuthState } from './firebase';
 import { onSnapshot, collection, doc, getDoc } from 'firebase/firestore';
 import { initFCM, listenForegroundMessages } from './utils/fcm';
@@ -14,9 +14,8 @@ import { useNavigation } from './hooks/useNavigation';
 import { HomeView } from './components/HomeView';
 
 // ============ ALL OTHER COMPONENTS: lazy loaded ============
-// FIX: یہ سب صرف تب load ہوں گے جب user اس page پر جائے
+// These components are loaded only when the user opens the relevant page.
 const QuranView       = lazy(() => import('./components/QuranView').then(m => ({ default: m.QuranView })));
-const SurahReader     = lazy(() => import('./components/SurahReader').then(m => ({ default: m.SurahReader })));
 const HadithView      = lazy(() => import('./components/HadithView').then(m => ({ default: m.HadithView })));
 const NamazView       = lazy(() => import('./components/NamazView').then(m => ({ default: m.NamazView })));
 const DuasView        = lazy(() => import('./components/DuasView').then(m => ({ default: m.DuasView })));
@@ -64,14 +63,14 @@ class ErrorBoundary extends Component<
       return this.props.fallback || (
         <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6">
           <div className="text-center space-y-4">
-            <div className="text-4xl">⚠️</div>
-            <h2 className="text-xl font-bold text-slate-800 font-urdu">کچھ غلط ہو گیا</h2>
-            <p className="text-xs text-red-500 mt-2 break-words px-2">{this.state.error?.message}</p>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 mx-auto"><X size={22} /></div>
+            <h2 className="text-xl font-bold text-slate-800">Something went wrong</h2>
+            <p className="max-w-sm px-2 text-sm text-slate-500">The application could not load this screen. Please try again.</p>
             <button
               onClick={this.handleRetry}
-              className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-urdu hover:bg-emerald-700 transition-colors"
+              className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
             >
-              دوبارہ کوشش کریں
+              Try again
             </button>
           </div>
         </div>
@@ -84,9 +83,10 @@ class ErrorBoundary extends Component<
 // ============ MAIN APP ============
 export default function App() {
 
-  const [selectedSurahNum, setSelectedSurahNum] = useState<number | null>(null);
+  // Kept for compatibility with the navigation hook; QuranView now contains its own reader.
+  const [, setSelectedSurahNum] = useState<number | null>(null);
 
-  // ── حدیث navigation (UserDashboard سے) ──────────────────────
+  // Hadith navigation requested from UserDashboard.
   const [pendingHadithNav, setPendingHadithNav] = useState<{
     bookKey: string; chapterKey: string; chapterName: string;
     from: number; to: number; hadithNum: number;
@@ -107,12 +107,6 @@ export default function App() {
     setSelectedSurahNum,
   });
 
-  // ============ SURAH HANDLER ============
-const handleSelectSurah = useCallback((surahNum: number) => {
-  setSelectedSurahNum(surahNum);
-  nav.navigateTo('quran'); // ← یہ add کریں
-  nav.navigateTo('surah');
-}, [nav]);
   // ============ FCM ============
   useEffect(() => {
     let isMountedLocal = true;
@@ -125,12 +119,12 @@ const handleSelectSurah = useCallback((surahNum: number) => {
       unsubscribe = listenForegroundMessages();
     }
 
-    // ── نماز notifications setup ──────────────────────────────
+    // Prayer notification setup.
     const setupPrayerNotifications = async () => {
       const granted = await requestNotificationPermission();
       if (!granted || !isMountedLocal) return;
 
-      // prayer.prayerTimes میں اوقات ہیں تو schedule کریں
+      // Schedule notifications when prayer times are available.
       if (prayer.prayerTimes) {
         scheduleAllPrayerNotifications({
           fajr:    prayer.prayerTimes.fajr,
@@ -232,7 +226,7 @@ const handleSelectSurah = useCallback((surahNum: number) => {
   // ============ RENDER ============
   return (
     <ErrorBoundary>
-      <div className={`w-full max-w-md mx-auto min-h-screen relative flex flex-col shadow-xl overflow-hidden pb-14 ${currentView === 'tasbih' ? 'bg-[#fef2c7]' : 'bg-slate-50'}`}>
+      <div dir="ltr" className={`w-full max-w-md mx-auto min-h-screen relative flex flex-col shadow-xl overflow-hidden pb-14 ${currentView === 'tasbih' ? 'bg-[#fef2c7]' : 'bg-slate-50'}`}>
 
         {/* LOGIN SPLASH */}
         {currentView === 'login-splash' && (
@@ -275,7 +269,6 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                   onOpenMosque={(m) => mosques.setSelectedMosque(m)}
                   userCoords={prayer.userCoords}
                   requestLocation={prayer.requestLocation}
-                  isRealFirebase={realFirebaseActive}
                   isAuthenticated={auth.isAuthenticated}
                   isUserAuthenticated={auth.isAnyUser}
                   userAuthName={auth.currentUserName}
@@ -285,14 +278,7 @@ const handleSelectSurah = useCallback((surahNum: number) => {
               )}
 
               {currentView === 'quran' && (
-                <QuranView onSelectSurah={handleSelectSurah} />
-              )}
-
-              {currentView === 'surah' && selectedSurahNum !== null && (
-                <SurahReader
-                  surahNum={selectedSurahNum}
-                  onBack={() => nav.goBack()}
-                />
+                <QuranView />
               )}
 
               {currentView === 'hadith' && (
@@ -424,15 +410,15 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                 className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'hadith' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
               >
                 <Scroll size={17} />
-                <span className="text-[10px] font-urdu mt-0.5">حدیث</span>
+                <span className="text-[10px] mt-0.5">Hadith</span>
               </button>
 
               <button
                 onClick={() => nav.navigateTo('quran')}
-                className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'quran' || currentView === 'surah' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
+                className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'quran' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
               >
                 <BookOpen size={17} />
-                <span className="text-[10px] font-urdu mt-0.5">قرآن</span>
+                <span className="text-[10px] mt-0.5">Quran</span>
               </button>
 
               <button
@@ -451,7 +437,7 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                 className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'mosques' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
               >
                 <Compass size={17} />
-                <span className="text-[10px] font-urdu mt-0.5">مساجد</span>
+                <span className="text-[10px] mt-0.5">Mosques</span>
               </button>
 
               <button
@@ -459,7 +445,7 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                 className={`flex flex-col items-center justify-center flex-1 transition-all ${currentView === 'duas' ? 'text-emerald-700 font-bold' : 'text-slate-400'}`}
               >
                 <Heart size={17} />
-                <span className="text-[10px] font-urdu mt-0.5">دعائیں</span>
+                <span className="text-[10px] mt-0.5">Duas</span>
               </button>
             </div>
 
@@ -467,9 +453,9 @@ const handleSelectSurah = useCallback((surahNum: number) => {
             {mosques.selectedMosque && (
               <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-3 animate-fadeIn">
                 <div className="bg-white w-full max-w-sm rounded-2xl p-4 space-y-3.5 shadow-2xl pb-6 border border-slate-200">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2" dir="rtl">
-                    <h3 className="text-sm font-bold font-urdu text-slate-800">
-                      {mosques.selectedMosque.name || 'مسجد'}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2" dir="ltr">
+                    <h3 className="text-sm font-bold text-slate-800">
+                      {mosques.selectedMosque.name || 'Mosque'}
                     </h3>
                     <div className="flex items-center gap-1">
                       <button
@@ -481,8 +467,8 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                         }`}
                       >
                         {mosques.savedPopupMosques.includes(mosques.selectedMosque.id)
-                          ? '✓ محفوظ'
-                          : 'محفوظ کریں'}
+                          ? '✓ Saved'
+                          : 'Save'}
                       </button>
                       <button
                         onClick={() => mosques.setSelectedMosque(null)}
@@ -494,38 +480,38 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                   </div>
 
                   {mosques.selectedMosque.address && (
-                    <div className="text-right space-y-0.5">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold block">پتہ</span>
-                      <p className="text-xs text-slate-600 font-urdu">{mosques.selectedMosque.address}</p>
+                    <div className="text-left space-y-0.5">
+                      <span className="text-[9px] text-slate-400 uppercase font-bold block">Address</span>
+                      <p className="text-xs text-slate-600">{mosques.selectedMosque.address}</p>
                     </div>
                   )}
 
                   {mosques.selectedMosque.imamName && (
-                    <div className="text-right space-y-0.5">
-                      <span className="text-[9px] text-slate-400 uppercase font-bold block">امام</span>
-                      <p className="text-xs text-emerald-700 font-bold font-urdu">{mosques.selectedMosque.imamName}</p>
+                    <div className="text-left space-y-0.5">
+                      <span className="text-[9px] text-slate-400 uppercase font-bold block">Imam</span>
+                      <p className="text-xs text-emerald-700 font-bold">{mosques.selectedMosque.imamName}</p>
                     </div>
                   )}
 
                   {mosques.selectedMosque.announcement && (
-                    <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-right text-xs text-amber-800 font-urdu flex items-start gap-2 justify-end">
-                      <span>{mosques.selectedMosque.announcement}</span>
+                    <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-left text-xs text-amber-800 flex items-start gap-2 justify-start">
                       <Bell size={13} className="text-amber-600 shrink-0 mt-0.5" />
+                      <span>{mosques.selectedMosque.announcement}</span>
                     </div>
                   )}
 
                   <div className="border-t border-slate-100 pt-3 space-y-2">
-                    <div className="text-right text-[9px] text-slate-400 uppercase font-bold tracking-tight">
-                      نماز کے اوقات
+                    <div className="text-left text-[9px] text-slate-400 uppercase font-bold tracking-tight">
+                      Prayer Times
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 text-center">
                       {[
-                        ['فجر', mosques.selectedMosque.fajr],
-                        ['ظہر', mosques.selectedMosque.zuhr],
-                        ['عصر', mosques.selectedMosque.asr],
+                        ['Fajr', mosques.selectedMosque.fajr],
+                        ['Dhuhr', mosques.selectedMosque.zuhr],
+                        ['Asr', mosques.selectedMosque.asr],
                       ].map(([label, time]) => (
                         <div key={label} className="p-1.5 bg-slate-50 rounded-lg border border-slate-200">
-                          <div className="text-[9px] text-slate-500 font-urdu">{label} جماعت</div>
+                          <div className="text-[9px] text-slate-500">{label} congregation</div>
                           <div className="text-xs font-mono font-bold text-slate-800 mt-0.5">
                             {formatTo12Hour(time as string, '--:--')}
                           </div>
@@ -534,15 +520,15 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 text-center">
                       {[
-                        ['مغرب', mosques.selectedMosque.maghrib],
-                        ['عشاء', mosques.selectedMosque.isha],
-                        ['جمعہ', mosques.selectedMosque.jumah],
+                        ['Maghrib', mosques.selectedMosque.maghrib],
+                        ['Isha', mosques.selectedMosque.isha],
+                        ['Jumu’ah', mosques.selectedMosque.jumah],
                       ].map(([label, time]) => (
-                        <div key={label} className={`p-1.5 rounded-lg border ${label === 'جمعہ' ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-200'}`}>
-                          <div className={`text-[9px] font-urdu ${label === 'جمعہ' ? 'text-emerald-800 font-bold' : 'text-slate-500'}`}>
-                            {label} جماعت
+                        <div key={label} className={`p-1.5 rounded-lg border ${label === 'Jumu’ah' ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-200'}`}>
+                          <div className={`text-[9px] ${label === 'Jumu’ah' ? 'text-emerald-800 font-bold' : 'text-slate-500'}`}>
+                            {label} congregation
                           </div>
-                          <div className={`text-xs font-mono font-bold mt-0.5 ${label === 'جمعہ' ? 'text-emerald-700' : 'text-slate-800'}`}>
+                          <div className={`text-xs font-mono font-bold mt-0.5 ${label === 'Jumu’ah' ? 'text-emerald-700' : 'text-slate-800'}`}>
                             {formatTo12Hour(time as string, '--:--')}
                           </div>
                         </div>
@@ -556,18 +542,18 @@ const handleSelectSurah = useCallback((surahNum: number) => {
                         mosques.handleMosqueAlert(mosques.selectedMosque!);
                         mosques.setSelectedMosque(null);
                       }}
-                      className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10.5px] font-urdu font-bold rounded-xl flex items-center justify-center gap-1 flex-row-reverse"
+                      className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10.5px] font-bold rounded-xl flex items-center justify-center gap-1"
                     >
-                      <Bell size={12} /><span>الرٹس آن کریں</span>
+                      <Bell size={12} /><span>Enable Alerts</span>
                     </button>
                     {mosques.selectedMosque.latitude && mosques.selectedMosque.longitude && (
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${mosques.selectedMosque.latitude},${mosques.selectedMosque.longitude}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="py-2.5 bg-[#4285F4] hover:bg-[#357ae8] text-white text-[10.5px] font-urdu font-bold rounded-xl flex items-center justify-center gap-1.5 flex-row-reverse"
+                        className="py-2.5 bg-[#4285F4] hover:bg-[#357ae8] text-white text-[10.5px] font-bold rounded-xl flex items-center justify-center gap-1.5"
                       >
-                        <MapPin size={12} /><span>گوگل میپ پر راستہ</span>
+                        <MapPin size={12} /><span>Directions in Google Maps</span>
                       </a>
                     )}
                   </div>
