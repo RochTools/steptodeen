@@ -18,8 +18,8 @@ const messaging = firebase.messaging();
 
 // ── Firebase سے background push آئے تو ─────────────────────────
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || '🕌 StepToDeen';
-  const body  = payload.notification?.body  || 'نماز کا وقت ہو گیا';
+  const title = payload.notification?.title || 'StepTuDeen';
+  const body  = payload.notification?.body  || 'namaz ka waqt ho gaya hai';
   const icon  = payload.notification?.icon  || '/icon-192.png';
 
   self.registration.showNotification(title, {
