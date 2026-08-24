@@ -565,7 +565,7 @@ export const QuranView: React.FC<QuranViewProps> = () => {
   const currentTafsirPage = tafsirPages[tafsirPage] || [];
 
   return (
-    <div className="mx-auto w-full max-w-[900px] bg-white p-2 text-left text-slate-900">
+    <div dir="ltr" className="mx-auto w-full max-w-[900px] bg-white p-2 text-left text-slate-900">
       <style>{`
         @font-face{font-family:'KFGQPC Hafs';src:url('https://cdn.jsdelivr.net/gh/mustafa0x/qpc-fonts@f93bf5f3/various-woff2/UthmanicHafs1%20Ver09.woff2') format('woff2');font-display:swap}
         .quran-hafs{font-family:'KFGQPC Hafs','Noto Naskh Arabic',serif;font-weight:700;color:#111;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
@@ -633,10 +633,10 @@ export const QuranView: React.FC<QuranViewProps> = () => {
 
       {/* Surah reader bottom sheet */}
       {selectedSurah && selectedMeta && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55" onMouseDown={(event) => { if (event.target === event.currentTarget) closeReader(); }}>
-          <div className="flex max-h-[88vh] w-full max-w-[700px] flex-col overflow-hidden rounded-t-[18px] bg-white shadow-2xl">
+        <div dir="ltr" className="fixed inset-0 z-50 flex items-end justify-center bg-black/55" onMouseDown={(event) => { if (event.target === event.currentTarget) closeReader(); }}>
+          <div dir="ltr" className="flex max-h-[88vh] w-full max-w-[700px] flex-col overflow-hidden rounded-t-[18px] bg-white shadow-2xl">
             <div className="flex items-center justify-between gap-3 border-b border-[#d8e4da] px-4 py-3">
-              <h3 className="truncate text-sm font-bold text-[#14532d]">Surah {selectedMeta.en} ({selectedMeta.ar})</h3>
+              <h3 dir="ltr" className="truncate text-sm font-bold text-[#14532d]">Surah {selectedMeta.en} <span dir="rtl">({selectedMeta.ar})</span></h3>
               <button onClick={closeReader} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100" aria-label="Close"><X size={17} /></button>
             </div>
 
@@ -711,7 +711,7 @@ export const QuranView: React.FC<QuranViewProps> = () => {
       {/* Quran language / tafsir picker */}
       {(picker || showWelcome) && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !showWelcome) setPicker(null); }}>
-          <div className="max-h-[84vh] w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div dir="ltr" className="max-h-[84vh] w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <h3 className="text-sm font-bold text-[#14532d]">{picker === 'tafsir' ? 'Select Tafsir' : 'Select Quran language'}</h3>
@@ -746,8 +746,8 @@ export const QuranView: React.FC<QuranViewProps> = () => {
       {/* Audio choice */}
       {audioChoiceAyah != null && selectedMeta && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/65 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setAudioChoiceAyah(null); }}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl">
-            <button onClick={() => setAudioChoiceAyah(null)} className="float-right flex h-8 w-8 items-center justify-center rounded-full bg-slate-100"><X size={15} /></button>
+          <div dir="ltr" className="relative w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl">
+            <button onClick={() => setAudioChoiceAyah(null)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100"><X size={15} /></button>
             <Volume2 className="mx-auto mb-3 mt-2 text-[#14532d]" size={28} />
             <h3 className="text-lg font-bold text-[#14532d]">Choose Recitation</h3>
             <p className="mb-4 mt-1 text-xs text-slate-500">Surah {selectedMeta.en} - Ayah {audioChoiceAyah}</p>
@@ -759,7 +759,7 @@ export const QuranView: React.FC<QuranViewProps> = () => {
 
       {/* Compact audio player */}
       {audioState && (
-        <div className="fixed bottom-3 left-3 right-3 z-[90] mx-auto flex max-w-lg items-center justify-between gap-3 rounded-2xl border border-[#d8e4da] bg-white p-3 shadow-2xl">
+        <div dir="ltr" className="fixed bottom-3 left-3 right-3 z-[90] mx-auto flex max-w-lg items-center justify-between gap-3 rounded-2xl border border-[#d8e4da] bg-white p-3 shadow-2xl">
           <div className="flex min-w-0 items-center gap-2"><Volume2 className="shrink-0 text-[#14532d]" size={19} /><div className="min-w-0"><strong className="block truncate text-xs">{SURAHS[audioState.surah - 1]?.en} - Ayah {audioState.ayah}</strong><small className="block text-[10px] text-slate-500">{audioState.status === 'loading' ? 'Loading audio...' : audioState.status === 'error' ? 'Audio could not be loaded' : audioState.status === 'complete' ? 'Recitation complete' : audioState.status}</small></div></div>
           <div className="flex shrink-0 gap-2"><button onClick={toggleAudio} className="flex h-9 w-9 items-center justify-center rounded-full bg-[#14532d] text-white">{audioState.status === 'playing' ? <Pause size={15} /> : <Play size={15} />}</button><button onClick={stopAudio} className="flex h-9 w-9 items-center justify-center rounded-full bg-[#14532d] text-white"><Square size={14} /></button></div>
         </div>
