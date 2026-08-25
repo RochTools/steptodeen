@@ -431,11 +431,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
           src="/mosque-header.webp"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -top-[26px] z-[7] w-full select-none opacity-90"
+          className="pointer-events-none absolute inset-x-0 -top-[14px] z-[7] w-full select-none opacity-90"
           decoding="async"
           fetchPriority="high"
         />
-        <div className="pointer-events-none absolute inset-0 z-[9] bg-gradient-to-b from-[#043784]/20 via-transparent to-[#032b73]/55" />
+        <div className="pointer-events-none absolute inset-0 z-[9] bg-gradient-to-b from-white/8 via-transparent to-[#0d4caa]/28" />
 
         {/* Top actions */}
         <div className="relative z-20 flex items-center justify-between px-4 pt-3">

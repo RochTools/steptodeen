@@ -81,10 +81,10 @@ const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
     showSun: isDaytime || isTwilight,
     showMoon: !isDaytime,
     headerBackground: isDaytime
-      ? 'linear-gradient(135deg, #063b9d 0%, #075ac8 58%, #0a75d8 100%)'
+      ? 'linear-gradient(180deg, #6ad7ff 0%, #3ea8f4 34%, #1e79de 68%, #125cc7 100%)'
       : isTwilight
-        ? 'linear-gradient(135deg, #15386c 0%, #0f559a 52%, #ea8c43 100%)'
-        : 'linear-gradient(135deg, #031225 0%, #07224b 44%, #0b3f88 100%)',
+        ? 'linear-gradient(180deg, #2d5d97 0%, #2f7fca 42%, #4b97dd 62%, #f1a45c 100%)'
+        : 'linear-gradient(180deg, #0d2346 0%, #133764 42%, #174881 72%, #1a5aa6 100%)',
     sun: {
       x: sunPoint.x,
       y: sunPoint.y,
@@ -173,6 +173,14 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
       `}</style>
 
       <div className="pointer-events-none absolute inset-0 z-[0]" style={{ background: celestialScene.headerBackground }} />
+      <div
+        className="pointer-events-none absolute inset-0 z-[0] opacity-90"
+        style={{
+          background: celestialScene.showMoon
+            ? 'radial-gradient(circle at 50% 14%, rgba(210,235,255,0.18) 0%, rgba(210,235,255,0.10) 18%, rgba(210,235,255,0.03) 34%, transparent 50%)'
+            : 'radial-gradient(circle at 52% 10%, rgba(255,255,255,0.26) 0%, rgba(214,240,255,0.18) 20%, rgba(155,218,255,0.10) 34%, transparent 52%), radial-gradient(circle at 18% 20%, rgba(255,255,255,0.14) 0%, transparent 34%), radial-gradient(circle at 82% 22%, rgba(255,255,255,0.12) 0%, transparent 30%)',
+        }}
+      />
       <div
         className="pointer-events-none absolute inset-0 z-[1] opacity-[0.18]"
         style={{
