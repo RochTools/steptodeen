@@ -81,10 +81,10 @@ const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
     showSun: isDaytime || isTwilight,
     showMoon: !isDaytime,
     headerBackground: isDaytime
-      ? 'linear-gradient(180deg, #6ad7ff 0%, #3ea8f4 34%, #1e79de 68%, #125cc7 100%)'
+      ? 'linear-gradient(180deg, #7fe3ff 0%, #52bff9 30%, #2b8ae7 66%, #155ec8 100%)'
       : isTwilight
-        ? 'linear-gradient(180deg, #2d5d97 0%, #2f7fca 42%, #4b97dd 62%, #f1a45c 100%)'
-        : 'linear-gradient(180deg, #0d2346 0%, #133764 42%, #174881 72%, #1a5aa6 100%)',
+        ? 'linear-gradient(180deg, #496f9f 0%, #3d86cf 38%, #5aa8e6 62%, #f2ad6c 100%)'
+        : 'linear-gradient(180deg, #18345c 0%, #204a7a 38%, #205f9c 68%, #1f6ec0 100%)',
     sun: {
       x: sunPoint.x,
       y: sunPoint.y,
@@ -174,18 +174,18 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
 
       <div className="pointer-events-none absolute inset-0 z-[0]" style={{ background: celestialScene.headerBackground }} />
       <div
-        className="pointer-events-none absolute inset-0 z-[0] opacity-90"
+        className="pointer-events-none absolute inset-0 z-[0] opacity-100"
         style={{
           background: celestialScene.showMoon
-            ? 'radial-gradient(circle at 50% 14%, rgba(210,235,255,0.18) 0%, rgba(210,235,255,0.10) 18%, rgba(210,235,255,0.03) 34%, transparent 50%)'
-            : 'radial-gradient(circle at 52% 10%, rgba(255,255,255,0.26) 0%, rgba(214,240,255,0.18) 20%, rgba(155,218,255,0.10) 34%, transparent 52%), radial-gradient(circle at 18% 20%, rgba(255,255,255,0.14) 0%, transparent 34%), radial-gradient(circle at 82% 22%, rgba(255,255,255,0.12) 0%, transparent 30%)',
+            ? 'transparent'
+            : 'radial-gradient(circle at 52% 10%, rgba(255,255,255,0.30) 0%, rgba(214,240,255,0.22) 20%, rgba(155,218,255,0.12) 34%, transparent 54%), radial-gradient(circle at 18% 20%, rgba(255,255,255,0.15) 0%, transparent 34%), radial-gradient(circle at 82% 22%, rgba(255,255,255,0.14) 0%, transparent 30%), linear-gradient(180deg, rgba(255,255,255,0.07), transparent 38%)',
         }}
       />
       <div
-        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.18]"
+        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.11]"
         style={{
           backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 70 70'%3E%3Cg fill='none' stroke='%237fd8ff' stroke-width='1'%3E%3Cpath d='M35 8l7 13 13 7-13 7-7 13-7-13-13-7 13-7z'/%3E%3Ccircle cx='35' cy='28' r='5'/%3E%3C/g%3E%3C/svg%3E\")",
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 70 70'%3E%3Cg fill='none' stroke='%239bdfff' stroke-width='1'%3E%3Cpath d='M35 8l7 13 13 7-13 7-7 13-7-13-13-7 13-7z'/%3E%3Ccircle cx='35' cy='28' r='5'/%3E%3C/g%3E%3C/svg%3E\")",
           backgroundSize: '70px 70px',
         }}
       />
@@ -237,7 +237,6 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
             }}
           >
             <div className="relative h-11 w-11">
-              <div className="celestial-moon-glow absolute inset-[-12px] rounded-full bg-white/20 blur-xl" style={{ opacity: celestialScene.moon.glowOpacity }} />
               <div className="celestial-moon-core relative h-11 w-11 rounded-full border border-white/60" />
               <div className="absolute inset-[3px] rounded-full bg-[#0a2f66]" style={{ transform: 'translateX(10px)' }} />
               <div className="absolute left-[8px] top-[8px] h-1.5 w-1.5 rounded-full bg-white/65 blur-[0.7px]" />
