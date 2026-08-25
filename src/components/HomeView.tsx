@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, BookOpen, CircleDot, Compass, Heart, LogIn, MapPin, Scroll, User } from 'lucide-react';
+import { AlertTriangle, Bell, BookOpen, CalendarDays, ChevronDown, CircleDot, Clock3, Compass, Heart, MapPin, Menu, MoreVertical, Scroll, Search, SlidersHorizontal, Sunrise, User, X } from 'lucide-react';
 import { Mosque } from '../types';
 
 interface HomeViewProps {
@@ -137,35 +137,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [loadingAyah, setLoadingAyah] = useState(true);
   const [loadingHadith, setLoadingHadith] = useState(true);
   const [isDeviceOffline, setIsDeviceOffline] = useState<boolean>(!navigator.onLine);
-  const [dateSlot, setDateSlot] = useState(0);
-  const [dateVisible, setDateVisible] = useState(true);
-
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const interval = setInterval(() => {
-      setDateVisible(false);
-      timeoutId = setTimeout(() => {
-        setDateSlot(prev => (prev + 1) % 2);
-        setDateVisible(true);
-      }, 500);
-    }, 3500);
-    return () => { clearInterval(interval); clearTimeout(timeoutId); };
-  }, []);
-
-  const [prayerSlot, setPrayerSlot] = useState(0);
-  const [slotVisible, setSlotVisible] = useState(true);
-
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const interval = setInterval(() => {
-      setSlotVisible(false);
-      timeoutId = setTimeout(() => {
-        setPrayerSlot(prev => (prev + 1) % 3);
-        setSlotVisible(true);
-      }, 600);
-    }, 4000);
-    return () => { clearInterval(interval); clearTimeout(timeoutId); };
-  }, []);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [locationName, setLocationName] = useState('Current location');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ icon: string; title: string; subtitle?: string; type: string; action: () => void }[]>([]);
@@ -310,25 +283,55 @@ export const HomeView: React.FC<HomeViewProps> = ({
     return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
   }, []);
 
-  const getNextPrayerCountdown = () => {
+  useEffect(() => {
+    if (!userCoords) {
+      setLocationName('Current location');
+      return;
+    }
+    const cacheKey = `location_name_${userCoords.latitude.toFixed(2)}_${userCoords.longitude.toFixed(2)}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      setLocationName(cached);
+      return;
+    }
+    const controller = new AbortController();
+    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${userCoords.latitude}&longitude=${userCoords.longitude}&localityLanguage=en`, { signal: controller.signal })
+      .then(response => response.json())
+      .then(data => {
+        const name = data.city || data.locality || data.principalSubdivision || 'Current location';
+        setLocationName(name);
+        localStorage.setItem(cacheKey, name);
+      })
+      .catch(() => setLocationName('Current location'));
+    return () => controller.abort();
+  }, [userCoords]);
+
+  const getNextPrayerDetails = () => {
     const now = new Date();
     const currentInMins = now.getHours() * 60 + now.getMinutes();
     const parseToMins = (timeStr: string) => { if (!timeStr) return 0; const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
     const prayers = [
-      { name: 'fajr', label: 'Fajr', mins: parseToMins(prayerTimes.fajr) },
-      { name: 'zuhr', label: 'Dhuhr', mins: parseToMins(prayerTimes.zuhr) },
-      { name: 'asr', label: 'Asr', mins: parseToMins(prayerTimes.asr) },
-      { name: 'maghrib', label: 'Maghrib', mins: parseToMins(prayerTimes.maghrib) },
-      { name: 'isha', label: 'Isha', mins: parseToMins(prayerTimes.isha) },
+      { name: 'fajr', label: 'Fajr', urdu: 'فجر', mins: parseToMins(prayerTimes.fajr) },
+      { name: 'zuhr', label: 'Dhuhr', urdu: 'ظہر', mins: parseToMins(prayerTimes.zuhr) },
+      { name: 'asr', label: 'Asr', urdu: 'عصر', mins: parseToMins(prayerTimes.asr) },
+      { name: 'maghrib', label: 'Maghrib', urdu: 'مغرب', mins: parseToMins(prayerTimes.maghrib) },
+      { name: 'isha', label: 'Isha', urdu: 'عشاء', mins: parseToMins(prayerTimes.isha) },
     ];
     prayers.sort((a, b) => a.mins - b.mins);
     let next = prayers.find(p => p.mins > currentInMins);
     let isNextDay = false;
     if (!next) { next = prayers[0]; isNextDay = true; }
-    let diff = isNextDay ? (1440 - currentInMins) + next.mins : next.mins - currentInMins;
+    const nextPrayer = next || prayers[0]!;
+    const diff = isNextDay ? (1440 - currentInMins) + nextPrayer.mins : nextPrayer.mins - currentInMins;
     const hrs = Math.floor(diff / 60);
     const mins = diff % 60;
-    return hrs > 0 ? `Next prayer: ${next.label} in ${hrs}h ${mins}m` : `Next prayer: ${next.label} in ${mins} minutes`;
+    return {
+      label: nextPrayer.label,
+      urdu: nextPrayer.urdu,
+      time: formatTo12Hour(prayerTimes[nextPrayer.name] || '--:--'),
+      countdown: hrs > 0 ? `${hrs}h ${mins}m remaining` : `${mins} minutes remaining`,
+      shortCountdown: hrs > 0 ? `${nextPrayer.label} in ${hrs}h ${mins}m` : `${nextPrayer.label} in ${mins} minutes`,
+    };
   };
 
   useEffect(() => {
@@ -397,6 +400,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
     return parseFloat((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1));
   };
 
+  const nextPrayerDetails = getNextPrayerDetails();
+  const gregorianDate = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+  const accountLabel = isAuthenticated ? (authName || 'Imam account') : isUserAuthenticated ? (userAuthName || 'My account') : 'Log in';
+  const accountTarget = isAuthenticated ? 'imam-login' : isUserAuthenticated ? 'user-dashboard' : 'login-splash';
+
   return (
     <div className="pb-16 animate-fadeIn bg-slate-50">
       <style>{`
@@ -410,200 +422,123 @@ export const HomeView: React.FC<HomeViewProps> = ({
         }
       `}</style>
 
-      {/* ═══════════ TOP BANNER — CSS Islamic pattern, no image ═══════════ */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#071f1b] via-[#0d4a3c] to-[#123c2f] text-white">
-        {/* Soft light and gold glow */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 12% 8%, rgba(231,198,107,.20), transparent 34%), radial-gradient(circle at 92% 5%, rgba(52,211,153,.15), transparent 30%), linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.28))',
-          }}
+      {/* ═══════════ PROFESSIONAL BLUE PRAYER HEADER ═══════════ */}
+      <div className="relative min-h-[390px] overflow-hidden rounded-b-[30px] bg-gradient-to-br from-[#063b9d] via-[#075ac8] to-[#0a75d8] text-white shadow-[0_10px_30px_rgba(5,69,166,.28)]">
+        <img
+          src="/mosque-header.webp"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-8 w-full select-none opacity-90"
+          decoding="async"
+          fetchPriority="high"
         />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#043784]/20 via-transparent to-[#032b73]/55" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 70 70'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Cpath d='M35 8l7 13 13 7-13 7-7 13-7-13-13-7 13-7z'/%3E%3Ccircle cx='35' cy='28' r='5'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: '70px 70px' }} />
 
-        {/* Repeating geometric Islamic motif */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.14]"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23e7c66b' stroke-width='1'%3E%3Cpath d='M36 8l7 14 14 7-14 7-7 14-7-14-14-7 14-7z'/%3E%3Ccircle cx='36' cy='29' r='6'/%3E%3Cpath d='M0 0l18 18M72 0L54 18M0 72l18-18M72 72L54 54'/%3E%3C/g%3E%3C/svg%3E\")",
-            backgroundSize: '72px 72px',
-          }}
-        />
+        {/* Top actions */}
+        <div className="relative z-20 flex items-center justify-between px-4 pt-4">
+          <button type="button" onClick={() => onNavigate('menu')} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm transition active:scale-95" aria-label="Open menu">
+            <Menu size={25} strokeWidth={2.4} />
+          </button>
 
-        {/* Decorative corner rings */}
-        <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full border border-amber-200/15" />
-        <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full border border-emerald-200/10" />
-        <div className="pointer-events-none absolute -left-16 top-20 h-36 w-36 rounded-full border border-amber-200/10" />
-
-        {/* Header Row */}
-        <div className="relative z-10 flex flex-row-reverse items-start justify-between px-4 pt-4 mb-3">
-          <div className="flex flex-col gap-1.5">
-            {isAuthenticated ? (
-              <button type="button" onClick={() => onNavigate('imam-login')} className="flex items-center gap-1.5 py-1 px-3 bg-amber-500/25 backdrop-blur-sm border border-amber-400/40 text-amber-200 font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
-                {authName || 'Imam'}
-              </button>
-            ) : isUserAuthenticated ? (
-              <button type="button" onClick={() => onNavigate('user-dashboard')} className="flex items-center gap-1.5 py-1 px-3 bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                {userAuthName}
-              </button>
-            ) : (
-              <button type="button" onClick={() => onNavigate('login-splash')} className="flex items-center gap-1.5 py-1 px-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-bold text-[11px] rounded-full active:scale-95 cursor-pointer select-none">
-                <LogIn size={10} className="text-amber-300 shrink-0" />
-                Log in
-              </button>
-            )}
-          </div>
-
-          <div className="text-left">
-            <div className="h-7" style={{ opacity: dateVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-              {dateSlot === 0 ? (
-                <div className="text-[12px] font-urdu font-bold text-amber-300 leading-tight">{todayDate || '—'}</div>
-              ) : (
-                <div className="text-[12px] font-urdu text-white/80 leading-tight">{todayDate}</div>
-              )}
-            </div>
-            {(() => {
-              const p = currentPrayer;
-              const rawTime = prayerTimes[p] || '--:--';
-              const parseToMins = (t: string) => { if (!t) return 0; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-              const fmt = (mins: number) => {
-                const h24 = Math.floor((mins % 1440) / 60), m = mins % 60;
-                const ampm = h24 >= 12 ? 'PM' : 'AM';
-                let h12 = h24 % 12; h12 = h12 || 12;
-                return `${h12 < 10 ? '0' : ''}${h12}:${m < 10 ? '0' : ''}${m} ${ampm}`;
-              };
-              const startMins = parseToMins(rawTime);
-              const jOffset = p === 'maghrib' ? 10 : p === 'fajr' ? 30 : 15;
-              const slots = [
-                { label: 'Start time', time: formatTo12Hour(rawTime), color: 'text-white' },
-                { label: 'Congregation', time: fmt(startMins + jOffset), color: 'text-amber-300' },
-                { label: 'End time', time: p === 'fajr' ? fmt(startMins + 85) : p === 'zuhr' ? formatTo12Hour(prayerTimes['asr']) : p === 'asr' ? formatTo12Hour(prayerTimes['maghrib']) : p === 'maghrib' ? formatTo12Hour(prayerTimes['isha']) : formatTo12Hour(prayerTimes['fajr']), color: 'text-white' },
-              ];
-              const current = slots[prayerSlot];
-              return (
-                <div style={{ opacity: slotVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-                  <div className="text-[9px] text-white/50">{current.label}</div>
-                  <div className={`text-[20px] font-mono font-bold ${current.color} leading-tight`}>{current.time}</div>
-                  <div className="flex gap-1 mt-1">
-                    {slots.map((_, i) => (
-                      <span key={i} className={`h-0.5 rounded-full transition-all duration-300 ${i === prayerSlot ? 'bg-amber-400 w-4' : 'bg-white/25 w-1.5'}`} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-            <div className="mt-1.5 flex max-w-[210px] items-center gap-1.5">
-              <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-400" />
-              </span>
-              <span className="text-[9px] font-medium leading-tight text-amber-100 drop-shadow">{getNextPrayerCountdown()}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Search bar and three-dot button */}
-        <div className="relative z-10 px-4 mb-3 flex flex-row-reverse items-center gap-2 w-full">
-
-          {/* تھری ڈاٹ بٹن */}
-          <div className="shrink-0">
-            <button
-              onClick={() => onNavigate('menu')}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                background: "rgba(255,255,255,0.15)",
-                color: "#ffffff",
-                border: "1px solid rgba(255,255,255,0.3)",
-                cursor: "pointer",
-              }}
-            >
-              <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
-                <circle cx="10" cy="4" r="1.8" />
-                <circle cx="10" cy="10" r="1.8" />
-                <circle cx="10" cy="16" r="1.8" />
-              </svg>
+          <div className="relative flex items-center gap-2">
+            <button type="button" className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm" aria-label="Notifications" title="Notifications — coming soon">
+              <Bell size={21} />
+              <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-amber-300" />
             </button>
-          </div>
+            <button type="button" onClick={() => setHeaderMenuOpen(value => !value)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm" aria-label="Account options">
+              <MoreVertical size={22} />
+            </button>
 
-          {/* سرچ بار */}
-          <div className="relative flex-1 min-w-0">
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-xl px-3 py-2.5 shadow-lg">
-              <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Search Surah or Ayah, e.g. Yaseen Ayah 7..."
-                className="flex-1 bg-transparent text-white placeholder-white/50 text-[12px] text-left outline-none min-w-0"
-                dir="ltr"
-              />
-              {searchQuery && (
-                <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-white/50 hover:text-white transition-colors shrink-0">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path d="M18 6 6 18M6 6l12 12" />
-                  </svg>
+            {headerMenuOpen && (
+              <div className="absolute right-0 top-12 z-50 w-52 overflow-hidden rounded-xl border border-white/20 bg-white text-slate-800 shadow-2xl">
+                <button type="button" onClick={() => { setHeaderMenuOpen(false); onNavigate(accountTarget); }} className="flex w-full items-center gap-2 border-b border-slate-100 px-4 py-3 text-left text-xs font-semibold hover:bg-blue-50">
+                  <User size={15} className="text-blue-700" /> {accountLabel}
                 </button>
-              )}
-            </div>
-
-            {/* سرچ نتائج */}
-            {searchResults.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
-                {searchResults.map((result, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => {
-                      result.action();
-                      setSearchQuery('');
-                      setSearchResults([]);
-                    }}
-                    className="flex w-full items-center gap-3 border-0 border-b border-slate-100 bg-white px-4 py-3 text-left transition-colors last:border-0 hover:bg-emerald-50 active:bg-emerald-100"
-                  >
-                    {result.icon && <span className="text-lg shrink-0">{result.icon}</span>}
-                    <span className="flex-1 text-right">
-                      <span className="block text-[12px] font-bold text-slate-800" dir="auto">{result.title}</span>
-                      {result.subtitle && <span className="block text-[10px] text-slate-400" dir="auto">{result.subtitle}</span>}
-                    </span>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shrink-0">{result.type}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {isSearching && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
-                <span className="text-[12px] text-slate-500">Searching...</span>
+                <button type="button" onClick={() => { setHeaderMenuOpen(false); onNavigate('menu'); }} className="flex w-full items-center gap-2 px-4 py-3 text-left text-xs font-semibold hover:bg-blue-50">
+                  <SlidersHorizontal size={15} className="text-blue-700" /> App menu
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* آیت */}
-        <div className="relative z-10 px-4 pb-8">
-          {dailyAyah ? (
-            <p className="text-[11px] text-white/65 font-amiri leading-relaxed text-center drop-shadow" dir="rtl">
-              {dailyAyah.ar.length > 80 ? dailyAyah.ar.substring(0, 80) + '...' : dailyAyah.ar}
-            </p>
-          ) : (
-            <p className="text-[11px] text-white/50 font-amiri text-center" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-          )}
+        {/* Date and next prayer summary */}
+        <div className="relative z-10 mt-20 w-[58%] px-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-amber-200 backdrop-blur-sm"><CalendarDays size={22} /></span>
+            <div className="min-w-0">
+              <div className="truncate text-[12px] font-urdu font-bold text-amber-100" dir="auto">{todayDate || 'Hijri date'}</div>
+              <div className="mt-1 text-[12px] font-semibold text-white/90">{gregorianDate}</div>
+            </div>
+          </div>
+
+          <div className="mt-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/12 px-3 py-2 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md">
+            <Clock3 size={14} className="shrink-0 text-amber-200" />
+            <span className="truncate">Next prayer: {nextPrayerDetails.shortCountdown}</span>
+          </div>
         </div>
 
-        {/* ═══════════ نیچے کا مواد ═══════════ */}
-        <div className="relative -mt-4 bg-slate-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] space-y-4 pt-5">
+        {/* Main prayer glass card */}
+        <div className="relative z-20 mx-4 mt-5 rounded-[24px] border border-white/35 bg-white/12 p-4 shadow-[0_12px_35px_rgba(0,34,110,.28)] backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white text-[#0755bd] shadow-lg"><Sunrise size={31} strokeWidth={1.8} /></span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-white/75">Next Prayer</div>
+              <div className="mt-0.5 flex items-baseline gap-2"><span className="font-urdu text-[25px] font-bold text-white" dir="rtl">{nextPrayerDetails.urdu}</span><span className="text-[11px] font-semibold text-amber-100">{nextPrayerDetails.label}</span></div>
+              <div className="mt-1 text-[10px] text-white/75">{nextPrayerDetails.countdown}</div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="text-[30px] font-mono font-bold leading-none tracking-tight text-white">{nextPrayerDetails.time.replace(/\s?(AM|PM)$/i, '')}</div>
+              <div className="mt-1 text-[11px] font-bold text-amber-100">{nextPrayerDetails.time.match(/AM|PM/i)?.[0] || ''}</div>
+              <button type="button" onClick={() => onNavigate('settings')} className="mt-2 flex max-w-[120px] items-center gap-1 rounded-full bg-[#063a93]/70 px-2.5 py-1.5 text-[9px] font-semibold text-white">
+                <MapPin size={11} className="shrink-0" /><span className="truncate">{locationName}</span><ChevronDown size={10} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative z-30 mx-4 my-4">
+        <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-[0_5px_18px_rgba(15,53,111,.10)]">
+          <Search size={19} className="shrink-0 text-blue-700" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={event => setSearchQuery(event.target.value)}
+            onKeyDown={event => event.key === 'Enter' && handleSearch()}
+            placeholder="Search Surah or Ayah, e.g. Yaseen Ayah 7..."
+            className="min-w-0 flex-1 bg-transparent text-left text-[12px] text-slate-700 outline-none placeholder:text-slate-400"
+            dir="ltr"
+          />
+          {searchQuery && (
+            <button type="button" onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"><X size={14} /></button>
+          )}
+          <button type="button" onClick={() => onNavigate('menu')} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700" aria-label="Search options"><SlidersHorizontal size={17} /></button>
+        </div>
+
+        {searchResults.length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-1 z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+            {searchResults.map((result, index) => (
+              <button key={index} type="button" onClick={() => { result.action(); setSearchQuery(''); setSearchResults([]); }} className="flex w-full items-center gap-3 border-b border-slate-100 bg-white px-4 py-3 text-left transition-colors last:border-0 hover:bg-blue-50 active:bg-blue-100">
+                <span className="flex-1 text-left"><span className="block text-[12px] font-bold text-slate-800" dir="auto">{result.title}</span>{result.subtitle && <span className="block text-[10px] text-slate-400" dir="auto">{result.subtitle}</span>}</span>
+                <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">{result.type}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {isSearching && (
+          <div className="absolute left-0 right-0 top-full mt-1 z-50 flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-2xl">
+            <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600" />
+            <span className="text-[12px] text-slate-500">Searching...</span>
+          </div>
+        )}
+      </div>
+
+      {/* Main content */}
+      <div className="relative space-y-4 bg-slate-50 pt-1">
 
           {isDeviceOffline && (
             <div className="mx-4 p-2.5 bg-amber-50/70 shadow-[0_2px_10px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.03)] flex items-center gap-2.5 text-amber-900 animate-fadeIn">
@@ -775,7 +710,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
 
-        </div>
       </div>
     </div>
   );
