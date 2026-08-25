@@ -16,8 +16,8 @@ const CATEGORIES = [
   { label: "Imam Account",     subject: "Feedback: Imam Account" },
   { label: "Imam Panel",       subject: "Feedback: Imam Panel" },
   { label: "App General",      subject: "Feedback: General App" },
-  { label: "Bug Report",       subject: "Bug Report: StepToDeen" },
-  { label: "Suggestion",       subject: "Suggestion: StepToDeen" },
+  { label: "Bug Report",       subject: "Bug Report: StepTuDeen" },
+  { label: "Suggestion",       subject: "Suggestion: StepTuDeen" },
   { label: "Other",            subject: "Feedback: Other" },
 ];
 
