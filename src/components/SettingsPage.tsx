@@ -309,7 +309,7 @@ export default function SettingsPage({ onBack }: SettingsProps) {
           }}
         >
           <p style={{ margin: 0, fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
-            <strong>🔒 Privacy Note:</strong> StepToDeen only uses your location to find nearby
+            <strong>🔒 Privacy Note:</strong> StepTuDeen only uses your location to find nearby
             masjids and calculate Qibla direction. Your location is never stored or shared.
           </p>
         </div>
