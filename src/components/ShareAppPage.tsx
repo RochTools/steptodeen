@@ -4,8 +4,8 @@ interface ShareAppProps {
   onBack?: () => void;
 }
 
-const APP_URL = "https://steptodeen.hubproapk.workers.dev/";
-const APP_NAME = "StepToDeen";
+const APP_URL = "https://steptudeen.islamorg.workers.dev/";
+const APP_NAME = "StepTuDeen";
 const SHARE_MESSAGE = `Check out ${APP_NAME} — A complete Islamic app with Quran, Hadith, Qibla, Duas and much more!\n\n${APP_URL}`;
 
 export default function ShareAppPage({ onBack }: ShareAppProps) {
@@ -60,7 +60,7 @@ export default function ShareAppPage({ onBack }: ShareAppProps) {
           Share App
         </h1>
         <p style={{ margin: 0, fontSize: 13, opacity: 0.85, lineHeight: 1.5 }}>
-          Share StepToDeen with your family and friends
+          Share StepTuDeen with your family and friends
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export default function ShareAppPage({ onBack }: ShareAppProps) {
             ☪
           </div>
           <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 700, color: "#0f172a" }}>
-            StepToDeen
+            StepTuDeen
           </h2>
           <p style={{ margin: "0 0 16px", fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
             A complete Islamic app with Quran, Hadith, Qibla, Masnoon Duas, Digital Tasbih and much more.
@@ -109,7 +109,7 @@ export default function ShareAppPage({ onBack }: ShareAppProps) {
             }}
           >
             <Share2 size={18} />
-            Share StepToDeen
+            Share StepTuDeen
           </button>
         </div>
 
