@@ -124,7 +124,7 @@ const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
   const nightProgress = clamp(nightElapsed / nightDuration, 0, 1);
 
   const sunPoint = getQuadraticPoint(dayProgress, { x: 18, y: 86 }, { x: 54, y: 7 }, { x: 88, y: 14 });
-  const moonPoint = getQuadraticPoint(nightProgress, { x: 90, y: 24 }, { x: 56, y: 4 }, { x: 18, y: 18 });
+  const moonPoint = getQuadraticPoint(nightProgress, { x: 90, y: 31 }, { x: 56, y: 12 }, { x: 18, y: 24 });
 
   const rawSunOpacity = (dayProgress < 0.08 ? dayProgress / 0.08 : 1) * (dayProgress > 0.86 ? (1 - dayProgress) / 0.14 : 1);
   const rawMoonOpacity = (nightProgress < 0.10 ? nightProgress / 0.10 : 1) * (nightProgress > 0.90 ? (1 - nightProgress) / 0.10 : 1);
@@ -148,7 +148,7 @@ const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
     moon: {
       x: moonPoint.x,
       y: moonPoint.y,
-      opacity: clamp(rawMoonOpacity, 0.18, 1),
+      opacity: clamp(rawMoonOpacity, 0.34, 1),
       scale: 0.94 + Math.sin(nightProgress * Math.PI) * 0.12,
     },
   };
@@ -541,11 +541,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
           animation: celestial-spin 18s linear infinite;
         }
         .celestial-moon-core {
-          background: radial-gradient(circle at 28% 30%, rgba(255,255,255,0.98) 0%, rgba(226,232,240,0.98) 46%, rgba(148,163,184,0.92) 100%);
-          box-shadow: 0 0 18px rgba(226, 232, 240, 0.26), 0 0 36px rgba(148, 163, 184, 0.18);
+          background: radial-gradient(circle at 30% 28%, rgba(255,255,255,1) 0%, rgba(241,245,249,0.99) 38%, rgba(203,213,225,0.97) 70%, rgba(148,163,184,0.96) 100%);
+          box-shadow: inset -5px -6px 10px rgba(71, 85, 105, 0.20), 0 0 14px rgba(226, 232, 240, 0.24), 0 0 24px rgba(148, 163, 184, 0.15);
         }
         .celestial-moon-glow {
           animation: celestial-moon-breathe 6.2s ease-in-out infinite;
+          opacity: 0.72;
         }
         .celestial-star {
           animation: celestial-twinkle 3.4s ease-in-out infinite;
@@ -641,13 +642,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 transform: `translate(-50%, -50%) scale(${celestialScene.moon.scale})`,
               }}
             >
-              <div className="relative h-12 w-12">
-                <div className="celestial-moon-glow absolute inset-[-16px] rounded-full bg-slate-100/25 blur-2xl" />
-                <span className="celestial-star absolute -left-5 top-1 h-1.5 w-1.5 rounded-full bg-white/85" />
-                <span className="celestial-star absolute left-5 -top-3 h-1 w-1 rounded-full bg-amber-100/70" style={{ animationDelay: '0.7s' }} />
-                <span className="celestial-star absolute -right-4 top-5 h-1 w-1 rounded-full bg-white/70" style={{ animationDelay: '1.4s' }} />
-                <div className="celestial-moon-core relative h-12 w-12 rounded-full" />
-                <div className="absolute inset-[4px] rounded-full bg-[#0b3f88]" style={{ transform: 'translateX(11px)' }} />
+              <div className="relative h-10 w-10">
+                <div className="celestial-moon-glow absolute inset-[-10px] rounded-full bg-slate-100/20 blur-xl" />
+                <span className="celestial-star absolute -left-4 top-1 h-1.5 w-1.5 rounded-full bg-white/85" />
+                <span className="celestial-star absolute left-4 -top-2 h-1 w-1 rounded-full bg-amber-100/70" style={{ animationDelay: '0.7s' }} />
+                <span className="celestial-star absolute -right-3 top-4 h-1 w-1 rounded-full bg-white/70" style={{ animationDelay: '1.4s' }} />
+                <div className="celestial-moon-core relative h-10 w-10 rounded-full border border-white/45" />
+                <div className="absolute inset-[3px] rounded-full bg-[#0a3371]" style={{ transform: 'translateX(9px)' }} />
+                <div className="absolute left-[9px] top-[8px] h-1.5 w-1.5 rounded-full bg-white/50 blur-[1px]" />
               </div>
             </div>
           )}
