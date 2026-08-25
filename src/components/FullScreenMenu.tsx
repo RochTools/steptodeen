@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import {
   X, ChevronRight, Settings, Info, Shield, Mail,
   FileText, HelpCircle, Share2, Star, MessageSquare,
-  LifeBuoy, Youtube
+  LifeBuoy, Youtube, Linkedin, Facebook
 } from "lucide-react";
 
 // ─── WhatsApp SVG (lucide میں نہیں ہے) ───────────────────────────────────────
@@ -29,7 +29,6 @@ const MENU_ITEMS = [
   { id: "terms",     label: "Terms of Service",  icon: <FileText   size={18} /> },
   { id: "faq",       label: "FAQ",               icon: <HelpCircle size={18} /> },
   { id: "share",     label: "Share App",         icon: <Share2     size={18} /> },
-  { id: "rate",      label: "Rate Us",           icon: <Star       size={18} /> },
   { id: "feedback",  label: "Feedback",          icon: <MessageSquare size={18} /> },
   { id: "help",      label: "Help Center",       icon: <LifeBuoy   size={18} /> },
 ];
@@ -43,16 +42,30 @@ const SOCIAL_LINKS = [
     icon: <WhatsAppIcon />,
   },
   {
+    id: "linkedin",
+    label: "LinkedIn",
+    url: "https://www.linkedin.com/in/steptudeen",
+    color: "#0A66C2",
+    icon: <Linkedin size={18} />,
+  },
+  {
+    id: "facebook",
+    label: "Facebook",
+    url: "https://facebook.com/steptudeen",
+    color: "#1877F2",
+    icon: <Facebook size={18} />,
+  },
+  {
     id: "youtube",
     label: "YouTube",
-    url: "https://youtube.com/@steptodeen",
+    url: "https://youtube.com/@steptudeen",
     color: "#FF0000",
     icon: <Youtube size={18} />,
   },
   {
     id: "tiktok",
     label: "TikTok",
-    url: "https://tiktok.com/@steptodeen.pk",
+    url: "https://tiktok.com/@steptudeen.pk",
     color: "#010101",
     icon: <TikTokIcon />,
   },
@@ -243,7 +256,7 @@ export default function FullScreenMenu({ onNavigate, onClose }: Props) {
           padding: "12px 16px", borderTop: "1px solid #f1f5f9",
           textAlign: "center", fontSize: 11, color: "#94a3b8", flexShrink: 0,
         }}>
-          Version 1.0.0 • © 2024 Step to Deen
+          Version 1.3.0 • © 2026 Step tuDeen
         </div>
       </div>
     </>
