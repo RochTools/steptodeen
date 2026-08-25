@@ -38,7 +38,7 @@ export default function HelpCenterPage({ onBack }: HelpCenterProps) {
           Help Center
         </h1>
         <p style={{ margin: 0, fontSize: 13, opacity: 0.85, lineHeight: 1.5 }}>
-          How to use StepToDeen
+          How to use StepTuDeen
         </p>
       </div>
 
@@ -53,14 +53,14 @@ export default function HelpCenterPage({ onBack }: HelpCenterProps) {
             Important: Location Permission Issue
           </h2>
           <p style={{ margin: "0 0 10px", fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
-            StepToDeen requires location permission to show nearby masjids and calculate Qibla direction. If you tapped "Allow Location" and nothing happened, or if masjid distances appear incorrect, your browser may have blocked the location permission.
+            StepTuDeen requires location permission to show nearby masjids and calculate Qibla direction. If you tapped "Allow Location" and nothing happened, or if masjid distances appear incorrect, your browser may have blocked the location permission.
           </p>
           <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
             How to fix this on Android (Chrome):
           </p>
           <Step number="1" text="Open Chrome browser and tap the three-dot menu (top right)." />
           <Step number="2" text="Go to Settings → Site Settings → Location." />
-          <Step number="3" text="Find StepToDeen (steptodeen.hubproapk.workers.dev) in the blocked list." />
+          <Step number="3" text="Find StepTuDeen (steptudeen.hubproapk.workers.dev) in the blocked list." />
           <Step number="4" text='Tap on it and change the permission to Allow.' />
           <Step number="5" text="Come back to the app and tap Allow Location again — it will now work." />
           <Note text="Once blocked, the browser will not show the permission popup again until you manually allow it from browser settings. This is a browser security limitation and cannot be bypassed by the app." />
