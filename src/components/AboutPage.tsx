@@ -23,8 +23,8 @@ const FEATURES = [
   },
   {
     icon: <Globe size={20} />,
-    title: "50+ Languages",
-    desc: "Translation in 50+ languages coming soon",
+    title: "40+ Languages",
+    desc: "Translation in 40+ languages coming soon",
     color: "#3b82f6",
   },
   {
@@ -97,7 +97,7 @@ export default function AboutPage({ onBack }: AboutProps) {
           <Info size={28} />
         </div>
         <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 800, letterSpacing: "-0.5px" }}>
-          StepToDeen
+          StepTuDeen
         </h1>
         <p style={{ margin: "0 0 14px", fontSize: 13, opacity: 0.85, lineHeight: 1.5 }}>
           Your complete Islamic companion app.
@@ -124,7 +124,7 @@ export default function AboutPage({ onBack }: AboutProps) {
             About Us
           </h2>
           <p style={{ margin: 0, fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
-            StepToDeen is an Islamic app currently in its experimental phase. Our mission is to
+            StepTuDeen is an Islamic app currently in its experimental phase. Our mission is to
             make authentic Islamic knowledge easily accessible to every Muslim around the world —
             in their own language, at their fingertips.
           </p>
@@ -173,10 +173,10 @@ export default function AboutPage({ onBack }: AboutProps) {
           border: "1px solid #f1f5f9", textAlign: "center",
         }}>
           <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
-            Version 1.0.0 &nbsp;•&nbsp; © 2024 StepToDeen
+            Version 1.3.0 &nbsp;•&nbsp; © 2026 StepTuDeen
           </p>
           <p style={{ margin: "4px 0 0", fontSize: 12, color: "#94a3b8" }}>
-            May Allah accept this effort. Ameen 🤲
+            May Allah accept this effort. Ameen
           </p>
         </div>
 
