@@ -170,7 +170,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
           border: "1px solid #f1f5f9", textAlign: "center",
         }}>
           <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
-            Version 1.0.0 — © 2026 StepTuDeen, Pakistan
+            Version 1.3.0 — © 2026 StepTuDeen, Pakistan
           </p>
         </div>
 
