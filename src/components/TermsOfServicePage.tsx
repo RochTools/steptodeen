@@ -38,7 +38,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
           Terms of Service
         </h1>
         <p style={{ margin: 0, fontSize: 13, opacity: 0.85, lineHeight: 1.5 }}>
-          Last updated: June 2025
+          Last updated: August 2026
         </p>
       </div>
 
@@ -48,7 +48,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
         {/* Intro */}
         <SectionCard title="1. Acceptance of Terms">
           <p style={para}>
-            By downloading or using <strong>StepToDeen</strong>, you agree to these Terms of Service.
+            By downloading or using <strong>StepTuDeen</strong>, you agree to these Terms of Service.
             If you do not agree, please do not use the app.
           </p>
           <p style={para}>
@@ -58,7 +58,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
 
         {/* Use of App */}
         <SectionCard title="2. Use of the App">
-          <p style={para}>StepToDeen is an Islamic app provided for the purpose of:</p>
+          <p style={para}>StepTuDeen is an Islamic app provided for the purpose of:</p>
           <ul style={list}>
             <li style={listItem}>Accessing Quran and Hadith with Urdu translation</li>
             <li style={listItem}>Performing daily azkar and tasbih</li>
@@ -78,7 +78,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
             name and a valid Gmail address. You are responsible for keeping your password secure.
           </p>
           <p style={para}>
-            StepToDeen reserves the right to suspend or delete any account that violates
+            StepTuDeen reserves the right to suspend or delete any account that violates
             these terms.
           </p>
         </SectionCard>
@@ -98,14 +98,14 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
           <ul style={list}>
             <li style={listItem}>If it is found that an Imam account was created without a genuine reason or masjid affiliation, the account may be deleted without prior notice</li>
             <li style={listItem}>Providing false masjid information is a violation of these terms</li>
-            <li style={listItem}>StepToDeen reserves the right to remove any Imam account at its discretion</li>
+            <li style={listItem}>StepTuDeen reserves the right to remove any Imam account at its discretion</li>
           </ul>
         </SectionCard>
 
         {/* Content Accuracy */}
         <SectionCard title="5. Content Accuracy">
           <p style={para}>
-            StepToDeen strives to provide authentic and accurate Islamic content. All hadiths
+            StepTuDeen strives to provide authentic and accurate Islamic content. All hadiths
             are graded as Sahih, Hasan, or Da'if. However, we are not responsible for any
             errors or omissions.
           </p>
@@ -119,7 +119,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
         <SectionCard title="6. Local Data & Storage">
           <p style={para}>
             Certain data such as saved hadiths, bookmarks, and tasbih history is stored
-            locally on your device. StepToDeen is not responsible for loss of this data
+            locally on your device. StepTuDeen is not responsible for loss of this data
             if the app cache or data is cleared from device settings.
           </p>
         </SectionCard>
@@ -127,7 +127,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
         {/* Intellectual Property */}
         <SectionCard title="7. Intellectual Property">
           <p style={para}>
-            All content, design, and code within StepToDeen is the property of StepToDeen.
+            All content, design, and code within StepTuDeen is the property of StepTuDeen.
             You may not copy, reproduce, or distribute any part of the app without permission.
           </p>
         </SectionCard>
@@ -135,7 +135,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
         {/* Disclaimer */}
         <SectionCard title="8. Disclaimer">
           <p style={para}>
-            StepToDeen is currently in Beta. The app is provided "as is" without any warranty.
+            StepTuDeen is currently in Beta. The app is provided "as is" without any warranty.
             We are continuously working to improve the app and some features may change or
             be unavailable at times.
           </p>
@@ -170,7 +170,7 @@ export default function TermsOfServicePage({ onBack }: TermsProps) {
           border: "1px solid #f1f5f9", textAlign: "center",
         }}>
           <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
-            Version 1.0.0 — © 2024 StepToDeen, Pakistan
+            Version 1.0.0 — © 2026 StepTuDeen, Pakistan
           </p>
         </div>
 
