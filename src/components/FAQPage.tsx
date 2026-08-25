@@ -9,7 +9,7 @@ const FAQS = [
     items: [
       {
         q: "I tapped 'Allow Location' but nothing happened. Why?",
-        a: "This happens when your browser has previously blocked location permission for StepToDeen. Once blocked, the browser will not show the permission popup again automatically. To fix this: open Chrome, go to Settings → Site Settings → Location, find StepToDeen in the blocked list, and change it to Allow. Then come back to the app and try again.",
+        a: "This happens when your browser has previously blocked location permission for StepTuDeen. Once blocked, the browser will not show the permission popup again automatically. To fix this: open Chrome, go to Settings → Site Settings → Location, find StepTuDeen in the blocked list, and change it to Allow. Then come back to the app and try again.",
       },
       {
         q: "Masjid distances are showing incorrectly or from a different city. Why?",
@@ -17,7 +17,7 @@ const FAQS = [
       },
       {
         q: "How do I allow location permission from browser settings on Android?",
-        a: "Open Chrome → tap the three-dot menu (top right) → Settings → Site Settings → Location → find steptodeen.hubproapk.workers.dev in the blocked list → tap it → change to Allow. Then reload the app.",
+        a: "Open Chrome → tap the three-dot menu (top right) → Settings → Site Settings → Location → find https://steptudeen.islamorg.workers.dev/ in the blocked list → tap it → change to Allow. Then reload the app.",
       },
     ],
   },
@@ -64,7 +64,7 @@ const FAQS = [
       },
       {
         q: "Which Hadith books are available?",
-        a: "StepToDeen includes Sahih Bukhari, Sahih Muslim, Tirmizi, Abu Dawood, Ibn Majah, Nasai, Riyad Saliheen, Muwatta Malik, and Al-Adab Al-Mufrad.",
+        a: "StepTuDeen includes Sahih Bukhari, Sahih Muslim, Tirmizi, Abu Dawood, Ibn Majah, Nasai, Riyad Saliheen, Muwatta Malik, and Al-Adab Al-Mufrad.",
       },
       {
         q: "What does the Imam Panel do?",
@@ -85,11 +85,11 @@ const FAQS = [
       },
       {
         q: "Prayer times are not showing correctly.",
-        a: "Make sure location permission is enabled for StepToDeen. If the issue continues, contact us at steptodeen@gmail.com with your city name.",
+        a: "Make sure location permission is enabled for StepTuDeen. If the issue continues, contact us at steptodeen@gmail.com with your city name.",
       },
       {
-        q: "I found a mistake in a hadith or translation.",
-        a: "Please report it to us at steptodeen@gmail.com with the hadith reference. We take accuracy very seriously and will review it promptly.",
+        q: "I found a mistake in a hadith or Quran.",
+        a: "Please report it to us at steptodeen@gmail.com with the hadith or Quran reference. We take accuracy very seriously and will review it promptly.",
       },
     ],
   },
@@ -97,12 +97,12 @@ const FAQS = [
     category: "General",
     items: [
       {
-        q: "Is StepToDeen free to use?",
-        a: "Yes, StepToDeen is completely free. There are no hidden charges or subscriptions.",
+        q: "Is StepTuDeen free to use?",
+        a: "Yes, StepTuDeen is completely free. There are no hidden charges or subscriptions.",
       },
       {
         q: "What languages are supported?",
-        a: "Currently the app supports Urdu translation. Support for 50+ languages is coming in a future update.",
+        a: "Currently the app supports Urdu Hindi English 11+ languages. Support for 50+ languages is coming in a future update.",
       },
       {
         q: "How can I contact support?",
