@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Bell, BookOpen, CalendarDays, ChevronDown, CircleDot, Clock3, Compass, Heart, MapPin, Menu, MoreVertical, Scroll, Search, SlidersHorizontal, Sunrise, User, X } from 'lucide-react';
 import { Mosque } from '../types';
+import CelestialHeaderScene from './CelestialHeaderScene';
 
 interface HomeViewProps {
   onNavigate: (view: string) => void;
@@ -51,107 +52,6 @@ const formatTo12Hour = (time24: string) => {
   const strHrs = h < 10 ? '0' + h : h;
   const strMins = m < 10 ? '0' + m : m;
   return `${strHrs}:${strMins} ${ampm}`;
-};
-
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-const extractClockTime = (timeValue?: string) => {
-  if (!timeValue) return '';
-  const match = timeValue.match(/(\d{1,2}):(\d{2})/);
-  if (!match) return '';
-  return `${match[1].padStart(2, '0')}:${match[2]}`;
-};
-
-const parseTimeToMinutes = (timeValue?: string) => {
-  const normalized = extractClockTime(timeValue);
-  if (!normalized) return null;
-  const [hours, minutes] = normalized.split(':').map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
-  return hours * 60 + minutes;
-};
-
-const getPrayerTimeValue = (times: { [key: string]: string }, aliases: string[]) => {
-  for (const alias of aliases) {
-    if (times?.[alias]) return times[alias];
-  }
-
-  const entries = Object.entries(times || {});
-  for (const alias of aliases.map(item => item.toLowerCase())) {
-    const match = entries.find(([key, value]) => key.toLowerCase() === alias && !!value);
-    if (match) return match[1];
-  }
-
-  return '';
-};
-
-const getRangeProgress = (current: number, start: number, end: number) => {
-  if (end <= start) return 0;
-  return clamp((current - start) / (end - start), 0, 1);
-};
-
-const getQuadraticPoint = (
-  progress: number,
-  start: { x: number; y: number },
-  control: { x: number; y: number },
-  end: { x: number; y: number }
-) => {
-  const t = clamp(progress, 0, 1);
-  const inverse = 1 - t;
-
-  return {
-    x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
-    y: inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y,
-  };
-};
-
-const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
-  const fajrMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['fajr', 'Fajr']));
-  const sunriseMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['sunrise', 'Sunrise']));
-  const maghribMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['maghrib', 'Maghrib']));
-  const ishaMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['isha', 'Isha']));
-
-  const sunrise = sunriseMinutes ?? (fajrMinutes !== null ? clamp(fajrMinutes + 25, 0, 1439) : 360);
-  const maghrib = maghribMinutes ?? 1080;
-  const isha = ishaMinutes ?? clamp(maghrib + 75, 0, 1439);
-  const currentMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
-
-  const isDaytime = currentMinutes >= sunrise && currentMinutes < maghrib;
-  const isTwilight = !isDaytime && ((currentMinutes >= sunrise - 25 && currentMinutes < sunrise) || (currentMinutes >= maghrib && currentMinutes <= isha));
-
-  const dayProgress = getRangeProgress(currentMinutes, sunrise, maghrib);
-  const nightDuration = Math.max(1, (1440 - maghrib) + sunrise);
-  const nightElapsed = currentMinutes >= maghrib ? currentMinutes - maghrib : 1440 - maghrib + currentMinutes;
-  const nightProgress = clamp(nightElapsed / nightDuration, 0, 1);
-
-  const sunPoint = getQuadraticPoint(dayProgress, { x: 18, y: 86 }, { x: 54, y: 7 }, { x: 88, y: 14 });
-  const moonPoint = getQuadraticPoint(nightProgress, { x: 90, y: 31 }, { x: 56, y: 12 }, { x: 18, y: 24 });
-
-  const rawSunOpacity = (dayProgress < 0.08 ? dayProgress / 0.08 : 1) * (dayProgress > 0.86 ? (1 - dayProgress) / 0.14 : 1);
-  const rawMoonOpacity = (nightProgress < 0.10 ? nightProgress / 0.10 : 1) * (nightProgress > 0.90 ? (1 - nightProgress) / 0.10 : 1);
-
-  return {
-    isDaytime,
-    isTwilight,
-    showSun: isDaytime || isTwilight,
-    showMoon: !isDaytime,
-    headerBackground: isDaytime
-      ? 'linear-gradient(135deg, #063b9d 0%, #075ac8 58%, #0a75d8 100%)'
-      : isTwilight
-      ? 'linear-gradient(135deg, #15386c 0%, #0f559a 52%, #ea8c43 100%)'
-      : 'linear-gradient(135deg, #041631 0%, #072a5d 56%, #0b3f88 100%)',
-    sun: {
-      x: sunPoint.x,
-      y: sunPoint.y,
-      opacity: clamp(rawSunOpacity, 0, 1),
-      scale: 0.94 + Math.sin(dayProgress * Math.PI) * 0.18,
-    },
-    moon: {
-      x: moonPoint.x,
-      y: moonPoint.y,
-      opacity: clamp(rawMoonOpacity, 0.34, 1),
-      scale: 0.94 + Math.sin(nightProgress * Math.PI) * 0.12,
-    },
-  };
 };
 
 const SECTIONS = [
@@ -240,7 +140,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [isDeviceOffline, setIsDeviceOffline] = useState<boolean>(!navigator.onLine);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [locationName, setLocationName] = useState('Current location');
-  const [now, setNow] = useState(() => new Date());
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ icon: string; title: string; subtitle?: string; type: string; action: () => void }[]>([]);
@@ -386,13 +285,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   }, []);
 
   useEffect(() => {
-    const updateNow = () => setNow(new Date());
-    updateNow();
-    const intervalId = window.setInterval(updateNow, 30000);
-    return () => window.clearInterval(intervalId);
-  }, []);
-
-  useEffect(() => {
     if (!userCoords) {
       setLocationName('Current location');
       return;
@@ -510,7 +402,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   };
 
   const nextPrayerDetails = getNextPrayerDetails();
-  const celestialScene = getCelestialScene(prayerTimes, now);
   const gregorianDate = new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'long',
@@ -530,130 +421,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
           text-rendering: optimizeLegibility;
           -webkit-font-smoothing: antialiased;
         }
-        .celestial-sun-core {
-          background: radial-gradient(circle at 34% 34%, rgba(255,255,255,0.98) 0%, rgba(254,240,138,0.98) 34%, rgba(251,191,36,0.96) 66%, rgba(245,158,11,0.82) 100%);
-          box-shadow: 0 0 22px rgba(251, 191, 36, 0.45), 0 0 42px rgba(251, 191, 36, 0.20);
-        }
-        .celestial-sun-glow {
-          animation: celestial-sun-pulse 4.8s ease-in-out infinite;
-        }
-        .celestial-ray-ring {
-          animation: celestial-spin 18s linear infinite;
-        }
-        .celestial-moon-core {
-          background: radial-gradient(circle at 30% 28%, rgba(255,255,255,1) 0%, rgba(241,245,249,0.99) 38%, rgba(203,213,225,0.97) 70%, rgba(148,163,184,0.96) 100%);
-          box-shadow: inset -5px -6px 10px rgba(71, 85, 105, 0.20), 0 0 14px rgba(226, 232, 240, 0.24), 0 0 24px rgba(148, 163, 184, 0.15);
-        }
-        .celestial-moon-glow {
-          animation: celestial-moon-breathe 6.2s ease-in-out infinite;
-          opacity: 0.72;
-        }
-        .celestial-star {
-          animation: celestial-twinkle 3.4s ease-in-out infinite;
-        }
-        .celestial-cloud--one {
-          animation: celestial-cloud-drift-one 9.5s ease-in-out infinite;
-        }
-        .celestial-cloud--two {
-          animation: celestial-cloud-drift-two 11.5s ease-in-out infinite;
-        }
-        .celestial-cloud-piece {
-          border-radius: 999px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.34));
-          box-shadow: 0 6px 18px rgba(255, 255, 255, 0.08);
-        }
-        @keyframes celestial-spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes celestial-sun-pulse {
-          0%, 100% { transform: scale(1); opacity: 0.56; }
-          50% { transform: scale(1.12); opacity: 0.84; }
-        }
-        @keyframes celestial-moon-breathe {
-          0%, 100% { transform: scale(1); opacity: 0.40; }
-          50% { transform: scale(1.08); opacity: 0.64; }
-        }
-        @keyframes celestial-cloud-drift-one {
-          0% { transform: translate3d(-12px, 0, 0) scale(0.92); opacity: 0; }
-          22% { opacity: 0.72; }
-          58% { transform: translate3d(10px, -3px, 0) scale(1); }
-          100% { transform: translate3d(26px, -8px, 0) scale(1.04); opacity: 0; }
-        }
-        @keyframes celestial-cloud-drift-two {
-          0% { transform: translate3d(12px, 2px, 0) scale(0.90); opacity: 0; }
-          24% { opacity: 0.65; }
-          62% { transform: translate3d(-8px, -4px, 0) scale(1.02); }
-          100% { transform: translate3d(-22px, -9px, 0) scale(1.06); opacity: 0; }
-        }
-        @keyframes celestial-twinkle {
-          0%, 100% { opacity: 0.35; transform: scale(0.9); }
-          50% { opacity: 0.95; transform: scale(1.15); }
-        }
       `}</style>
 
       {/* ═══════════ PROFESSIONAL BLUE PRAYER HEADER ═══════════ */}
-      <div className="relative min-h-[320px] overflow-hidden rounded-b-[26px] text-white shadow-[0_10px_30px_rgba(5,69,166,.28)]" style={{ background: celestialScene.headerBackground }}>
-        <div className="pointer-events-none absolute inset-0 z-[1] opacity-[0.10]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 70 70'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Cpath d='M35 8l7 13 13 7-13 7-7 13-7-13-13-7 13-7z'/%3E%3Ccircle cx='35' cy='28' r='5'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: '70px 70px' }} />
-
-        <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true">
-          {celestialScene.showSun && (
-            <div
-              className="absolute transition-[left,top,opacity,transform] duration-[1600ms] ease-out"
-              style={{
-                left: `${celestialScene.sun.x}%`,
-                top: `${celestialScene.sun.y}%`,
-                opacity: celestialScene.sun.opacity,
-                transform: `translate(-50%, -50%) scale(${celestialScene.sun.scale})`,
-              }}
-            >
-              <div className="relative h-16 w-16">
-                <div className="celestial-sun-glow absolute inset-[-20px] rounded-full bg-amber-300/40 blur-2xl" />
-                <div className="celestial-cloud--one absolute -top-2 left-8 opacity-0">
-                  <div className="relative h-4 w-12">
-                    <span className="celestial-cloud-piece absolute bottom-0 left-0 h-3.5 w-7" />
-                    <span className="celestial-cloud-piece absolute bottom-1 left-3 h-4 w-5.5" />
-                    <span className="celestial-cloud-piece absolute bottom-0.5 right-0 h-3 w-5" />
-                  </div>
-                </div>
-                <div className="celestial-cloud--two absolute top-5 -left-8 opacity-0">
-                  <div className="relative h-3.5 w-10">
-                    <span className="celestial-cloud-piece absolute bottom-0 left-0 h-3 w-5.5" />
-                    <span className="celestial-cloud-piece absolute bottom-0.5 left-2.5 h-3.5 w-5" />
-                    <span className="celestial-cloud-piece absolute bottom-0 right-0 h-2.5 w-4" />
-                  </div>
-                </div>
-                <div className="celestial-ray-ring absolute inset-[-10px] rounded-full border border-amber-100/35" />
-                <div className="celestial-ray-ring absolute inset-[-4px] rounded-full border border-amber-50/20" style={{ animationDuration: '28s' }} />
-                <div className="celestial-sun-core relative h-16 w-16 rounded-full border border-white/30">
-                  <div className="absolute left-3 top-3 h-3.5 w-3.5 rounded-full bg-white/55 blur-[1px]" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {celestialScene.showMoon && (
-            <div
-              className="absolute transition-[left,top,opacity,transform] duration-[1800ms] ease-out"
-              style={{
-                left: `${celestialScene.moon.x}%`,
-                top: `${celestialScene.moon.y}%`,
-                opacity: celestialScene.moon.opacity,
-                transform: `translate(-50%, -50%) scale(${celestialScene.moon.scale})`,
-              }}
-            >
-              <div className="relative h-10 w-10">
-                <div className="celestial-moon-glow absolute inset-[-10px] rounded-full bg-slate-100/20 blur-xl" />
-                <span className="celestial-star absolute -left-4 top-1 h-1.5 w-1.5 rounded-full bg-white/85" />
-                <span className="celestial-star absolute left-4 -top-2 h-1 w-1 rounded-full bg-amber-100/70" style={{ animationDelay: '0.7s' }} />
-                <span className="celestial-star absolute -right-3 top-4 h-1 w-1 rounded-full bg-white/70" style={{ animationDelay: '1.4s' }} />
-                <div className="celestial-moon-core relative h-10 w-10 rounded-full border border-white/45" />
-                <div className="absolute inset-[3px] rounded-full bg-[#0a3371]" style={{ transform: 'translateX(9px)' }} />
-                <div className="absolute left-[9px] top-[8px] h-1.5 w-1.5 rounded-full bg-white/50 blur-[1px]" />
-              </div>
-            </div>
-          )}
-        </div>
+      <div className="relative min-h-[320px] overflow-hidden rounded-b-[26px] bg-[#063b9d] text-white shadow-[0_10px_30px_rgba(5,69,166,.28)]">
+        <CelestialHeaderScene prayerTimes={prayerTimes} />
 
         <img
           src="/mosque-header.webp"
