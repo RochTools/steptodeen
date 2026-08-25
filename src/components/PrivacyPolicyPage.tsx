@@ -38,7 +38,7 @@ export default function PrivacyPolicyPage({ onBack }: PrivacyPolicyProps) {
           Privacy Policy
         </h1>
         <p style={{ margin: 0, fontSize: 13, opacity: 0.85, lineHeight: 1.5 }}>
-          Last updated: June 2025
+          Last updated: August 2026
         </p>
       </div>
 
@@ -154,7 +154,7 @@ export default function PrivacyPolicyPage({ onBack }: PrivacyPolicyProps) {
           border: "1px solid #f1f5f9", textAlign: "center", marginTop: 8,
         }}>
           <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
-            © 2024 StepTuDeen — Pakistan
+            © 2026 StepTuDeen — Pakistan
           </p>
           <p style={{ margin: "4px 0 0", fontSize: 12, color: "#94a3b8" }}>
             May Allah bless this effort. Ameen
