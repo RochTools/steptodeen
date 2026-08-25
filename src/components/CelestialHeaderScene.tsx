@@ -76,13 +76,10 @@ const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
 
   const rawSunOpacity = (dayProgress < 0.08 ? dayProgress / 0.08 : 1) * (dayProgress > 0.88 ? (1 - dayProgress) / 0.12 : 1);
   const rawMoonOpacity = (nightProgress < 0.08 ? nightProgress / 0.08 : 1) * (nightProgress > 0.92 ? (1 - nightProgress) / 0.08 : 1);
-  const starsOpacity = isDaytime ? 0 : isTwilight ? 0.42 : 0.96;
 
   return {
     showSun: isDaytime || isTwilight,
     showMoon: !isDaytime,
-    showStars: !isDaytime,
-    starsOpacity,
     headerBackground: isDaytime
       ? 'linear-gradient(135deg, #063b9d 0%, #075ac8 58%, #0a75d8 100%)'
       : isTwilight
@@ -104,21 +101,6 @@ const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
   };
 };
 
-const NIGHT_STARS = [
-  { top: 8, left: 9, size: 2.4, delay: '0.1s', duration: '3.9s', opacity: 0.94, tint: '#ffffff', glow: 'rgba(255,255,255,0.7)' },
-  { top: 13, left: 22, size: 1.8, delay: '1.1s', duration: '4.6s', opacity: 0.75, tint: '#dbeafe', glow: 'rgba(219,234,254,0.55)' },
-  { top: 7, left: 36, size: 2.2, delay: '0.7s', duration: '3.4s', opacity: 0.92, tint: '#ffffff', glow: 'rgba(255,255,255,0.68)' },
-  { top: 15, left: 48, size: 1.6, delay: '1.8s', duration: '4.9s', opacity: 0.68, tint: '#fef3c7', glow: 'rgba(254,243,199,0.45)' },
-  { top: 10, left: 61, size: 2.6, delay: '0.5s', duration: '4.1s', opacity: 0.9, tint: '#ffffff', glow: 'rgba(255,255,255,0.72)' },
-  { top: 19, left: 72, size: 1.9, delay: '2.0s', duration: '3.8s', opacity: 0.76, tint: '#e0f2fe', glow: 'rgba(224,242,254,0.55)' },
-  { top: 9, left: 84, size: 2.1, delay: '1.4s', duration: '4.4s', opacity: 0.88, tint: '#ffffff', glow: 'rgba(255,255,255,0.66)' },
-  { top: 26, left: 14, size: 1.7, delay: '2.4s', duration: '4.8s', opacity: 0.7, tint: '#f8fafc', glow: 'rgba(248,250,252,0.48)' },
-  { top: 28, left: 29, size: 2.8, delay: '1.0s', duration: '3.7s', opacity: 0.96, tint: '#ffffff', glow: 'rgba(255,255,255,0.74)' },
-  { top: 23, left: 41, size: 1.5, delay: '0.3s', duration: '5.0s', opacity: 0.66, tint: '#fef9c3', glow: 'rgba(254,249,195,0.42)' },
-  { top: 32, left: 58, size: 2.0, delay: '1.6s', duration: '4.0s', opacity: 0.82, tint: '#ffffff', glow: 'rgba(255,255,255,0.60)' },
-  { top: 27, left: 79, size: 1.7, delay: '2.2s', duration: '4.7s', opacity: 0.72, tint: '#dbeafe', glow: 'rgba(219,234,254,0.50)' },
-  { top: 18, left: 90, size: 2.3, delay: '0.8s', duration: '3.6s', opacity: 0.9, tint: '#ffffff', glow: 'rgba(255,255,255,0.68)' },
-];
 
 const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes }) => {
   const [now, setNow] = useState(() => new Date());
@@ -152,10 +134,6 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
         .celestial-moon-glow {
           animation: celestial-moon-breathe 6.2s ease-in-out infinite;
           opacity: 0.84;
-        }
-        .celestial-star {
-          animation: celestial-twinkle 3.4s ease-in-out infinite;
-          will-change: transform, opacity;
         }
         .celestial-cloud--one {
           animation: celestial-cloud-drift-one 9.5s ease-in-out infinite;
@@ -192,45 +170,19 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
           62% { transform: translate3d(-8px, -4px, 0) scale(1.02); }
           100% { transform: translate3d(-22px, -9px, 0) scale(1.06); opacity: 0; }
         }
-        @keyframes celestial-twinkle {
-          0%, 100% { opacity: 0.35; transform: scale(0.9); }
-          50% { opacity: 0.95; transform: scale(1.15); }
-        }
       `}</style>
 
       <div className="pointer-events-none absolute inset-0 z-[0]" style={{ background: celestialScene.headerBackground }} />
       <div
-        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.10]"
+        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.18]"
         style={{
           backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 70 70'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Cpath d='M35 8l7 13 13 7-13 7-7 13-7-13-13-7 13-7z'/%3E%3Ccircle cx='35' cy='28' r='5'/%3E%3C/g%3E%3C/svg%3E\")",
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 70 70'%3E%3Cg fill='none' stroke='%237fd8ff' stroke-width='1'%3E%3Cpath d='M35 8l7 13 13 7-13 7-7 13-7-13-13-7 13-7z'/%3E%3Ccircle cx='35' cy='28' r='5'/%3E%3C/g%3E%3C/svg%3E\")",
           backgroundSize: '70px 70px',
         }}
       />
 
       <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true">
-        {celestialScene.showStars && (
-          <div className="absolute inset-0 transition-opacity duration-1000" style={{ opacity: celestialScene.starsOpacity }}>
-            {NIGHT_STARS.map((star, index) => (
-              <span
-                key={index}
-                className="celestial-star absolute rounded-full"
-                style={{
-                  top: `${star.top}%`,
-                  left: `${star.left}%`,
-                  width: star.size,
-                  height: star.size,
-                  opacity: star.opacity,
-                  background: star.tint,
-                  boxShadow: `0 0 ${star.size * 5}px ${star.glow}`,
-                  animationDelay: star.delay,
-                  animationDuration: star.duration,
-                }}
-              />
-            ))}
-          </div>
-        )}
-
         {celestialScene.showSun && (
           <div
             className="absolute transition-[left,top,opacity,transform] duration-[1200ms] ease-linear"
@@ -278,9 +230,6 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
           >
             <div className="relative h-11 w-11">
               <div className="celestial-moon-glow absolute inset-[-12px] rounded-full bg-white/20 blur-xl" style={{ opacity: celestialScene.moon.glowOpacity }} />
-              <span className="celestial-star absolute -left-4 top-1 h-1.5 w-1.5 rounded-full bg-white/90" style={{ animationDelay: '0.2s' }} />
-              <span className="celestial-star absolute left-4 -top-2 h-1 w-1 rounded-full bg-amber-100/80" style={{ animationDelay: '0.7s' }} />
-              <span className="celestial-star absolute -right-3 top-4 h-1 w-1 rounded-full bg-white/75" style={{ animationDelay: '1.4s' }} />
               <div className="celestial-moon-core relative h-11 w-11 rounded-full border border-white/60" />
               <div className="absolute inset-[3px] rounded-full bg-[#0a2f66]" style={{ transform: 'translateX(10px)' }} />
               <div className="absolute left-[8px] top-[8px] h-1.5 w-1.5 rounded-full bg-white/65 blur-[0.7px]" />
