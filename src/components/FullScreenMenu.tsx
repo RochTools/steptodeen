@@ -244,8 +244,7 @@ export default function FullScreenMenu({ onNavigate, onClose }: Props) {
             <p style={{
               fontSize: 12, color: "#64748b", lineHeight: 1.6, margin: 0, textAlign: "center",
             }}>
-              📍 Here you can add any extra information, announcements,
-              or custom content line by line. This section is fully flexible.
+              Your feedback helps us improve StepTuDeen. JazakAllah Khair for your time and support
             </p>
           </div>
 
