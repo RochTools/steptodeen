@@ -48,12 +48,12 @@ export default function PrivacyPolicyPage({ onBack }: PrivacyPolicyProps) {
         {/* Intro */}
         <Section>
           <p style={para}>
-            Welcome to <strong>StepToDeen</strong>. We are committed to protecting your privacy.
+            Welcome to <strong>StepTuDeen</strong>. We are committed to protecting your privacy.
             This Privacy Policy explains how we collect, use, and safeguard your information
             when you use our app.
           </p>
           <p style={para}>
-            StepToDeen is operated from <strong>Pakistan</strong> and is designed to help
+            StepTuDeen is operated from <strong>Pakistan</strong> and is designed to help
             Muslims access authentic Islamic knowledge easily.
           </p>
         </Section>
@@ -108,7 +108,7 @@ export default function PrivacyPolicyPage({ onBack }: PrivacyPolicyProps) {
         {/* Third Party */}
         <SectionCard title="5. Third-Party Services">
           <p style={para}>
-            StepToDeen uses <strong>Firebase</strong> (by Google) for authentication and database
+            StepTuDeen uses <strong>Firebase</strong> (by Google) for authentication and database
             services. Firebase has its own privacy policy which can be found at{" "}
             <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer"
               style={{ color: "#2d6a4f", fontWeight: 600 }}>
@@ -120,7 +120,7 @@ export default function PrivacyPolicyPage({ onBack }: PrivacyPolicyProps) {
         {/* Children */}
         <SectionCard title="6. Children's Privacy">
           <p style={para}>
-            StepToDeen is suitable for all ages. We do not knowingly collect personal data
+            StepTuDeen is suitable for all ages. We do not knowingly collect personal data
             from children under 13 without parental consent.
           </p>
         </SectionCard>
@@ -128,7 +128,7 @@ export default function PrivacyPolicyPage({ onBack }: PrivacyPolicyProps) {
         {/* Changes */}
         <SectionCard title="7. Changes to This Policy">
           <p style={para}>
-            This Privacy Policy may be updated in the future as new features are added to StepToDeen.
+            This Privacy Policy may be updated in the future as new features are added to StepTuDeen.
             We will notify users of any significant changes through the app. Continued use of the app
             after changes means you accept the updated policy.
           </p>
@@ -154,7 +154,7 @@ export default function PrivacyPolicyPage({ onBack }: PrivacyPolicyProps) {
           border: "1px solid #f1f5f9", textAlign: "center", marginTop: 8,
         }}>
           <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
-            © 2024 StepToDeen — Pakistan
+            © 2024 StepTuDeen — Pakistan
           </p>
           <p style={{ margin: "4px 0 0", fontSize: 12, color: "#94a3b8" }}>
             May Allah bless this effort. Ameen
