@@ -423,12 +423,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
       `}</style>
 
       {/* ═══════════ PROFESSIONAL BLUE PRAYER HEADER ═══════════ */}
-      <div className="relative min-h-[355px] overflow-hidden rounded-b-[28px] bg-gradient-to-br from-[#063b9d] via-[#075ac8] to-[#0a75d8] text-white shadow-[0_10px_30px_rgba(5,69,166,.28)]">
+      <div className="relative min-h-[310px] overflow-hidden rounded-b-[26px] bg-gradient-to-br from-[#063b9d] via-[#075ac8] to-[#0a75d8] text-white shadow-[0_10px_30px_rgba(5,69,166,.28)]">
         <img
           src="/mosque-header.webp"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-14 w-full select-none opacity-90"
+          className="pointer-events-none absolute inset-x-0 top-0 w-full select-none opacity-90"
           decoding="async"
           fetchPriority="high"
         />
@@ -436,7 +436,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 70 70'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Cpath d='M35 8l7 13 13 7-13 7-7 13-7-13-13-7 13-7z'/%3E%3Ccircle cx='35' cy='28' r='5'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: '70px 70px' }} />
 
         {/* Top actions */}
-        <div className="relative z-20 flex items-center justify-between px-4 pt-6">
+        <div className="relative z-20 flex items-center justify-between px-4 pt-3">
           <button type="button" onClick={() => onNavigate('menu')} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm transition active:scale-95" aria-label="Open menu">
             <Menu size={25} strokeWidth={2.4} />
           </button>
@@ -464,7 +464,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* Date and next prayer summary */}
-        <div className="relative z-10 mt-14 w-[58%] px-4">
+        <div className="relative z-10 mt-3 w-[58%] px-4">
           <div className="flex items-start gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-amber-200 backdrop-blur-sm"><CalendarDays size={22} /></span>
             <div className="min-w-0">
@@ -480,7 +480,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* Main prayer glass card */}
-        <div className="relative z-20 mx-4 mt-3 rounded-[22px] border border-white/35 bg-white/12 p-3.5 shadow-[0_12px_35px_rgba(0,34,110,.28)] backdrop-blur-md">
+        <div className="relative z-20 mx-4 mt-2 rounded-[20px] border border-white/35 bg-white/12 p-3 shadow-[0_12px_35px_rgba(0,34,110,.28)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-[#0755bd] shadow-lg"><Sunrise size={27} strokeWidth={1.8} /></span>
             <div className="min-w-0 flex-1">
