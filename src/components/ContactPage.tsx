@@ -1,4 +1,4 @@
-import { Mail, Youtube, MessageCircle, Send } from "lucide-react";
+import { Mail, Youtube, MessageCircle, Send, Facebook, Linkedin } from "lucide-react";
 import { useState } from "react";
 
 // ─── WhatsApp Icon ────────────────────────────────────────────────────────────
@@ -38,8 +38,8 @@ const CONTACT_LINKS = [
   {
     id: "youtube",
     label: "YouTube",
-    value: "@steptodeen",
-    url: "https://www.youtube.com/@steptodeeen",
+    value: "@steptudeen",
+    url: "https://www.youtube.com/@steptudeen",
     color: "#FF0000",
     icon: <Youtube size={20} />,
     badge: "Subscribe",
@@ -47,10 +47,30 @@ const CONTACT_LINKS = [
   {
     id: "tiktok",
     label: "TikTok",
-    value: "@steptodeen",
-    url: "https://www.tiktok.com/@steptodeen",
+    value: "@steptudeen",
+    url: "https://www.tiktok.com/@steptudeen",
     color: "#010101",
     icon: <TikTokIcon />,
+    badge: "Follow",
+  },
+  // ─── NEW: Facebook ─────────────────────────────────────────────────────
+  {
+    id: "facebook",
+    label: "Facebook",
+    value: "@steptudeen",
+    url: "https://www.facebook.com/steptudeen",
+    color: "#1877F2",
+    icon: <Facebook size={20} />,
+    badge: "Follow",
+  },
+  // ─── NEW: LinkedIn ─────────────────────────────────────────────────────
+  {
+    id: "linkedin",
+    label: "LinkedIn",
+    value: "@steptudeen",
+    url: "https://www.linkedin.com/in/steptudeen",
+    color: "#0A66C2",
+    icon: <Linkedin size={20} />,
     badge: "Follow",
   },
 ];
@@ -108,7 +128,7 @@ export default function ContactPage({ onBack }: ContactProps) {
         </div>
         <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 800, letterSpacing: "-0.5px" }}>Contact Us</h1>
         <p style={{ margin: 0, fontSize: 13, opacity: 0.85, lineHeight: 1.5 }}>
-          Your feedback helps us improve StepToDeen.
+          Your feedback helps us improve StepTuDeen.
         </p>
       </div>
 
@@ -178,7 +198,7 @@ export default function ContactPage({ onBack }: ContactProps) {
               borderRadius: 10, padding: "8px 12px", marginBottom: 12,
               fontSize: 13, color: "#16a34a", fontWeight: 500,
             }}>
-              ✅ Email client opened! Thank you for your feedback.
+               Email client opened! Thank you for your feedback.
             </div>
           )}
 
