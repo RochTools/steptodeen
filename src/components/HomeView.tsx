@@ -435,7 +435,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           decoding="async"
           fetchPriority="high"
         />
-        <div className="pointer-events-none absolute inset-0 z-[9] bg-gradient-to-b from-white/8 via-transparent to-[#0d4caa]/28" />
+        <div className="pointer-events-none absolute inset-0 z-[9] bg-gradient-to-b from-[#2f78d4]/40 via-[#2a72d0]/36 to-[#2169cd]/22" />
 
         {/* Top actions */}
         <div className="relative z-20 flex items-center justify-between px-4 pt-3">

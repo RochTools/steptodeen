@@ -81,10 +81,10 @@ const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
     showSun: isDaytime || isTwilight,
     showMoon: !isDaytime,
     headerBackground: isDaytime
-      ? 'linear-gradient(180deg, #7fe3ff 0%, #52bff9 30%, #2b8ae7 66%, #155ec8 100%)'
+      ? 'linear-gradient(180deg, #79d7ff 0%, #4eb2f3 30%, #2f84df 66%, #2169cd 100%)'
       : isTwilight
-        ? 'linear-gradient(180deg, #496f9f 0%, #3d86cf 38%, #5aa8e6 62%, #f2ad6c 100%)'
-        : 'linear-gradient(180deg, #18345c 0%, #204a7a 38%, #205f9c 68%, #1f6ec0 100%)',
+        ? 'linear-gradient(180deg, #4c77ae 0%, #428ad2 34%, #347fd7 64%, #2169cd 100%)'
+        : 'linear-gradient(180deg, #385d93 0%, #356daf 34%, #2c78c9 64%, #2169cd 100%)',
     sun: {
       x: sunPoint.x,
       y: sunPoint.y,
@@ -236,12 +236,22 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
               transform: `translate(-50%, -50%) scale(${celestialScene.moon.scale})`,
             }}
           >
-            <div className="relative h-11 w-11">
-              <div className="celestial-moon-core relative h-11 w-11 rounded-full border border-white/60" />
-              <div className="absolute inset-[3px] rounded-full bg-[#0a2f66]" style={{ transform: 'translateX(10px)' }} />
-              <div className="absolute left-[8px] top-[8px] h-1.5 w-1.5 rounded-full bg-white/65 blur-[0.7px]" />
-              <div className="absolute left-[11px] top-[16px] h-1 w-1 rounded-full bg-slate-300/60 blur-[0.4px]" />
-              <div className="absolute left-[14px] top-[21px] h-[3px] w-[3px] rounded-full bg-slate-300/35 blur-[0.2px]" />
+            <div className="relative h-12 w-12">
+              <svg viewBox="0 0 48 48" className="h-full w-full" aria-hidden="true">
+                <defs>
+                  <linearGradient id="moonFillGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="55%" stopColor="#f8fbff" />
+                    <stop offset="100%" stopColor="#dce7f5" />
+                  </linearGradient>
+                  <mask id="moonCrescentMask">
+                    <rect width="48" height="48" fill="black" />
+                    <circle cx="24" cy="24" r="17" fill="white" />
+                    <circle cx="33" cy="19" r="15" fill="black" />
+                  </mask>
+                </defs>
+                <circle cx="24" cy="24" r="17" fill="url(#moonFillGradient)" mask="url(#moonCrescentMask)" />
+              </svg>
             </div>
           </div>
         )}
