@@ -53,33 +53,75 @@ const getQuadraticPoint = (
 const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
   const fajrMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['fajr', 'Fajr']));
   const sunriseMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['sunrise', 'Sunrise']));
+  const sunsetMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['sunset', 'Sunset']));
   const maghribMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['maghrib', 'Maghrib']));
   const ishaMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['isha', 'Isha']));
 
   const sunrise = sunriseMinutes ?? (fajrMinutes !== null ? clamp(fajrMinutes + 25, 0, 1439) : 360);
-  const solarEnd = maghribMinutes ?? clamp(sunrise + 12 * 60, 0, 1439);
-  const isha = ishaMinutes ?? clamp(solarEnd + 75, 0, 1439);
+  const sunset = sunsetMinutes ?? maghribMinutes ?? clamp(sunrise + 12 * 60, 0, 1439);
+  const isha = ishaMinutes ?? clamp(sunset + 75, 0, 1439);
   const currentMinutes = nowDate.getHours() * 60 + nowDate.getMinutes() + nowDate.getSeconds() / 60;
+  const overlapWindow = 42;
 
-  const dawnStart = clamp(sunrise - 30, 0, 1439);
-  const daylightDuration = Math.max(1, solarEnd - sunrise || 12 * 60);
-  const isDaytime = currentMinutes >= sunrise && currentMinutes < solarEnd;
-  const isTwilight = !isDaytime && ((currentMinutes >= dawnStart && currentMinutes < sunrise) || (currentMinutes >= solarEnd && currentMinutes <= isha));
+  const isInWrappedWindow = (current: number, start: number, end: number) => {
+    if (start <= end) return current >= start && current <= end;
+    return current >= start || current <= end;
+  };
 
+  // Shared header arc for both sun and moon.
+  // Start  { x: 12%, y: 88% }
+  // Control{ x: 50%, y: 5%  }
+  // End    { x: 88%, y: 12% }
+  const startPoint = { x: 12, y: 88 };
+  const controlPoint = { x: 50, y: 5 };
+  const endPoint = { x: 88, y: 12 };
+
+  const daylightDuration = Math.max(1, sunset - sunrise);
   const dayProgress = clamp((currentMinutes - sunrise) / daylightDuration, 0, 1);
-  const nightDuration = Math.max(1, (1440 - solarEnd) + sunrise);
-  const nightElapsed = currentMinutes >= solarEnd ? currentMinutes - solarEnd : 1440 - solarEnd + currentMinutes;
-  const nightProgress = clamp(nightElapsed / nightDuration, 0, 1);
+  const sunPoint = getQuadraticPoint(dayProgress, startPoint, controlPoint, endPoint);
 
-  const sunPoint = getQuadraticPoint(dayProgress, { x: 18, y: 86 }, { x: 54, y: 8 }, { x: 90, y: 13 });
-  const moonPoint = getQuadraticPoint(nightProgress, { x: 91, y: 34 }, { x: 56, y: 15 }, { x: 17, y: 27 });
+  const moonVisibleStart = clamp(sunset - overlapWindow, 0, 1439);
+  const moonVisibleEnd = clamp(sunrise + overlapWindow, 0, 1439);
+  const adjustedCurrentForMoon = currentMinutes < moonVisibleStart ? currentMinutes + 1440 : currentMinutes;
+  const adjustedMoonEnd = moonVisibleEnd + 1440;
+  const moonProgress = clamp(
+    (adjustedCurrentForMoon - moonVisibleStart) / Math.max(1, adjustedMoonEnd - moonVisibleStart),
+    0,
+    1
+  );
+  const moonPoint = getQuadraticPoint(moonProgress, startPoint, controlPoint, endPoint);
 
-  const rawSunOpacity = (dayProgress < 0.08 ? dayProgress / 0.08 : 1) * (dayProgress > 0.88 ? (1 - dayProgress) / 0.12 : 1);
-  const rawMoonOpacity = (nightProgress < 0.08 ? nightProgress / 0.08 : 1) * (nightProgress > 0.92 ? (1 - nightProgress) / 0.08 : 1);
+  const isSunriseHandoff = currentMinutes >= sunrise && currentMinutes <= sunrise + overlapWindow;
+  const isSunsetHandoff = currentMinutes >= moonVisibleStart && currentMinutes <= sunset;
+  const isDaytime = currentMinutes >= sunrise && currentMinutes < sunset;
+  const isTwilight = isSunriseHandoff || isSunsetHandoff || (!isDaytime && currentMinutes >= sunset && currentMinutes <= isha);
+
+  const showSun = currentMinutes >= sunrise && currentMinutes <= sunset;
+  const showMoon = isInWrappedWindow(currentMinutes, moonVisibleStart, moonVisibleEnd);
+
+  const sunriseFadeIn = clamp((currentMinutes - sunrise) / overlapWindow, 0, 1);
+  const sunsetFadeOut = clamp((sunset - currentMinutes) / overlapWindow, 0, 1);
+  const sunOpacity = !showSun
+    ? 0
+    : currentMinutes <= sunrise + overlapWindow
+    ? 0.38 + sunriseFadeIn * 0.62
+    : currentMinutes >= moonVisibleStart
+    ? 0.38 + sunsetFadeOut * 0.62
+    : 1;
+
+  const duskMoonRise = clamp((currentMinutes - moonVisibleStart) / overlapWindow, 0, 1);
+  const dawnMoonFade = clamp((moonVisibleEnd - currentMinutes) / overlapWindow, 0, 1);
+  const moonOpacity = !showMoon
+    ? 0
+    : currentMinutes >= moonVisibleStart && currentMinutes <= sunset
+    ? 0.34 + duskMoonRise * 0.66
+    : currentMinutes >= sunrise && currentMinutes <= moonVisibleEnd
+    ? 0.34 + dawnMoonFade * 0.66
+    : 1;
 
   return {
-    showSun: isDaytime || isTwilight,
-    showMoon: !isDaytime,
+    showSun,
+    showMoon,
     headerBackground: isDaytime
       ? 'linear-gradient(180deg, #79d7ff 0%, #4eb2f3 30%, #2f84df 66%, #2169cd 100%)'
       : isTwilight
@@ -88,15 +130,15 @@ const getCelestialScene = (times: { [key: string]: string }, nowDate: Date) => {
     sun: {
       x: sunPoint.x,
       y: sunPoint.y,
-      opacity: clamp(rawSunOpacity, 0, 1),
-      scale: 0.94 + Math.sin(dayProgress * Math.PI) * 0.18,
+      opacity: clamp(sunOpacity, 0, 1),
+      scale: 0.96 + Math.sin(dayProgress * Math.PI) * 0.12,
     },
     moon: {
       x: moonPoint.x,
       y: moonPoint.y,
-      opacity: clamp(rawMoonOpacity, 0.7, 1),
-      scale: 0.98 + Math.sin(nightProgress * Math.PI) * 0.1,
-      glowOpacity: isTwilight ? 0.72 : 1,
+      opacity: clamp(moonOpacity, 0, 1),
+      scale: 0.98 + Math.sin(moonProgress * Math.PI) * 0.08,
+      glowOpacity: 0,
     },
   };
 };
@@ -190,7 +232,7 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
         }}
       />
 
-      <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true">
+      <div className="pointer-events-none absolute inset-0 z-[10] overflow-hidden" aria-hidden="true">
         {celestialScene.showSun && (
           <div
             className="absolute transition-[left,top,opacity,transform] duration-[1200ms] ease-linear"
@@ -201,26 +243,26 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({ prayerTimes
               transform: `translate(-50%, -50%) scale(${celestialScene.sun.scale})`,
             }}
           >
-            <div className="relative h-16 w-16">
-              <div className="celestial-sun-glow absolute inset-[-20px] rounded-full bg-amber-300/40 blur-2xl" />
-              <div className="celestial-cloud--one absolute -top-2 left-8 opacity-0">
-                <div className="relative h-4 w-12">
-                  <span className="celestial-cloud-piece absolute bottom-0 left-0 h-3.5 w-7" />
-                  <span className="celestial-cloud-piece absolute bottom-1 left-3 h-4 w-5.5" />
-                  <span className="celestial-cloud-piece absolute bottom-0.5 right-0 h-3 w-5" />
+            <div className="relative h-12 w-12">
+              <div className="celestial-sun-glow absolute inset-[-10px] rounded-full bg-amber-300/40 blur-xl" />
+              <div className="celestial-cloud--one absolute -top-1 left-6 opacity-0">
+                <div className="relative h-3 w-8">
+                  <span className="celestial-cloud-piece absolute bottom-0 left-0 h-2.5 w-4.5" />
+                  <span className="celestial-cloud-piece absolute bottom-0.5 left-2.5 h-3 w-4" />
+                  <span className="celestial-cloud-piece absolute bottom-0 right-0 h-2.5 w-3.5" />
                 </div>
               </div>
-              <div className="celestial-cloud--two absolute top-5 -left-8 opacity-0">
-                <div className="relative h-3.5 w-10">
-                  <span className="celestial-cloud-piece absolute bottom-0 left-0 h-3 w-5.5" />
-                  <span className="celestial-cloud-piece absolute bottom-0.5 left-2.5 h-3.5 w-5" />
-                  <span className="celestial-cloud-piece absolute bottom-0 right-0 h-2.5 w-4" />
+              <div className="celestial-cloud--two absolute top-4 -left-6 opacity-0">
+                <div className="relative h-3 w-7">
+                  <span className="celestial-cloud-piece absolute bottom-0 left-0 h-2.5 w-4" />
+                  <span className="celestial-cloud-piece absolute bottom-0.5 left-2 h-3 w-3.5" />
+                  <span className="celestial-cloud-piece absolute bottom-0 right-0 h-2 w-3" />
                 </div>
               </div>
-              <div className="celestial-ray-ring absolute inset-[-10px] rounded-full border border-amber-100/35" />
-              <div className="celestial-ray-ring absolute inset-[-4px] rounded-full border border-amber-50/20" style={{ animationDuration: '28s' }} />
-              <div className="celestial-sun-core relative h-16 w-16 rounded-full border border-white/30">
-                <div className="absolute left-3 top-3 h-3.5 w-3.5 rounded-full bg-white/55 blur-[1px]" />
+              <div className="celestial-ray-ring absolute inset-[-6px] rounded-full border border-amber-100/35" />
+              <div className="celestial-ray-ring absolute inset-[-2px] rounded-full border border-amber-50/20" style={{ animationDuration: '28s' }} />
+              <div className="celestial-sun-core relative h-12 w-12 rounded-full border border-white/30">
+                <div className="absolute left-2 top-2 h-2.5 w-2.5 rounded-full bg-white/55 blur-[1px]" />
               </div>
             </div>
           </div>
