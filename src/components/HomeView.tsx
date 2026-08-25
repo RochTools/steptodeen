@@ -681,15 +681,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-rose-700" dir="rtl">سنن ابن ماجہ</span>
               <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-rose-700">Sunan Ibn Majah</span>
             </button>
-
-            <button type="button" onClick={() => openHadithBook('malik')} className="group col-span-2 relative overflow-hidden rounded-lg bg-gradient-to-br from-cyan-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.98] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex items-center justify-center gap-3 text-center">
-              <span className="pointer-events-none absolute -right-4 -top-4 h-14 w-14 rotate-45 rounded-md bg-cyan-100/70 transition-transform duration-300 group-active:rotate-[55deg]" />
-              <BookOpen size={26} strokeWidth={2} className="relative shrink-0 text-cyan-700" />
-              <span className="home-card-urdu-title relative text-[16px] text-cyan-700" dir="rtl">موطا امام مالک</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-cyan-700">Muwatta Imam Malik</span>
-            </button>
-          </div>
-
+<button 
+  type="button" 
+  onClick={() => openHadithBook('malik')} 
+  className="group aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-cyan-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center"
+>
+  <span className="pointer-events-none absolute -right-4 -top-4 h-14 w-14 rotate-45 rounded-md bg-cyan-100/70 transition-transform duration-300 group-active:rotate-[55deg]" />
+  <BookOpen size={30} strokeWidth={2} className="relative mb-2 shrink-0 text-cyan-700" />
+  <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-cyan-700" dir="rtl">موطا امام مالک</span>
+  <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-cyan-700">Muwatta Imam Malik</span>
+</button>
+            </div>
           {/* آیتِ روز */}
           <div className="mx-4">
             <div className="text-center text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1.5">✦ Verse of the Day ✦</div>
