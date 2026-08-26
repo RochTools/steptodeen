@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Star, StarHalf, Send, User, Calendar, MessageSquare, ChevronRight, X } from 'lucide-react';
+import { Send, MessageSquare, ChevronRight, X, Calendar } from 'lucide-react';
 
 // ─── Firebase ────────────────────────────────────────────────────────────────
 import { initializeApp } from 'firebase/app';
@@ -11,7 +11,6 @@ import {
   query, 
   where, 
   serverTimestamp,
-  orderBy
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -23,7 +22,7 @@ const firebaseConfig = {
   appId: "1:764770905404:web:11a4be8da48ce471b58239"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig, 'rating-app');
 const db = getFirestore(app);
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -36,8 +35,58 @@ interface Review {
   createdAt: any;
 }
 
-// ─── Component ──────────────────────────────────────────────────────────────
-export default function RatingApp() {
+// ─── Helper functions (OUTSIDE component so ReviewCard can use them) ─────────
+function getReviewTime(r: Review): Date {
+  if (r.createdAt?.toDate) return r.createdAt.toDate();
+  if (r.createdAt?.seconds) return new Date(r.createdAt.seconds * 1000);
+  return new Date();
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+function getInitial(name: string): string {
+  return (name || '?').trim().charAt(0).toUpperCase();
+}
+
+function renderStars(rating: number): string {
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5;
+  const empty = 5 - full - (half ? 1 : 0);
+  return '★'.repeat(full) + (half ? '★' : '') + '☆'.repeat(empty);
+}
+
+// ─── Review Card Component ──────────────────────────────────────────────────
+function ReviewCard({ review }: { review: Review }) {
+  const date = getReviewTime(review);
+  const initial = getInitial(review.name);
+  const stars = renderStars(Math.round(review.rating || 0));
+
+  return (
+    <div style={styles.reviewCard}>
+      <div style={styles.reviewTop}>
+        <span style={styles.reviewAuthor}>
+          <span style={styles.avatar}>{initial}</span>
+          {review.name}
+        </span>
+        <span style={styles.reviewStars}>{stars}</span>
+      </div>
+      <div style={styles.reviewDate}>
+        <Calendar size={12} style={styles.reviewDateIcon} />
+        {formatDate(date)}
+      </div>
+      <div style={styles.reviewComment}>{review.comment}</div>
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+export default function RatingApp({ onBack }: { onBack?: () => void }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -137,38 +186,6 @@ export default function RatingApp() {
     }
   };
 
-  // ─── Helpers ───────────────────────────────────────────────────────────────
-  const getReviewTime = (r: Review) => {
-    if (r.createdAt?.toDate) return r.createdAt.toDate();
-    if (r.createdAt?.seconds) return new Date(r.createdAt.seconds * 1000);
-    return new Date();
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const renderStars = (rating: number) => {
-    const full = Math.floor(rating);
-    const half = rating % 1 >= 0.5;
-    const empty = 5 - full - (half ? 1 : 0);
-    return (
-      <>
-        {'★'.repeat(full)}
-        {half && '★'}
-        {'☆'.repeat(empty)}
-      </>
-    );
-  };
-
-  const getInitial = (name: string) => {
-    return (name || '?').trim().charAt(0).toUpperCase();
-  };
-
   // ─── Stats ─────────────────────────────────────────────────────────────────
   const totalReviews = reviews.length;
   const avgRating = totalReviews > 0
@@ -180,12 +197,11 @@ export default function RatingApp() {
   const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   reviews.forEach(r => {
     const rating = Math.min(5, Math.max(1, Math.round(r.rating || 0)));
-    starCounts[rating as keyof typeof starCounts] = (starCounts[rating as keyof typeof starCounts] || 0) + 1;
+    starCounts[rating as keyof typeof starCounts]++;
   });
 
-  const getBarPercent = (stars: number) => {
-    return totalReviews > 0 ? Math.round((starCounts[stars as keyof typeof starCounts] / totalReviews) * 100) : 0;
-  };
+  const getBarPercent = (stars: number) =>
+    totalReviews > 0 ? Math.round((starCounts[stars as keyof typeof starCounts] / totalReviews) * 100) : 0;
 
   const previewReviews = reviews.slice(0, 3);
   const hasMore = reviews.length > 3;
@@ -193,6 +209,14 @@ export default function RatingApp() {
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <div style={styles.container}>
+
+      {/* Back Button */}
+      {onBack && (
+        <button onClick={onBack} style={styles.backBtn}>
+          ← Back
+        </button>
+      )}
+
       {/* Rating Hero */}
       <div style={styles.heroCard}>
         <div style={styles.heroLeft}>
@@ -285,9 +309,7 @@ export default function RatingApp() {
         ) : error ? (
           <div style={styles.errorBox}>
             <p>{error}</p>
-            <button style={styles.retryBtn} onClick={loadReviews}>
-              Try again
-            </button>
+            <button style={styles.retryBtn} onClick={loadReviews}>Try again</button>
           </div>
         ) : reviews.length === 0 ? (
           <div style={styles.emptyBox}>
@@ -339,30 +361,6 @@ export default function RatingApp() {
   );
 }
 
-// ─── Review Card Component ──────────────────────────────────────────────────
-function ReviewCard({ review }: { review: Review }) {
-  const date = getReviewTime(review);
-  const initial = getInitial(review.name);
-  const stars = renderStars(Math.round(review.rating || 0));
-
-  return (
-    <div style={styles.reviewCard}>
-      <div style={styles.reviewTop}>
-        <span style={styles.reviewAuthor}>
-          <span style={styles.avatar}>{initial}</span>
-          {review.name}
-        </span>
-        <span style={styles.reviewStars}>{stars}</span>
-      </div>
-      <div style={styles.reviewDate}>
-        <Calendar size={12} style={styles.reviewDateIcon} />
-        {formatDate(date)}
-      </div>
-      <div style={styles.reviewComment}>{review.comment}</div>
-    </div>
-  );
-}
-
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -374,8 +372,16 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#f7f8f6',
     minHeight: '100vh',
   },
-
-  // Hero Card
+  backBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#0f5b4c',
+    fontWeight: 700,
+    fontSize: '0.9rem',
+    cursor: 'pointer',
+    marginBottom: '16px',
+    padding: '4px 0',
+  },
   heroCard: {
     background: '#ffffff',
     border: '1px solid #e7e7e2',
@@ -440,8 +446,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '100px',
     transition: 'width 0.6s ease',
   },
-
-  // Form
   formCard: {
     background: '#ffffff',
     border: '1px solid #e7e7e2',
@@ -487,6 +491,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '12px',
     outline: 'none',
     fontFamily: 'inherit',
+    boxSizing: 'border-box' as const,
   },
   textarea: {
     resize: 'vertical' as const,
@@ -524,8 +529,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#991b1b',
     border: '1px solid #fecaca',
   },
-
-  // List
   listCard: {
     background: '#ffffff',
     border: '1px solid #e7e7e2',
@@ -547,7 +550,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'Georgia, serif',
     color: '#152623',
   },
-
   reviewCard: {
     padding: '16px 0',
     borderBottom: '1px solid #e7e7e2',
@@ -599,7 +601,6 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: '6px',
     marginLeft: '35px',
   },
-
   readMoreBtn: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -616,14 +617,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'inherit',
     transition: 'all 0.2s',
   },
-
   loading: {
     textAlign: 'center' as const,
     padding: '24px',
     color: '#4b615c',
     fontSize: '0.9rem',
   },
-
   errorBox: {
     textAlign: 'center' as const,
     padding: '24px',
@@ -640,7 +639,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     marginTop: '8px',
   },
-
   emptyBox: {
     textAlign: 'center' as const,
     padding: '28px 16px',
@@ -654,8 +652,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#152623',
   },
   emptyText: { fontSize: '0.9rem', color: '#4b615c', margin: 0 },
-
-  // Modal
   modalOverlay: {
     position: 'fixed' as const,
     inset: 0,
