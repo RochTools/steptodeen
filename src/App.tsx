@@ -347,38 +347,57 @@ export default function App() {
         />
           )}
            {/* Ratings */}
-            {currentView === 'ratings' && (
-               <ratingapp onBack={() => nav.goBack()} />
-              {currentView === 'about' && (
-                <AboutPage onBack={() => nav.goBack()} />
-              )}
-              {currentView === 'contact' && (
-                <ContactPage onBack={() => nav.goBack()} />
-              )}
-              {currentView === 'privacy' && (
-                <PrivacyPolicyPage onBack={() => nav.goBack()} />
-              )}
-              {currentView === 'faq' && (
-                <FAQPage onBack={() => nav.goBack()} />
-              )}
-              {currentView === 'terms' && (
-                <TermsOfServicePage onBack={() => nav.goBack()} />
-              )}
-              {currentView === 'share' && (
-                <ShareAppPage onBack={() => nav.goBack()} />
-              )}
-              {currentView === 'feedback' && (
-                <FeedbackPage onBack={() => nav.goBack()} />
-              )}
-              {currentView === 'help' && (
-                <HelpCenterPage onBack={() => nav.goBack()} />
-              )}
-             {currentView === 'settings' && (
-             <SettingsPage onBack={() => {
-               prayer.requestLocation(); 
-                nav.goBack();
-                 }} />
-                 )} 
+{currentView === 'ratings' && (
+  <RatingApp onBack={() => nav.goBack()} />
+)}
+
+{/* About */}
+{currentView === 'about' && (
+  <AboutPage onBack={() => nav.goBack()} />
+)}
+
+{/* Contact */}
+{currentView === 'contact' && (
+  <ContactPage onBack={() => nav.goBack()} />
+)}
+
+{/* Privacy */}
+{currentView === 'privacy' && (
+  <PrivacyPolicyPage onBack={() => nav.goBack()} />
+)}
+
+{/* FAQ */}
+{currentView === 'faq' && (
+  <FAQPage onBack={() => nav.goBack()} />
+)}
+
+{/* Terms */}
+{currentView === 'terms' && (
+  <TermsOfServicePage onBack={() => nav.goBack()} />
+)}
+
+{/* Share */}
+{currentView === 'share' && (
+  <ShareAppPage onBack={() => nav.goBack()} />
+)}
+
+{/* Feedback */}
+{currentView === 'feedback' && (
+  <FeedbackPage onBack={() => nav.goBack()} />
+)}
+
+{/* Help Center */}
+{currentView === 'help' && (
+  <HelpCenterPage onBack={() => nav.goBack()} />
+)}
+
+{/* Settings */}
+{currentView === 'settings' && (
+  <SettingsPage onBack={() => {
+    prayer.requestLocation(); 
+    nav.goBack();
+  }} />
+)}
           {currentView === 'imam-login' && (
                 <ImamDashboard
                   onAddOrUpdateMosque={mosques.handleAddOrUpdateMosque}
