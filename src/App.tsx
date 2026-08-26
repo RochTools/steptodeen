@@ -35,7 +35,7 @@ const ShareAppPage    = lazy(() => import('./components/ShareAppPage'));
 const FeedbackPage    = lazy(() => import('./components/FeedbackPage'));
 const HelpCenterPage  = lazy(() => import('./components/HelpCenterPage'));
 const SettingsPage    = lazy(() => import('./components/SettingsPage'));
-const RatingApp       = lazy(() => import('./components/RatingApp'));
+const RatingApp       = lazy(() => import('./components/RatingAppPage'));
 import { Mosque } from './types';
 import { BookOpen, Scroll, Heart, Compass, Bell, X, MapPin } from 'lucide-react';
 import { formatTo12Hour } from './utils/timeHelpers';
