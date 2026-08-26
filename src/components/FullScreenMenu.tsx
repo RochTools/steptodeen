@@ -28,6 +28,7 @@ const MENU_ITEMS = [
   { id: "contact",   label: "Contact Us",        icon: <Mail       size={18} /> },
   { id: "terms",     label: "Terms of Service",  icon: <FileText   size={18} /> },
   { id: "faq",       label: "FAQ",               icon: <HelpCircle size={18} /> },
+  { id: "ratings",   label: "Ratings",           icon: <Star       size={18} /> },
   { id: "share",     label: "Share App",         icon: <Share2     size={18} /> },
   { id: "feedback",  label: "Feedback",          icon: <MessageSquare size={18} /> },
   { id: "help",      label: "Help Center",       icon: <LifeBuoy   size={18} /> },
