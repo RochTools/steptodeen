@@ -426,17 +426,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* ═══════════ PROFESSIONAL BLUE PRAYER HEADER ═══════════ */}
       <div className="relative min-h-[320px] overflow-hidden rounded-b-[26px] bg-[#063b9d] text-white shadow-[0_10px_30px_rgba(5,69,166,.28)]">
         <CelestialHeaderScene prayerTimes={prayerTimes} />
+<img
+  src="/mosque-header.webp"
+  alt=""
+  aria-hidden="true"
+  className="pointer-events-none absolute left-0 right-[16px] -top-[20px] z-[12] w-auto select-none opacity-90"
+  decoding="async"
+  fetchPriority="high"
+/>
 
-        <img
-          src="/mosque-header.webp"
-          alt=""
-          aria-hidden="true"
-className="pointer-events-none absolute left-0 right-[16px] -top-[20px] z-[12] w-full select-none opacity-90"
-          decoding="async"
-          fetchPriority="high"
-        />
-        <div className="pointer-events-none absolute inset-0 z-[8] bg-gradient-to-b from-[#2f78d4]/40 via-[#2a72d0]/36 to-[#2169cd]/22" />
-
+        
         {/* Top actions */}
         <div className="relative z-20 flex items-center justify-between px-4 pt-3">
           <button type="button" onClick={() => onNavigate('menu')} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm transition active:scale-95" aria-label="Open menu">
