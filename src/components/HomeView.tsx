@@ -430,7 +430,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   src="/mosque-header.webp"
   alt=""
   aria-hidden="true"
-  className="pointer-events-none absolute left-0 right-[16px] -top-[20px] z-[12] w-auto select-none opacity-90"
+  className="pointer-events-none absolute left-0 right-[30px] -top-[30px] z-[12] w-auto select-none opacity-90"
   decoding="async"
   fetchPriority="high"
 />
