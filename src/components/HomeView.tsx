@@ -434,8 +434,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   className="pointer-events-none absolute z-[12] select-none opacity-90"
   style={{ 
     right: '20px',
-    top: '-10px',
-    width: '80%',
+    top: '-16px',
+    width: '85%',
     maxHeight: 'calc(100% - 90px)',
     objectFit: 'contain',
     objectPosition: 'top right'
