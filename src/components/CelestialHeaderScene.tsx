@@ -381,28 +381,50 @@ const getPaletteForSolarHour = (solarHour: number): Palette => {
 };
 
 /* ------------------------------------------------------------------ *
- * The arc the sun and the moon travel along (percent of the header).
- * Apex ≈ 17% high, both ends ≈ 86% (sitting on the horizon line), so the
- * sun really rises on the left and sets on the right.
- * Old asymmetric arc, if you preferred it:
- *   start { x: 12, y: 88 } · control { x: 50, y: 5 } · end { x: 88, y: 12 }
+ * The path the sun AND the moon travel along (percent of the header box).
+ * Both bodies share exactly the same curve — only "how far along" differs
+ * (day = sunrise→sunset, night = maghrib→fajr).
+ *
+ * It is a cubic Bézier tuned for the prayer header, where:
+ *   · the big "Next Prayer" glass card sits in the lower half  → horizon
+ *   · /mosque-header.webp (minarets) sits at z-12              → sun passes
+ *     BEHIND it, because this scene renders at z-index 10
+ *   · the ⋮ (MoreVertical) button is top-right at z-20         → sun ends
+ *     there and fades out (and is covered by the button itself)
+ *
+ * So the journey is: out from under the card → up across the sky →
+ * behind the minarets → vanish at the three-dot menu.
  * ------------------------------------------------------------------ */
 
-const ARC_START = { x: 8, y: 86 };
-const ARC_CONTROL = { x: 50, y: -52 };
-const ARC_END = { x: 92, y: 86 };
+export interface CelestialPoint {
+  x: number;
+  y: number;
+}
 
-const getQuadraticPoint = (
-  progress: number,
-  start: { x: number; y: number },
-  control: { x: number; y: number },
-  end: { x: number; y: number }
-) => {
+export interface CelestialPath {
+  start: CelestialPoint;
+  control1: CelestialPoint;
+  control2: CelestialPoint;
+  end: CelestialPoint;
+}
+
+export const DEFAULT_CELESTIAL_PATH: CelestialPath = {
+  start: { x: 7, y: 88 },      // behind the Next Prayer card (below its top edge)
+  control1: { x: 24, y: 18 },  // pulls the climb up steeply, left of centre
+  control2: { x: 64, y: 8 },   // keeps the afternoon high, over the minarets
+  end: { x: 91, y: 10 },       // the ⋮ three-dot menu, top-right
+};
+
+const getCubicPoint = (progress: number, path: CelestialPath) => {
   const t = clamp(progress, 0, 1);
-  const inverse = 1 - t;
+  const k = 1 - t;
+  const a = k * k * k;
+  const b = 3 * k * k * t;
+  const c = 3 * k * t * t;
+  const d = t * t * t;
   return {
-    x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
-    y: inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y,
+    x: a * path.start.x + b * path.control1.x + c * path.control2.x + d * path.end.x,
+    y: a * path.start.y + b * path.control1.y + c * path.control2.y + d * path.end.y,
   };
 };
 
@@ -561,7 +583,7 @@ const getCelestialScene = (
   const palette = getPaletteForSolarHour(solarHour);
 
   // ---- positions -----------------------------------------------------------
-  const sunPoint = getQuadraticPoint(dayProgress, ARC_START, ARC_CONTROL, ARC_END);
+  const sunPoint = getCubicPoint(dayProgress, path);
 
   const moonVisibleStart = clamp(sunset - HANDOFF_WINDOW, 0, 1439);
   const moonVisibleEnd = clamp(sunrise + HANDOFF_WINDOW, 0, 1439);
@@ -571,17 +593,14 @@ const getCelestialScene = (
     0,
     1
   );
-  const moonPoint = getQuadraticPoint(moonProgress, ARC_START, ARC_CONTROL, ARC_END);
+  const moonPoint = getCubicPoint(moonProgress, path);
 
   // ---- visibility / fading -------------------------------------------------
-  const fade = clamp(daylight * 0.05, 14, 40); // sun fades in/out over this many minutes
+  // The fade is tied to the JOURNEY, not the clock: the sun is invisible while
+  // it is still tucked behind the prayer card, and it is fully gone the moment
+  // it reaches the three-dot menu — in every season.
   const showSun = isDay;
-  const sunOpacity = !showSun
-    ? 0
-    : Math.min(
-        clamp((currentMinutes - sunrise) / fade, 0, 1),
-        clamp((sunset - currentMinutes) / fade, 0, 1)
-      );
+  const sunOpacity = !showSun ? 0 : pathFade(dayProgress, 0.055);
 
   const inWrappedWindow = (current: number, start: number, end: number) =>
     start <= end ? current >= start && current <= end : current >= start || current <= end;
@@ -613,7 +632,7 @@ const getCelestialScene = (
   // ---- horizon afterglow follows the (real) sun, even below the horizon ----
   // After sunset it sits where the sun went down (right), then slides across
   // the bottom to where it will come up (left) by the time fajr arrives.
-  const glowX = isDay ? sunPoint.x : lerp(ARC_END.x, ARC_START.x, nightProgress);
+  const glowX = isDay ? sunPoint.x : lerp(path.end.x, path.start.x, nightProgress);
 
   const skyBackground = `linear-gradient(180deg, ${css(palette.top)} 0%, ${css(
     palette.mid
@@ -663,7 +682,7 @@ const getCelestialScene = (
     sun: {
       x: sunPoint.x,
       y: sunPoint.y,
-      opacity: clamp(0.35 + sunOpacity * 0.65, 0, 1),
+      opacity: clamp(sunOpacity, 0, 1),
       scale: palette.sunSize,
       core: `radial-gradient(circle at 36% 32%, ${css(palette.sunCore)} 0%, ${css(
         palette.sunMid
