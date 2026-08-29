@@ -38,6 +38,12 @@ export interface CelestialHeaderSceneProps {
    * shifts the crescent by one step.
    */
   hijriDate?: number | { day: number; month?: number; year?: number };
+  /**
+   * Travel path of the sun and moon, in percent of the header box.
+   * Both bodies share it. Defaults to DEFAULT_CELESTIAL_PATH, which starts
+   * behind the "Next Prayer" card and ends at the ⋮ three-dot menu.
+   */
+  path?: CelestialPath;
 }
 
 /* ------------------------------------------------------------------ *
@@ -46,6 +52,10 @@ export interface CelestialHeaderSceneProps {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/** Fade in over the first `edge` of the journey and out over the last `edge`. */
+const pathFade = (progress: number, edge: number) =>
+  clamp(progress / edge, 0, 1) * clamp((1 - progress) / edge, 0, 1);
 
 const extractClockTime = (timeValue?: string) => {
   if (!timeValue) return '';
@@ -409,10 +419,10 @@ export interface CelestialPath {
 }
 
 export const DEFAULT_CELESTIAL_PATH: CelestialPath = {
-  start: { x: 7, y: 88 },      // behind the Next Prayer card (below its top edge)
-  control1: { x: 24, y: 18 },  // pulls the climb up steeply, left of centre
-  control2: { x: 64, y: 8 },   // keeps the afternoon high, over the minarets
-  end: { x: 91, y: 10 },       // the ⋮ three-dot menu, top-right
+  start: { x: 8, y: 64 },      // tucked behind the "Next Prayer" card (hidden)
+  control1: { x: 20, y: 22 },  // steep climb out from behind the card
+  control2: { x: 60, y: 8 },   // high afternoon, crossing behind the minarets
+  end: { x: 91, y: 10 },       // ⋮ three-dot menu, top-right — it vanishes here
 };
 
 const getCubicPoint = (progress: number, path: CelestialPath) => {
@@ -542,6 +552,7 @@ const getCelestialScene = (
     sunset?: string;
     testMinutes?: number;
     hijriDate?: number | { day: number; month?: number; year?: number };
+    path?: CelestialPath;
   }
 ) => {
   const fajrMinutes = parseTimeToMinutes(getPrayerTimeValue(times, ['fajr', 'Fajr']));
@@ -556,6 +567,8 @@ const getCelestialScene = (
 
   const sunrise = sunriseMinutes ?? (fajrMinutes !== null ? clamp(fajrMinutes + 25, 0, 1439) : 360);
   const sunset = sunsetMinutes ?? clamp(sunrise + 12 * 60, 0, 1439);
+
+  const path: CelestialPath = { ...DEFAULT_CELESTIAL_PATH, ...(overrides?.path || {}) };
 
   const currentMinutes =
     overrides?.testMinutes !== undefined
@@ -772,6 +785,7 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({
   sunrise,
   sunset,
   hijriDate,
+  path,
   updateIntervalMs = 15000,
 }) => {
   const [now, setNow] = useState(() => new Date());
@@ -785,7 +799,7 @@ const CelestialHeaderScene: React.FC<CelestialHeaderSceneProps> = ({
     return () => window.clearInterval(intervalId);
   }, [testMinutes, updateIntervalMs]);
 
-  const scene = getCelestialScene(prayerTimes, now, { sunrise, sunset, testMinutes, hijriDate });
+  const scene = getCelestialScene(prayerTimes, now, { sunrise, sunset, testMinutes, hijriDate, path });
 
   return (
     <>
