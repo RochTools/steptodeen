@@ -1,13 +1,13 @@
 // ============ HIJRI DATE CONSTANTS & FUNCTIONS ============
 
-export const hijriMonthsUrdu = [
-  'محرم','صفر','ربیع الاول','ربیع الثانی',
-  'جمادی الاول','جمادی الثانی','رجب','شعبان',
-  'رمضان','شوال','ذوالقعدہ','ذوالحجہ'
+export const hijriMonthsEnglish = [
+  'Muharram', 'Safar', 'Rabi ul Awwal', 'Rabi ul Thani',
+  'Jamadi ul Awwal', 'Jamadi ul Thani', 'Rajab', 'Shaban',
+  'Ramadan', 'Shawwal', 'Dhul Qadah', 'Dhul Hijjah'
 ];
 
-export const urduDays = [
-  'اتوار', 'پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ'
+export const englishDays = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 ];
 
 export const getHijriMath = (d: Date) => {
@@ -50,7 +50,7 @@ export const fetchHijriDate = async (): Promise<string> => {
       const monthIndex = parseInt(h.month.number) - 1;
 
       if (monthIndex >= 0 && monthIndex < 12) {
-        const result = `${urduDays[d.getDay()]}، ${h.day} ${hijriMonthsUrdu[monthIndex]} ${h.year}ھ`;
+        const result = `${englishDays[d.getDay()]}, ${h.day} ${hijriMonthsEnglish[monthIndex]} ${h.year}H`;
         
         localStorage.setItem(cacheKey, result);
         
@@ -69,6 +69,6 @@ export const fetchHijriDate = async (): Promise<string> => {
     // ✅ صرف یہاں math fallback
     console.warn('Hijri API failed, using math:', err);
     const { hDay, hMonth, hYear } = getHijriMath(d);
-    return `${urduDays[d.getDay()]}، ${hDay} ${hijriMonthsUrdu[hMonth - 1]} ${hYear}ھ`;
+    return `${englishDays[d.getDay()]}, ${hDay} ${hijriMonthsEnglish[hMonth - 1]} ${hYear}H`;
   }
 };
