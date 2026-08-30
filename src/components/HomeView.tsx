@@ -491,7 +491,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         {/* Date and next prayer summary */}
-        <div className="relative z-10 mt-3 w-[58%] px-4">
+        <div className="relative z-10 mt-10 w-[58%] px-4">
           <div className="flex items-start gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-amber-200 backdrop-blur-sm"><CalendarDays size={22} /></span>
             <div className="min-w-0">
