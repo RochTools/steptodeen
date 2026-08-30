@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Bell, BookOpen, CalendarDays, ChevronDown, CircleDot, Clock3, Compass, Heart, MapPin, Menu, MoreVertical, Scroll, Search, SlidersHorizontal, Sunrise, User, X } from 'lucide-react';
+import { AlertTriangle, Bell, BookOpen, CalendarDays, ChevronDown, CircleDot, Compass, Heart, MapPin, Menu, MoreVertical, Scroll, Search, SlidersHorizontal, Sunrise, User, X } from 'lucide-react';
 import { Mosque } from '../types';
 import CelestialHeaderScene from './CelestialHeaderScene';
 
@@ -312,13 +312,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
     const currentInMins = now.getHours() * 60 + now.getMinutes();
     const parseToMins = (timeStr: string) => { if (!timeStr) return 0; const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
     const prayers = [
-      { name: 'fajr', label: 'Fajr', urdu: 'فجر', mins: parseToMins(prayerTimes.fajr) },
-      { name: 'zuhr', label: 'Dhuhr', urdu: 'ظہر', mins: parseToMins(prayerTimes.zuhr) },
-      { name: 'asr', label: 'Asr', urdu: 'عصر', mins: parseToMins(prayerTimes.asr) },
+      { name: 'fajr',    label: 'Fajr',    urdu: 'فجر',  mins: parseToMins(prayerTimes.fajr) },
+      { name: 'zuhr',    label: 'Dhuhr',   urdu: 'ظہر',  mins: parseToMins(prayerTimes.zuhr) },
+      { name: 'asr',     label: 'Asr',     urdu: 'عصر',  mins: parseToMins(prayerTimes.asr) },
       { name: 'maghrib', label: 'Maghrib', urdu: 'مغرب', mins: parseToMins(prayerTimes.maghrib) },
-      { name: 'isha', label: 'Isha', urdu: 'عشاء', mins: parseToMins(prayerTimes.isha) },
+      { name: 'isha',    label: 'Isha',    urdu: 'عشاء', mins: parseToMins(prayerTimes.isha) },
     ];
     prayers.sort((a, b) => a.mins - b.mins);
+
+    // کیا ابھی کوئی نماز کا وقت چل رہا ہے؟ (اذان ہوئی لیکن 30 منٹ نہیں گزرے)
+    const current = prayers.find(p => currentInMins >= p.mins && currentInMins < p.mins + 30);
+    if (current) {
+      const minsLeft = (current.mins + 30) - currentInMins;
+      return {
+        label: current.label,
+        urdu: current.urdu,
+        time: formatTo12Hour(prayerTimes[current.name] || '--:--'),
+        countdown: `${minsLeft} min remaining`,
+        shortCountdown: `${current.label} time`,
+        isCurrent: true,
+      };
+    }
+
+    // اگلی نماز
     let next = prayers.find(p => p.mins > currentInMins);
     let isNextDay = false;
     if (!next) { next = prayers[0]; isNextDay = true; }
@@ -331,7 +347,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
       urdu: nextPrayer.urdu,
       time: formatTo12Hour(prayerTimes[nextPrayer.name] || '--:--'),
       countdown: hrs > 0 ? `${hrs}h ${mins}m remaining` : `${mins} minutes remaining`,
-      shortCountdown: hrs > 0 ? `${nextPrayer.label} in ${hrs}h ${mins}m` : `${nextPrayer.label} in ${mins} minutes`,
+      shortCountdown: hrs > 0 ? `${nextPrayer.label} in ${hrs}h ${mins}m` : `${nextPrayer.label} in ${mins}m`,
+      isCurrent: false,
     };
   };
 
@@ -482,20 +499,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
 
-          <div className="mt-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/12 px-3 py-2 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md">
-            <Clock3 size={14} className="shrink-0 text-amber-200" />
-            <span className="truncate">Next prayer: {nextPrayerDetails.shortCountdown}</span>
-          </div>
+
         </div>
 
         {/* Main prayer glass card */}
-        <div className="relative z-20 mx-4 mt-2 rounded-[20px] border border-white/35 bg-white/12 p-3 shadow-[0_12px_35px_rgba(0,34,110,.28)] backdrop-blur-md">
+        <div className={`relative z-20 mx-4 mt-2 rounded-[20px] border p-3 shadow-[0_12px_35px_rgba(0,34,110,.28)] backdrop-blur-md ${nextPrayerDetails.isCurrent ? 'border-amber-300/50 bg-amber-500/20' : 'border-white/35 bg-white/12'}`}>
           <div className="flex items-center gap-3">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-[#0755bd] shadow-lg"><Sunrise size={27} strokeWidth={1.8} /></span>
+            <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full shadow-lg ${nextPrayerDetails.isCurrent ? 'bg-amber-300 text-amber-900' : 'bg-white text-[#0755bd]'}`}>
+              <Sunrise size={27} strokeWidth={1.8} />
+            </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-white/75">Next Prayer</div>
-              <div className="mt-0.5 flex items-baseline gap-2"><span className="font-urdu text-[22px] font-bold text-white" dir="rtl">{nextPrayerDetails.urdu}</span><span className="text-[10px] font-semibold text-amber-100">{nextPrayerDetails.label}</span></div>
-              <div className="mt-1 text-[10px] text-white/75">{nextPrayerDetails.countdown}</div>
+              <div className={`text-[11px] font-semibold uppercase tracking-wide ${nextPrayerDetails.isCurrent ? 'text-amber-200' : 'text-white/75'}`}>
+                {nextPrayerDetails.isCurrent ? '🕌 Current Prayer' : 'Next Prayer'}
+              </div>
+              <div className="mt-0.5 flex items-baseline gap-2">
+                <span className="font-urdu text-[22px] font-bold text-white" dir="rtl">{nextPrayerDetails.urdu}</span>
+                <span className="text-[10px] font-semibold text-amber-100">{nextPrayerDetails.label}</span>
+              </div>
+              <div className={`mt-1 text-[10px] ${nextPrayerDetails.isCurrent ? 'text-amber-200' : 'text-white/75'}`}>
+                {nextPrayerDetails.countdown}
+              </div>
             </div>
             <div className="shrink-0 text-right">
               <div className="text-[27px] font-mono font-bold leading-none tracking-tight text-white">{nextPrayerDetails.time.replace(/\s?(AM|PM)$/i, '')}</div>
