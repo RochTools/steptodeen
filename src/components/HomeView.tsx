@@ -377,28 +377,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
         setLoadingAyah(false);
       });
 
-    const sectionNum = (Math.floor(dayOfYear / 10) % 97) + 1;
-    Promise.all([
-      fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukharisherif/sections/${sectionNum}.min.json`).then(r => r.json()),
-      fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/urd-bukharisherif/sections/${sectionNum}.min.json`).then(r => r.json())
-    ])
-      .then(([resAr, resUr]) => {
-        const arHadiths = resAr.hadiths || [];
-        const urHadiths = resUr.hadiths || [];
-        if (arHadiths.length > 0) {
-          const hadithIdx = dayOfYear % arHadiths.length;
-          const chosenAr = arHadiths[hadithIdx];
-          const chosenUr = urHadiths.find((h: any) => h.hadithnumber === chosenAr.hadithnumber) || {};
-          setDailyHadith({ ar: chosenAr.text || '', ur: chosenUr.text || '', ref: `Sahih Bukhari · Hadith ${chosenAr.hadithnumber}` });
-        } else {
-          setDailyHadith({ ar: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ", ur: "اعمال کا دارومدار نیتوں پر ہے۔", ref: "Sahih Bukhari · Hadith 1" });
-        }
-        setLoadingHadith(false);
-      })
-      .catch(() => {
-        setDailyHadith({ ar: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ", ur: "اعمال کا دارومدار نیتوں پر ہے۔", ref: "Sahih Bukhari · Hadith 1" });
-        setLoadingHadith(false);
-      });
+    const DAILY_HADITHS = [
+      { ar: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ", ur: "اعمال کا دارومدار نیتوں پر ہے۔", ref: "Sahih Bukhari · Hadith 1" },
+      { ar: "الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ", ur: "مسلمان وہ ہے جس کی زبان اور ہاتھ سے دوسرے مسلمان محفوظ رہیں۔", ref: "Sahih Bukhari · Hadith 10" },
+      { ar: "لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لِأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ", ur: "تم میں سے کوئی اس وقت تک مومن نہیں ہو سکتا جب تک اپنے بھائی کے لیے وہ نہ چاہے جو اپنے لیے چاہتا ہے۔", ref: "Sahih Bukhari · Hadith 13" },
+      { ar: "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الْآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ", ur: "جو اللہ اور آخرت کے دن پر ایمان رکھتا ہو وہ اچھی بات کہے یا خاموش رہے۔", ref: "Sahih Bukhari · Hadith 6018" },
+      { ar: "الدِّينُ النَّصِيحَةُ", ur: "دین خیرخواہی کا نام ہے۔", ref: "Sahih Muslim · Hadith 55" },
+      { ar: "خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ", ur: "تم میں سے بہترین وہ ہے جو قرآن سیکھے اور سکھائے۔", ref: "Sahih Bukhari · Hadith 5027" },
+      { ar: "اتَّقِ اللَّهَ حَيْثُمَا كُنْتَ وَأَتْبِعِ السَّيِّئَةَ الْحَسَنَةَ تَمْحُهَا", ur: "جہاں بھی ہو اللہ سے ڈرو، اور برائی کے بعد نیکی کرو وہ اسے مٹا دے گی۔", ref: "Sunan Tirmidhi · Hadith 1987" },
+      { ar: "الطَّهُورُ شَطْرُ الْإِيمَانِ", ur: "پاکیزگی نصف ایمان ہے۔", ref: "Sahih Muslim · Hadith 223" },
+      { ar: "أَحَبُّ الْأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ", ur: "اللہ کو سب سے محبوب عمل وہ ہے جو ہمیشہ کیا جائے، چاہے تھوڑا ہی ہو۔", ref: "Sahih Bukhari · Hadith 6465" },
+      { ar: "مَنْ صَامَ رَمَضَانَ إِيمَانًا وَاحْتِسَابًا غُفِرَ لَهُ مَا تَقَدَّمَ مِنْ ذَنْبِهِ", ur: "جس نے ایمان اور ثواب کی نیت سے رمضان کے روزے رکھے اس کے پچھلے گناہ معاف کر دیے گئے۔", ref: "Sahih Bukhari · Hadith 38" },
+      { ar: "بُنِيَ الْإِسْلَامُ عَلَى خَمْسٍ", ur: "اسلام پانچ چیزوں پر قائم ہے: توحید، نماز، زکوٰۃ، حج اور روزہ۔", ref: "Sahih Bukhari · Hadith 8" },
+      { ar: "خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ", ur: "لوگوں میں سب سے بہتر وہ ہے جو لوگوں کے لیے سب سے زیادہ نفع بخش ہو۔", ref: "Al-Mu'jam al-Awsat · Hadith 5787" },
+      { ar: "إِنَّ اللَّهَ رَفِيقٌ يُحِبُّ الرِّفْقَ", ur: "بے شک اللہ نرم مزاج ہے اور نرمی کو پسند کرتا ہے۔", ref: "Sahih Bukhari · Hadith 6927" },
+      { ar: "مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ طَرِيقًا إِلَى الْجَنَّةِ", ur: "جو علم کی تلاش میں کوئی راستہ اختیار کرے اللہ اس کے لیے جنت کا راستہ آسان کر دیتا ہے۔", ref: "Sahih Muslim · Hadith 2699" },
+      { ar: "اللَّهُمَّ لَا سَهْلَ إِلَّا مَا جَعَلْتَهُ سَهْلًا", ur: "اے اللہ! کوئی چیز آسان نہیں مگر جسے تو آسان بنا دے۔", ref: "Ibn Hibban · Hadith 974" },
+      { ar: "أَفْضَلُ الصَّلَاةِ بَعْدَ الْفَرِيضَةِ صَلَاةُ اللَّيْلِ", ur: "فرض نماز کے بعد سب سے افضل نماز رات کی نماز (تہجد) ہے۔", ref: "Sahih Muslim · Hadith 1163" },
+      { ar: "الْمُؤْمِنُ الْقَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ الْمُؤْمِنِ الضَّعِيفِ", ur: "طاقتور مومن کمزور مومن سے بہتر اور اللہ کو زیادہ محبوب ہے۔", ref: "Sahih Muslim · Hadith 2664" },
+      { ar: "كُلُّ مَعْرُوفٍ صَدَقَةٌ", ur: "ہر نیکی صدقہ ہے۔", ref: "Sahih Bukhari · Hadith 6021" },
+      { ar: "إِنَّ مِنْ أَكْمَلِ الْمُؤْمِنِينَ إِيمَانًا أَحْسَنُهُمْ خُلُقًا", ur: "ایمان میں سب سے کامل مومن وہ ہے جس کے اخلاق سب سے اچھے ہوں۔", ref: "Sunan Tirmidhi · Hadith 1162" },
+      { ar: "مَنْ لَا يَشْكُرُ النَّاسَ لَا يَشْكُرُ اللَّهَ", ur: "جو لوگوں کا شکریہ ادا نہیں کرتا وہ اللہ کا بھی شکر ادا نہیں کرتا۔", ref: "Sunan Tirmidhi · Hadith 1954" },
+    ];
+    const hadithIdx = dayOfYear % DAILY_HADITHS.length;
+    setDailyHadith(DAILY_HADITHS[hadithIdx]);
+    setLoadingHadith(false);
   }, []);
 
   const openHadithBook = (bookKey: string) => {
@@ -637,79 +640,79 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           {/* Main features and individual Hadith books — one equal square grid */}
           <div className="mx-3 grid grid-cols-2 gap-3 pb-1">
-            <button type="button" onClick={() => onNavigate('quran')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-emerald-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <BookOpen size={30} strokeWidth={2} className="relative mb-2 shrink-0 text-emerald-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-emerald-700" dir="rtl">القرآن الكريم</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-700">Quran</span>
+            <button type="button" onClick={() => onNavigate('quran')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <BookOpen size={30} strokeWidth={2} className="mb-2 shrink-0 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">القرآن الكريم</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-800">Quran</span>
             </button>
 
-            <button type="button" onClick={() => onNavigate('namaz')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-indigo-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <User size={30} strokeWidth={2} className="relative mb-2 shrink-0 text-indigo-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-indigo-700" dir="rtl">نماز کا طریقہ</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.08em] text-indigo-700">Prayer</span>
+            <button type="button" onClick={() => onNavigate('namaz')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <User size={30} strokeWidth={2} className="mb-2 shrink-0 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">نماز کا طریقہ</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-800">Prayer</span>
             </button>
 
-            <button type="button" onClick={() => onNavigate('duas')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-rose-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <Heart size={30} strokeWidth={2} className="relative mb-2 shrink-0 text-rose-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-rose-700" dir="rtl">مسنون دعائیں</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.08em] text-rose-700">Duas</span>
+            <button type="button" onClick={() => onNavigate('duas')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <Heart size={30} strokeWidth={2} className="mb-2 shrink-0 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">مسنون دعائیں</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-800">Duas</span>
             </button>
 
-            <button type="button" onClick={() => onNavigate('tasbih')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-amber-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <CircleDot size={30} strokeWidth={2} className="relative mb-2 shrink-0 text-amber-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-amber-700" dir="rtl">تسبیح کاؤنٹر</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.08em] text-amber-700">Tasbih</span>
+            <button type="button" onClick={() => onNavigate('tasbih')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <CircleDot size={30} strokeWidth={2} className="mb-2 shrink-0 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">تسبیح کاؤنٹر</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-800">Tasbih</span>
             </button>
 
-            <button type="button" onClick={() => onNavigate('qibla')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-teal-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <Compass size={30} strokeWidth={2} className="relative mb-2 shrink-0 text-teal-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-teal-700" dir="rtl">قبلہ رخ سمت</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.08em] text-teal-700">Qibla</span>
+            <button type="button" onClick={() => onNavigate('qibla')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <Compass size={30} strokeWidth={2} className="mb-2 shrink-0 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">قبلہ رخ سمت</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-800">Qibla</span>
             </button>
 
-            <button type="button" onClick={() => openHadithBook('bukhari')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-emerald-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <BookOpen size={30} strokeWidth={2} className="relative mb-2 text-emerald-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-emerald-700" dir="rtl">صحیح بخاری</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-emerald-700">Sahih Bukhari</span>
+            <button type="button" onClick={() => openHadithBook('bukhari')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <BookOpen size={30} strokeWidth={2} className="mb-2 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">صحیح بخاری</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-slate-800">Sahih Bukhari</span>
             </button>
 
-            <button type="button" onClick={() => openHadithBook('muslim')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <BookOpen size={30} strokeWidth={2} className="relative mb-2 text-blue-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-blue-700" dir="rtl">صحیح مسلم</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-blue-700">Sahih Muslim</span>
+            <button type="button" onClick={() => openHadithBook('muslim')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <BookOpen size={30} strokeWidth={2} className="mb-2 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">صحیح مسلم</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-slate-800">Sahih Muslim</span>
             </button>
 
-            <button type="button" onClick={() => openHadithBook('abudawud')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-indigo-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <Scroll size={30} strokeWidth={2} className="relative mb-2 text-indigo-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-indigo-700" dir="rtl">سنن ابو داود</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-indigo-700">Sunan Abu Dawud</span>
+            <button type="button" onClick={() => openHadithBook('abudawud')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <Scroll size={30} strokeWidth={2} className="mb-2 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">سنن ابو داود</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-slate-800">Sunan Abu Dawud</span>
             </button>
 
-            <button type="button" onClick={() => openHadithBook('tirmidhi')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-amber-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <Scroll size={30} strokeWidth={2} className="relative mb-2 text-amber-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-amber-700" dir="rtl">جامع ترمذی</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-amber-700">Jami at-Tirmidhi</span>
+            <button type="button" onClick={() => openHadithBook('tirmidhi')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <Scroll size={30} strokeWidth={2} className="mb-2 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">جامع ترمذی</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-slate-800">Jami at-Tirmidhi</span>
             </button>
 
-            <button type="button" onClick={() => openHadithBook('nasai')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-teal-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <BookOpen size={30} strokeWidth={2} className="relative mb-2 text-teal-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-teal-700" dir="rtl">سنن نسائی</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-teal-700">Sunan an-Nasai</span>
+            <button type="button" onClick={() => openHadithBook('nasai')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <BookOpen size={30} strokeWidth={2} className="mb-2 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">سنن نسائی</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-slate-800">Sunan an-Nasai</span>
             </button>
 
-            <button type="button" onClick={() => openHadithBook('ibnmajah')} className="group relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-rose-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center">
-              <BookOpen size={30} strokeWidth={2} className="relative mb-2 text-rose-700" />
-              <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-rose-700" dir="rtl">سنن ابن ماجہ</span>
-              <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-rose-700">Sunan Ibn Majah</span>
+            <button type="button" onClick={() => openHadithBook('ibnmajah')} className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center">
+              <BookOpen size={30} strokeWidth={2} className="mb-2 text-slate-800" />
+              <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">سنن ابن ماجہ</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-slate-800">Sunan Ibn Majah</span>
             </button>
 <button 
   type="button" 
   onClick={() => openHadithBook('malik')} 
-  className="group aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-cyan-50 via-white to-white p-3 shadow-[0_6px_16px_rgba(0,0,0,0.12),0_2px_4px_rgba(0,0,0,0.06)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.10)] flex flex-col items-center justify-center text-center"
+  className="aspect-square rounded-md bg-white p-3 shadow-[0_4px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.96] active:shadow-[0_2px_6px_rgba(0,0,0,0.08)] flex flex-col items-center justify-center text-center"
 >
-  <BookOpen size={30} strokeWidth={2} className="relative mb-2 shrink-0 text-cyan-700" />
-  <span className="home-card-urdu-title relative mb-1.5 text-[16px] text-cyan-700" dir="rtl">موطا امام مالک</span>
-  <span className="relative text-[9px] font-bold uppercase tracking-[0.06em] text-cyan-700">Muwatta Imam Malik</span>
+  <BookOpen size={30} strokeWidth={2} className="mb-2 shrink-0 text-slate-800" />
+  <span className="home-card-urdu-title mb-1.5 text-[16px] text-slate-800" dir="rtl">موطا امام مالک</span>
+  <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-slate-800">Muwatta Imam Malik</span>
 </button>
             </div>
           {/* آیتِ روز */}
