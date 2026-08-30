@@ -466,17 +466,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
         
         {/* Top actions */}
         <div className="relative z-20 flex items-center justify-between px-4 pt-3">
-          <button type="button" onClick={() => onNavigate('menu')} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm transition active:scale-95" aria-label="Open menu">
-            <Menu size={25} strokeWidth={2.4} />
+
+          <button type="button" className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm" aria-label="Notifications" title="Notifications — coming soon">
+            <Bell size={21} />
+            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-amber-300" />
           </button>
 
           <div className="relative flex items-center gap-2">
-            <button type="button" className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm" aria-label="Notifications" title="Notifications — coming soon">
-              <Bell size={21} />
-              <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-amber-300" />
-            </button>
             <button type="button" onClick={() => setHeaderMenuOpen(value => !value)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm" aria-label="Account options">
-              <MoreVertical size={22} />
+              <Menu size={22} />
             </button>
 
             {headerMenuOpen && (
@@ -550,7 +548,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {searchQuery && (
             <button type="button" onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"><X size={14} /></button>
           )}
-          <button type="button" onClick={() => onNavigate('menu')} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700" aria-label="Search options"><SlidersHorizontal size={17} /></button>
+
         </div>
 
         {searchResults.length > 0 && (
