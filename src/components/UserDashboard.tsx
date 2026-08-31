@@ -297,7 +297,11 @@ export function UserDashboard({
           <div 
             onClick={() => {
               if (onGoToQuran) {
+                // ✅ قرآن کھلے گا اور یہی آیت highlight ہو گی
+                // ❌ onClose() ہٹا دیا — یہ navigateTo('quran') کو فوراً undo کر کے
+                //    واپس ڈش بورڈ پر لے آتا تھا، اس لیے آیت کبھی نہیں کھلتی تھی
                 onGoToQuran(lastSeenQuran.surah, lastSeenQuran.ayah);
+              } else {
                 onClose();
               }
             }}
