@@ -1,22 +1,24 @@
 import { useState, useRef } from 'react';
-import { LogOut, Camera, User, Heart, MapPin } from 'lucide-react';
+import { Camera, User, Heart, MapPin, LogIn, LayoutDashboard, LogOut } from 'lucide-react';
 import { Mosque } from '../types';
 
 interface UserDashboardProps {
   userName: string;
-  userPhone: string;
-  onLogout: () => void;
   onClose: () => void;
   onOpenMosque: (mosque: Mosque) => void;
   onGoToSavedHadith?: (bookKey: string, chapterKey: string, chapterName: string, from: number, to: number, hadithNum: number) => void;
+  onImamLogin: () => void;
+  onImamDashboard: () => void;
+  isImamLoggedIn: boolean;
+  onImamLogout: () => void;
 }
 
-export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoToSavedHadith }: UserDashboardProps) {
+export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadith, onImamLogin, onImamDashboard, isImamLoggedIn, onImamLogout }: UserDashboardProps) {
   const [profileImage, setProfileImage] = useState<string | null>(() => {
     return localStorage.getItem('user_profile_image') || null;
   });
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAllDhikr, setShowAllDhikr] = useState(false);
 
   // ── آخری دیکھی حدیث ─────────────────────────────────────────────
   const lastSeenHadith = (() => {
@@ -41,8 +43,6 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   })();
-
-  const [showAllDhikr, setShowAllDhikr] = useState(false);
 
   // ── محفوظ احادیث ─────────────────────────────────────────────
   const [savedHadiths, setSavedHadiths] = useState<any[]>(() => {
@@ -87,17 +87,36 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
   return (
     <div className="min-h-screen bg-white flex flex-col items-center px-6 pt-10 gap-6 pb-8">
 
-      {/* Top Row: profile + logout */}
+      {/* Top Row: profile + imam button */}
       <div className="w-full flex items-start justify-center relative">
 
-        {/* Logout - top right */}
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="absolute right-0 top-0 flex items-center gap-1 px-2.5 py-1.5 bg-red-50 border border-red-200 text-red-500 font-urdu text-xs font-bold rounded-lg active:scale-95 hover:bg-red-100 transition-all"
-        >
-          <LogOut size={12} />
-          لاگ آؤٹ
-        </button>
+        {/* Imam Login / Dashboard - top right */}
+        {isImamLoggedIn ? (
+          <div className="absolute right-0 top-0 flex flex-col items-end gap-1">
+            <button
+              onClick={onImamDashboard}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-lg active:scale-95 hover:bg-emerald-100 transition-all"
+            >
+              <LayoutDashboard size={12} />
+              Imam Panel
+            </button>
+            <button
+              onClick={onImamLogout}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-red-50 border border-red-200 text-red-500 text-xs font-bold rounded-lg active:scale-95 hover:bg-red-100 transition-all"
+            >
+              <LogOut size={12} />
+              Logout
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onImamLogin}
+            className="absolute right-0 top-0 flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-lg active:scale-95 hover:bg-blue-100 transition-all"
+          >
+            <LogIn size={12} />
+            Imam Login
+          </button>
+        )}
 
         {/* Profile Picture */}
         <div className="relative">
@@ -315,40 +334,6 @@ export function UserDashboard({ userName, onLogout, onClose, onOpenMosque, onGoT
         ← ایپ پر واپس جائیں
       </button>
 
-      {/* Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center px-6 z-50"
-          onClick={() => setShowLogoutConfirm(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xs bg-white rounded-2xl p-5 shadow-xl space-y-4"
-          >
-            <div className="text-center space-y-1.5">
-              <div className="w-12 h-12 mx-auto rounded-full bg-red-50 flex items-center justify-center">
-                <LogOut size={20} className="text-red-500" />
-              </div>
-              <h3 className="text-slate-800 font-urdu font-bold text-base">کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟</h3>
-              <p className="text-slate-400 font-urdu text-xs">آپ کو دوبارہ لاگ ان کرنا پڑے گا</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-urdu font-bold text-sm rounded-xl transition-all"
-              >
-                منسوخ کریں
-              </button>
-              <button
-                onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
-                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 active:scale-95 text-white font-urdu font-bold text-sm rounded-xl transition-all"
-              >
-                لاگ آؤٹ کریں
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );
