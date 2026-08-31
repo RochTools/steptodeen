@@ -324,7 +324,6 @@ export default function App() {
                   userName={auth.isAnyUser ? (auth.currentUserName || 'My Account') : auth.isAuthenticated ? (auth.authName || 'Imam Account') : 'Guest'}
                   userPhone={auth.currentUserEmail}
                   isGuest={!auth.isAnyUser && !auth.isAuthenticated}
-                  onUserLogin={() => nav.navigateTo('login-splash')}
                   onClose={() => nav.goBack()}
                   onOpenMosque={(mosque) => {
                     mosques.setSelectedMosque(mosque);
@@ -349,8 +348,11 @@ export default function App() {
                     }
                     nav.navigateTo('quran');
                   }}
-                  /* ✅ امام فیسٹر: لوگ ان / ڈیش بورڈ / لاگ آؤٹ */
-                  onImamLogin={() => nav.navigateTo('imam-login')}
+                  /* ✅ امام سیکشن:
+                     لاگ ان نہیں ہے → بٹن سے امام ڈش بورڈ نہیں کھلے گا،
+                     اصل لاگ ان اسکرین (LoginChoiceView) پر جائے گا جہاں امام لاگ ان ہو سکتا ہے۔
+                     لاگ ان ہے → Imam Panel سے امام ڈش بورڈ کھلے گا۔ */
+                  onImamLogin={() => nav.navigateTo('login-splash')}
                   onImamDashboard={() => nav.navigateTo('imam-login')}
                   isImamLoggedIn={auth.isAuthenticated}
                   onImamLogout={() => {
