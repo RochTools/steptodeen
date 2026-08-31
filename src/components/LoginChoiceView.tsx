@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { firebaseGoogleSignIn } from '../firebase';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { GoogleAuthProvider, getRedirectResult, signInWithRedirect } from 'firebase/auth';
 
 interface LoginChoiceViewProps {
   onImamLoginSuccess: () => void;
@@ -12,6 +13,11 @@ interface LoginChoiceViewProps {
   setAuthName: (val: string) => void;
   setAuthUid: (val: string) => void;
 }
+
+// کیا ایپ PWA (standalone) موڈ میں چل رہی ہے؟
+const isStandalonePwa = () =>
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (window.navigator as any).standalone === true;
 
 export function LoginChoiceView({
   onImamLoginSuccess,
@@ -26,6 +32,67 @@ export function LoginChoiceView({
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState('');
 
+  // ─────────────────────────────────────────────────────────────
+  // ✅ لاگ ان کے بعد اکاؤنٹٹ کی ایڈجسٹمنٹ:
+  //    • پہلے سے رجسٹر ہے → اُسے کا اکاؤنٹ واپس مل جائے گا
+  //    • پہلے سے رجسٹر نہیں → خودکار نیا اکاؤنٹ ببن جائے گا
+  // ─────────────────────────────────────────────────────────────
+  const processSignedInUser = async (user: any): Promise<void> => {
+    setAuthEmail(user.email || '');
+    setAuthName(user.displayName || user.email?.split('@')[0] || '');
+    setAuthUid(user.uid);
+
+    const db = getFirestore();
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      // ✅ نیا اکاؤنٹ — پہلی بار لاگ ان کرنے والے کے لیے
+      await setDoc(userDocRef, {
+        role: 'imam',
+        email: user.email || '',
+        name: user.displayName || user.email?.split('@')[0] || '',
+        createdAt: new Date().toISOString(),
+      });
+    } else if (userDoc.data()?.role !== 'imam') {
+      // ڈاکیومنٹ موجود ہے مگر role مختلف ہے — امام لاگ ان سے آئے ہیں تو role درست کر دو
+      await setDoc(userDocRef, { role: 'imam' }, { merge: true });
+    }
+
+    // ✅ لاگ ان مکمل — ہوم پر چلو
+    localStorage.setItem('imam_authenticated', 'true');
+    setIsAuthenticated(true);
+    onImamLoginSuccess();
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // ✅ PWA سہولت: اگر redirect کے ذریعے واپس آئے ہوں تو نتیجہ سنبھالو
+  // ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isRealFirebase || !realtimeAuth) return;
+    let cancelled = false;
+
+    getRedirectResult(realtimeAuth)
+      .then(async (result: any) => {
+        if (cancelled || !result?.user) return;   // redirect نہیں تھا، کچھ نہ کرو
+        setVerifying(true);
+        await processSignedInUser(result.user);
+      })
+      .catch((err: any) => {
+        console.error('Redirect sign-in error:', err?.code || err);
+        if (!cancelled) {
+          setError('Sign-in could not be completed. Please try again.');
+          setVerifying(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtimeAuth, isRealFirebase]);
+
+  // ─────────────────────────────────────────────────────────────
+  // ✅ Continue with Google — کوئی بھی لاگ ان کر سکتا ہے
+  // ─────────────────────────────────────────────────────────────
   const handleGoogleSignIn = async () => {
     if (!isRealFirebase || !realtimeAuth) {
       setError('No internet connection. Please try again.');
@@ -33,28 +100,28 @@ export function LoginChoiceView({
     }
     setLoading(true);
     setError('');
+
+    // ── مرحلہ 1: Google سائن اِن ──
+    let user: any = null;
     try {
-      const user = await firebaseGoogleSignIn(realtimeAuth);
-      if (!user) { setError('Google sign-in failed. Please try again.'); setLoading(false); return; }
-      setLoading(false);
-      setVerifying(true);
-
-      setAuthEmail(user.email || '');
-      setAuthName(user.displayName || user.email?.split('@')[0] || '');
-      setAuthUid(user.uid);
-
-      const db = getFirestore();
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-
-      if (userDoc.exists() && userDoc.data()?.role === 'imam') {
-        localStorage.setItem('imam_authenticated', 'true');
-        setIsAuthenticated(true);
-        onImamLoginSuccess();
-      } else {
-        setError('This account is not registered as an Imam. Please contact support.');
-      }
+      user = await firebaseGoogleSignIn(realtimeAuth);
     } catch (err: any) {
       const code = err?.code || '';
+      console.error('Google sign-in error:', code, err);
+
+      // ✅ PWA میں popup بلاک/فیل ہو جائے تو redirect خودکار
+      if ((code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request') && isStandalonePwa()) {
+        try {
+          await signInWithRedirect(realtimeAuth, new GoogleAuthProvider());
+          return; // واپسی پر اوپر والا useEffect سنبھالے گا
+        } catch (redirectErr: any) {
+          console.error('Redirect sign-in failed:', redirectErr);
+          setError('Could not open Google sign-in. Please try again.');
+          setLoading(false);
+          return;
+        }
+      }
+
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         setError('Sign-in was cancelled. Please try again.');
       } else if (code === 'auth/popup-blocked') {
@@ -74,11 +141,31 @@ export function LoginChoiceView({
       } else {
         setError('Something went wrong. Please try again.');
       }
-      console.error('Google sign-in error:', code, err);
+      setLoading(false);
+      return;
+    }
+
+    if (!user) {
+      setError('Google sign-in failed. Please try again.');
+      setLoading(false);
+      return;
     }
     setLoading(false);
+
+    // ── مرحلہ 2: اکاؤنٹ موجود ہے یا نیا بنانا ہے ──
+    setVerifying(true);
+    try {
+      await processSignedInUser(user);   // ✅ کامیابی پر ہوم نویگیشن اسی کے اندر ہے
+    } catch (err: any) {
+      console.error('Account setup error:', err?.code || err);
+      setError('Your account was signed in, but setup failed. Please check your internet connection and try again.');
+      setVerifying(false);   // ✅ ایرر پر بھی واپس فارم پر، spinner میں نہیں پھنسنا
+    }
   };
 
+  // ─────────────────────────────────────────────────────────────
+  // UI: تصدیق کی اسکرین (اب صرف چند سیکنڈ دیکھائی دیتی ہے)
+  // ─────────────────────────────────────────────────────────────
   if (verifying) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-white px-6">
@@ -96,7 +183,7 @@ export function LoginChoiceView({
             </div>
           </div>
           <div>
-            <p className="text-lg font-bold text-slate-800">Signing you in...</p>
+            <p className="text-lg font-bold text-slate-800">Setting up your account...</p>
             <p className="mt-1 text-sm text-slate-400">Please wait a moment</p>
           </div>
           {/* Animated dots */}
@@ -122,7 +209,7 @@ export function LoginChoiceView({
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-slate-800">Imam Login</h1>
-        <p className="mt-1 text-sm text-slate-500">Only for registered Imams</p>
+        <p className="mt-1 text-sm text-slate-500">Sign in to manage your mosque</p>
       </div>
 
       <div className="w-full max-w-xs space-y-4">
@@ -149,7 +236,7 @@ export function LoginChoiceView({
         )}
 
         <p className="text-center text-[11px] text-slate-400">
-          This login is only for Imams to manage their mosque.
+          New accounts are created automatically on first sign-in.
         </p>
       </div>
     </div>
