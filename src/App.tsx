@@ -320,8 +320,11 @@ export default function App() {
 
               {currentView === 'user-dashboard' && (
                 <UserDashboard
-                  userName={auth.currentUserName}
+                  /* ✅ Guest mode: login نہیں ہے تو "Guest"، ورنے اصل نام (imam ہو تو امام کا نام) */
+                  userName={auth.isAnyUser ? (auth.currentUserName || 'My Account') : auth.isAuthenticated ? (auth.authName || 'Imam Account') : 'Guest'}
                   userPhone={auth.currentUserEmail}
+                  isGuest={!auth.isAnyUser && !auth.isAuthenticated}
+                  onUserLogin={() => nav.navigateTo('login-splash')}
                   onClose={() => nav.goBack()}
                   onOpenMosque={(mosque) => {
                     mosques.setSelectedMosque(mosque);
@@ -336,6 +339,27 @@ export default function App() {
                     setPendingHadithNav({ bookKey, chapterKey, chapterName, from, to, hadithNum });
                     setScrollToHadithNum(hadithNum);
                     nav.navigateTo('hadith');
+                  }}
+                  /* ✅ Quran: آخری دیکھی گئی آیت پر جانے کے لیے (QuranView اسی key کو پڑھتا ہے) */
+                  onGoToQuran={(surah, ayah) => {
+                    try {
+                      localStorage.setItem('steptudeen_app_quran_search_target', JSON.stringify({ surah, ayah }));
+                    } catch (error) {
+                      console.warn('Could not save Quran target:', error);
+                    }
+                    nav.navigateTo('quran');
+                  }}
+                  /* ✅ امام فیسٹر: لوگ ان / ڈیش بورڈ / لاگ آؤٹ */
+                  onImamLogin={() => nav.navigateTo('imam-login')}
+                  onImamDashboard={() => nav.navigateTo('imam-login')}
+                  isImamLoggedIn={auth.isAuthenticated}
+                  onImamLogout={() => {
+                    try { realtimeAuth?.signOut?.(); } catch (error) { console.warn('Imam sign-out failed:', error); }
+                    auth.setIsAuthenticated(false);
+                    auth.setAuthEmail('');
+                    auth.setAuthName('');
+                    auth.setAuthUid('');
+                    nav.setNavigationHistory(['home']);
                   }}
                 />
               )}
