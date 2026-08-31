@@ -3,15 +3,19 @@ import { Camera, User, Heart, MapPin, LogIn, LayoutDashboard, LogOut, Bookmark, 
 import { Mosque } from '../types';
 
 interface UserDashboardProps {
-  userName: string;
+  userName?: string;          // ✅ اب optional ہے — login کے بغیر (guest) بھی ڈش بورڈ چلے گا
   onClose: () => void;
   onOpenMosque: (mosque: Mosque) => void;
   onGoToSavedHadith?: (bookKey: string, chapterKey: string, chapterName: string, from: number, to: number, hadithNum: number) => void;
-  onImamLogin: () => void;
+  onImamLogin: () => void;    // ✅ امام لاگ ان پیج پر لے جاتا ہے
   onImamDashboard: () => void;
   isImamLoggedIn: boolean;
   onImamLogout: () => void;
   onGoToQuran?: (surah: number, ayah: number) => void; // New prop for Quran navigation
+  isGuest?: boolean;          // ✅ true ہو تو guest mode دکھائے گا
+  onUserLogin?: () => void;   // ✅ optional: guest سے یوزر login پیج جانے کا راستہ
+  userPhone?: string;         // ✅ optional: یوزر کا فون/ای میل (اگر ہو)
+  onLogout?: () => void;      // ✅ optional: یوزر لاگ آؤٹ (صرف logged-in یوزر کے لیے)
 }
 
 // Last seen Quran interface - matches QuranView's LastSeen
@@ -23,7 +27,7 @@ interface LastSeenQuran {
 }
 
 export function UserDashboard({ 
-  userName, 
+  userName = 'Guest',   // ✅ login کے بغیر آنے پر نام "Guest" دکھے گا
   onClose, 
   onOpenMosque, 
   onGoToSavedHadith, 
@@ -31,7 +35,11 @@ export function UserDashboard({
   onImamDashboard, 
   isImamLoggedIn, 
   onImamLogout,
-  onGoToQuran 
+  onGoToQuran,
+  isGuest = false,
+  onUserLogin,
+  userPhone,
+  onLogout
 }: UserDashboardProps) {
   const [profileImage, setProfileImage] = useState<string | null>(() => {
     return localStorage.getItem('user_profile_image') || null;
@@ -196,6 +204,17 @@ export function UserDashboard({
       {/* Top Row: profile + imam button */}
       <div className="w-full flex items-start justify-center relative">
 
+        {/* ✅ User Logout - top left (صرف logged-in یوزر کے لیے، guest کے لیے نہیں) */}
+        {!isGuest && onLogout && (
+          <button
+            onClick={onLogout}
+            className="absolute left-0 top-0 flex items-center gap-1 px-2.5 py-1.5 bg-red-50 border border-red-200 text-red-500 text-xs font-bold rounded-lg active:scale-95 hover:bg-red-100 transition-all"
+          >
+            <LogOut size={12} />
+            Logout
+          </button>
+        )}
+
         {/* Imam Login / Dashboard - top right */}
         {isImamLoggedIn ? (
           <div className="absolute right-0 top-0 flex flex-col items-end gap-1">
@@ -249,6 +268,23 @@ export function UserDashboard({
       {/* Name */}
       <div className="text-center -mt-1">
         <h2 className="text-black text-2xl font-bold">{userName}</h2>
+        {userPhone && <p className="text-[11px] text-slate-400 mt-1 truncate max-w-[240px] mx-auto">{userPhone}</p>}
+
+        {/* ✅ Guest mode — login کے بغیر ڈش بورڈ دیکھنے پر */}
+        {isGuest && (
+          <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
+            <span className="text-[10px] text-slate-400">Guest mode — data is saved on this device only</span>
+            {onUserLogin && (
+              <button
+                onClick={onUserLogin}
+                className="flex items-center gap-1 px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-[10px] font-bold rounded-lg transition-all"
+              >
+                <LogIn size={11} />
+                User Login
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="w-full border-t border-slate-200"></div>

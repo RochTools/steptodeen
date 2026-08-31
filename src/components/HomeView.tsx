@@ -427,8 +427,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
     month: 'long',
     year: 'numeric',
   }).format(new Date());
-  const accountLabel = isAuthenticated ? (authName || 'Imam account') : isUserAuthenticated ? (userAuthName || 'My account') : 'Log in';
-  const accountTarget = isAuthenticated ? 'imam-login' : isUserAuthenticated ? 'user-dashboard' : 'login-splash';
+  // ✅ اب Imam بھی login نہیں اور یوزر بھی login نہیں → پھر بھی یوزر ڈش بورڈ کھلے گا (Guest mode)
+  const accountLabel = isAuthenticated ? (authName || 'Imam account') : isUserAuthenticated ? (userAuthName || 'My account') : 'My Dashboard';
+  const accountTarget = isAuthenticated ? 'imam-login' : 'user-dashboard';
 
   return (
     <div className="pb-16 animate-fadeIn bg-slate-50">
