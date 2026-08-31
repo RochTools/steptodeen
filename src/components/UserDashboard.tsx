@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, User, Heart, MapPin, LogIn, LayoutDashboard, LogOut, Bookmark } from 'lucide-react';
+import { Camera, User, Heart, MapPin, LogIn, LayoutDashboard, LogOut, Bookmark, Clock } from 'lucide-react';
 import { Mosque } from '../types';
 
 interface UserDashboardProps {
@@ -11,68 +11,92 @@ interface UserDashboardProps {
   onImamDashboard: () => void;
   isImamLoggedIn: boolean;
   onImamLogout: () => void;
+  onGoToQuran?: (surah: number, ayah: number) => void; // New prop for Quran navigation
 }
 
-// Last seen hadith interface
-interface LastSeenHadith {
-  bookKey: string;
-  bookName: string;
-  chapterKey: string;
-  chapterName: string;
-  hadithNum: number;
-  from: number;
-  to: number;
+// Last seen Quran interface - matches QuranView's LastSeen
+interface LastSeenQuran {
+  surah: number;
+  ayah: number;
+  surahName: string;
   savedAt: number;
 }
 
-export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadith, onImamLogin, onImamDashboard, isImamLoggedIn, onImamLogout }: UserDashboardProps) {
+export function UserDashboard({ 
+  userName, 
+  onClose, 
+  onOpenMosque, 
+  onGoToSavedHadith, 
+  onImamLogin, 
+  onImamDashboard, 
+  isImamLoggedIn, 
+  onImamLogout,
+  onGoToQuran 
+}: UserDashboardProps) {
   const [profileImage, setProfileImage] = useState<string | null>(() => {
     return localStorage.getItem('user_profile_image') || null;
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAllDhikr, setShowAllDhikr] = useState(false);
+  
+  // ── Toast notification ──
+  const [toast, setToast] = useState('');
 
-  // ── Last Seen Hadith ─────────────────────────────────────────────
-  const [lastSeenHadith, setLastSeenHadith] = useState<LastSeenHadith | null>(() => {
+  // ── Last Seen Quran (same key as QuranView) ──
+  const [lastSeenQuran, setLastSeenQuran] = useState<LastSeenQuran | null>(() => {
     try { 
-      const data = localStorage.getItem('user_last_seen_hadith');
+      const data = localStorage.getItem('steptudeen_app_quran_last_seen');
       return data ? JSON.parse(data) : null;
     } catch { return null; }
   });
 
-  // Listen for changes to last seen hadith from other components
+  // Listen for Quran last seen updates
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user_last_seen_hadith') {
+      if (e.key === 'steptudeen_app_quran_last_seen') {
         try {
           const data = e.newValue ? JSON.parse(e.newValue) : null;
-          setLastSeenHadith(data);
+          setLastSeenQuran(data);
+          if (data) {
+            setToast(`Quran last seen: Surah ${data.surahName} - Ayah ${data.ayah}`);
+          }
         } catch {
-          setLastSeenHadith(null);
+          setLastSeenQuran(null);
         }
       }
     };
 
-    // Also listen for custom events from the hadith viewer
+    // Custom event listener for real-time updates from QuranView
     const handleCustomEvent = (e: CustomEvent) => {
-      if (e.detail?.type === 'lastSeenHadithUpdated') {
+      if (e.detail?.type === 'quranLastSeenUpdated') {
         try {
-          const data = localStorage.getItem('user_last_seen_hadith');
-          setLastSeenHadith(data ? JSON.parse(data) : null);
+          const data = localStorage.getItem('steptudeen_app_quran_last_seen');
+          const parsed = data ? JSON.parse(data) : null;
+          setLastSeenQuran(parsed);
+          if (parsed) {
+            setToast(`Quran last seen updated: Surah ${parsed.surahName} - Ayah ${parsed.ayah}`);
+          }
         } catch {
-          setLastSeenHadith(null);
+          setLastSeenQuran(null);
         }
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('lastSeenHadithUpdated', handleCustomEvent as EventListener);
+    window.addEventListener('quranLastSeenUpdated', handleCustomEvent as EventListener);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('lastSeenHadithUpdated', handleCustomEvent as EventListener);
+      window.removeEventListener('quranLastSeenUpdated', handleCustomEvent as EventListener);
     };
   }, []);
+
+  // ── Toast auto-dismiss ──
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(''), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   // ── Tasbih Data ─────────────────────────────────────────────
   const today = new Date().toISOString().split('T')[0];
@@ -119,6 +143,7 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
     const updated = savedHadiths.filter(h => !(h.num === num && h.book === book));
     setSavedHadiths(updated);
     localStorage.setItem('user_saved_hadiths', JSON.stringify(updated));
+    setToast('Hadith removed from saved list');
   };
 
   // ── Saved Mosques ─────────────────────────────────────────────
@@ -132,10 +157,10 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
     const updated = savedMosques.filter(m => m.id !== id);
     setSavedMosques(updated);
     localStorage.setItem('user_saved_mosques', JSON.stringify(updated));
-    // sync with MosqueFinderView map
     const mosqueMap = JSON.parse(localStorage.getItem('user_saved_mosques_map') || '{}');
     delete mosqueMap[id];
     localStorage.setItem('user_saved_mosques_map', JSON.stringify(mosqueMap));
+    setToast('Mosque removed from saved list');
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +171,7 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
       const result = ev.target?.result as string;
       setProfileImage(result);
       localStorage.setItem('user_profile_image', result);
+      setToast('Profile picture updated!');
     };
     reader.readAsDataURL(file);
   };
@@ -160,7 +186,8 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
+    if (days < 7) return `${days}d ago`;
+    return new Date(timestamp).toLocaleDateString();
   };
 
   return (
@@ -230,7 +257,6 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
       <div className="w-full">
         <h3 className="text-right text-slate-700 font-bold text-sm mb-3">📿 Tasbih Counter</h3>
 
-        {/* Today / Yesterday / Total */}
         <div className="flex gap-2 mb-3">
           <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-2xl p-3 text-center">
             <p className="text-xl font-black text-emerald-700">{tasbihToday.toLocaleString()}</p>
@@ -246,7 +272,6 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
           </div>
         </div>
 
-        {/* Each Dhikr Count */}
         {dhikrList.length > 0 && (
           <div className="space-y-2">
             {(showAllDhikr ? dhikrList : dhikrList.slice(0, 3)).map((d: any, i: number) => (
@@ -272,44 +297,44 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
 
       <div className="w-full border-t border-slate-200"></div>
 
-      {/* ── Last Seen Hadith ── */}
+      {/* ── Quran - Last Seen (from QuranView) ── */}
       <div className="w-full">
         <h3 className="text-right text-slate-700 font-bold text-sm mb-3">
-          📖 Last Viewed Hadith
+          📖 Quran - Last Viewed
         </h3>
 
-        {lastSeenHadith && onGoToSavedHadith ? (
-          <div
+        {lastSeenQuran ? (
+          <div 
             onClick={() => {
-              onGoToSavedHadith(
-                lastSeenHadith.bookKey,
-                lastSeenHadith.chapterKey,
-                lastSeenHadith.chapterName,
-                lastSeenHadith.from || 0,
-                lastSeenHadith.to || 0,
-                lastSeenHadith.hadithNum
-              );
+              if (onGoToQuran) {
+                onGoToQuran(lastSeenQuran.surah, lastSeenQuran.ayah);
+                onClose();
+              }
             }}
-            className="bg-amber-50 border border-amber-200 rounded-xl p-3 cursor-pointer active:scale-95 hover:bg-amber-100 transition-all"
+            className={`bg-emerald-50 border border-emerald-200 rounded-xl p-3 ${onGoToQuran ? 'cursor-pointer active:scale-95 hover:bg-emerald-100 transition-all' : ''}`}
           >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[9px] text-amber-600 border border-amber-200 bg-amber-100 px-1.5 py-0.5 rounded-lg">← Open</span>
+              <span className="text-[9px] text-emerald-600 border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 rounded-lg">
+                {onGoToQuran ? '← Open' : 'Last Seen'}
+              </span>
               <div className="text-right">
-                <span className="text-[10px] text-amber-700 font-bold">{lastSeenHadith.bookName}</span>
-                <span className="text-[10px] text-amber-500 font-mono ml-1"> #{lastSeenHadith.hadithNum}</span>
+                <span className="text-[10px] text-emerald-700 font-bold">Surah {lastSeenQuran.surahName}</span>
+                <span className="text-[10px] text-emerald-500 font-mono ml-1"> #{lastSeenQuran.ayah}</span>
               </div>
             </div>
-            <p className="text-[10px] text-amber-600 text-right">⭐ Last viewed hadith</p>
-            <p className="text-[10px] text-amber-500 text-right mt-0.5">{lastSeenHadith.chapterName}</p>
-            <p className="text-[9px] text-amber-400 text-right mt-1">
-              {getTimeAgo(lastSeenHadith.savedAt)}
-            </p>
+            <p className="text-[10px] text-emerald-600 text-right">⭐ Last viewed ayah</p>
+            <div className="flex items-center justify-end gap-1 mt-1">
+              <Clock size={10} className="text-emerald-400" />
+              <p className="text-[9px] text-emerald-400 text-right">
+                {getTimeAgo(lastSeenQuran.savedAt)}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="text-center py-5 bg-slate-50 rounded-2xl border border-slate-100">
             <Bookmark size={24} className="text-slate-300 mx-auto mb-2" />
-            <p className="text-slate-400 text-xs">No hadith viewed yet</p>
-            <p className="text-slate-300 text-[10px] mt-1">Your last viewed hadith will appear here</p>
+            <p className="text-slate-400 text-xs">No Quran ayah viewed yet</p>
+            <p className="text-slate-300 text-[10px] mt-1">Your last viewed ayah will appear here</p>
           </div>
         )}
       </div>
@@ -411,14 +436,6 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
 
       <div className="w-full border-t border-slate-200"></div>
 
-      {/* Future placeholders */}
-      <div className="w-full space-y-2 opacity-40">
-        <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-          <span className="text-[10px] text-slate-400">Coming soon</span>
-          <span className="text-slate-500 text-sm">📖 Last read Surah</span>
-        </div>
-      </div>
-
       {/* Back */}
       <button
         onClick={onClose}
@@ -427,6 +444,15 @@ export function UserDashboard({ userName, onClose, onOpenMosque, onGoToSavedHadi
         ← Back to App
       </button>
 
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed right-4 top-4 z-[100] flex w-[min(360px,calc(100vw-32px))] items-center gap-3 rounded-xl border border-[#d8e4da] bg-white p-3 text-xs shadow-2xl">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f0f7f1] text-[#14532d]">
+            <Bookmark size={15} />
+          </span>
+          <span>{toast}</span>
+        </div>
+      )}
     </div>
   );
 }
