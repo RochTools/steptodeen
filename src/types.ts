@@ -78,23 +78,4 @@ export interface Dua {
   ur: string;
 }
 
-// ============ OTP SYSTEM TYPES ============
 
-export interface AppUser {
-  uid: string;
-  email: string;
-  name: string;
-  password?: string;
-  role: 'user' | 'imam';
-  createdAt: string;
-  emailVerified: boolean;
-}
-
-export type LoginFlowStep = 
-  | 'email-input'
-  | 'otp-verify'
-  | 'create-password'
-  | 'login-password'
-  | 'forgot-email'
-  | 'forgot-otp'
-  | 'forgot-new-password';
