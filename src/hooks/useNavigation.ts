@@ -14,11 +14,7 @@ export const useNavigation = ({
 }: UseNavigationProps) => {
 
   const getInitialView = useCallback(() => {
-    const imamAuth = localStorage.getItem('imam_authenticated') === 'true';
-    const userAuth = localStorage.getItem('user_authenticated') === 'true';
-    const otpAuth = localStorage.getItem('otp_authenticated') === 'true';
-    if (imamAuth || userAuth || otpAuth) return 'home';
-    return 'login-splash';
+    return 'home';
   }, []);
 
   const navRef = useRef<string[]>([getInitialView()]);
