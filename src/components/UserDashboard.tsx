@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Camera, User, Heart, MapPin, LogIn, LayoutDashboard, LogOut, Bookmark, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Heart, MapPin, LogIn, LayoutDashboard, LogOut, Bookmark, Clock } from 'lucide-react';
 import { Mosque } from '../types';
 
 interface UserDashboardProps {
@@ -13,7 +13,6 @@ interface UserDashboardProps {
   onImamLogout: () => void;
   onGoToQuran?: (surah: number, ayah: number) => void; // New prop for Quran navigation
   isGuest?: boolean;          // ✅ true ہو تو guest mode دکھائے گا
-  onUserLogin?: () => void;   // ✅ optional: guest سے یوزر login پیج جانے کا راستہ
   userPhone?: string;         // ✅ optional: یوزر کا فون/ای میل (اگر ہو)
   onLogout?: () => void;      // ✅ optional: یوزر لاگ آؤٹ (صرف logged-in یوزر کے لیے)
 }
@@ -37,14 +36,9 @@ export function UserDashboard({
   onImamLogout,
   onGoToQuran,
   isGuest = false,
-  onUserLogin,
   userPhone,
   onLogout
 }: UserDashboardProps) {
-  const [profileImage, setProfileImage] = useState<string | null>(() => {
-    return localStorage.getItem('user_profile_image') || null;
-  });
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAllDhikr, setShowAllDhikr] = useState(false);
   
   // ── Toast notification ──
@@ -171,19 +165,6 @@ export function UserDashboard({
     setToast('Mosque removed from saved list');
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      setProfileImage(result);
-      localStorage.setItem('user_profile_image', result);
-      setToast('Profile picture updated!');
-    };
-    reader.readAsDataURL(file);
-  };
-
   // Format time ago
   const getTimeAgo = (timestamp: number) => {
     const diff = Date.now() - timestamp;
@@ -243,25 +224,9 @@ export function UserDashboard({
           </button>
         )}
 
-        {/* Profile Picture */}
-        <div className="relative">
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="w-24 h-24 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
-          >
-            {profileImage ? (
-              <img src={profileImage} alt="profile" className="w-full h-full object-cover" />
-            ) : (
-              <User size={44} className="text-slate-400" />
-            )}
-          </div>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="absolute bottom-0 right-0 w-7 h-7 bg-emerald-700 rounded-full flex items-center justify-center border-2 border-white shadow"
-          >
-            <Camera size={13} className="text-white" />
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+        {/* ✅ پروفائل پکچر سسٹم ہٹا دیا گیا — سادہ آئیکن ایویٹر */}
+        <div className="w-24 h-24 rounded-full bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center shadow-sm">
+          <User size={44} className="text-emerald-600" />
         </div>
       </div>
 
@@ -270,20 +235,9 @@ export function UserDashboard({
         <h2 className="text-black text-2xl font-bold">{userName}</h2>
         {userPhone && <p className="text-[11px] text-slate-400 mt-1 truncate max-w-[240px] mx-auto">{userPhone}</p>}
 
-        {/* ✅ Guest mode — login کے بغیر ڈش بورڈ دیکھنے پر */}
+        {/* ✅ Guest mode — login کے بغیر بھی ڈش بورڈ چلتا ہے (لوکل ڈیٹا) */}
         {isGuest && (
-          <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
-            <span className="text-[10px] text-slate-400">Guest mode — data is saved on this device only</span>
-            {onUserLogin && (
-              <button
-                onClick={onUserLogin}
-                className="flex items-center gap-1 px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-[10px] font-bold rounded-lg transition-all"
-              >
-                <LogIn size={11} />
-                User Login
-              </button>
-            )}
-          </div>
+          <span className="inline-block mt-2 text-[10px] text-slate-400">Guest mode — data is saved on this device only</span>
         )}
       </div>
 
@@ -291,7 +245,7 @@ export function UserDashboard({
 
       {/* ── Tasbih Counter ── */}
       <div className="w-full">
-        <h3 className="text-right text-slate-700 font-bold text-sm mb-3">📿 Tasbih Counter</h3>
+        <h3 className="text-left text-slate-700 font-bold text-sm mb-3">📿 Tasbih Counter</h3>
 
         <div className="flex gap-2 mb-3">
           <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-2xl p-3 text-center">
@@ -335,7 +289,7 @@ export function UserDashboard({
 
       {/* ── Quran - Last Seen (from QuranView) ── */}
       <div className="w-full">
-        <h3 className="text-right text-slate-700 font-bold text-sm mb-3">
+        <h3 className="text-left text-slate-700 font-bold text-sm mb-3">
           📖 Quran - Last Viewed
         </h3>
 
@@ -379,7 +333,7 @@ export function UserDashboard({
 
       {/* ── Saved Hadiths ── */}
       <div className="w-full">
-        <h3 className="text-right text-slate-700 font-bold text-sm mb-3">
+        <h3 className="text-left text-slate-700 font-bold text-sm mb-3">
           📚 Saved Hadiths
           <span className="text-slate-400 font-normal text-xs ml-1">({savedHadiths.length})</span>
         </h3>
@@ -428,7 +382,7 @@ export function UserDashboard({
 
       {/* ── Saved Mosques ── */}
       <div className="w-full">
-        <h3 className="text-right text-slate-700 font-bold text-sm mb-3">
+        <h3 className="text-left text-slate-700 font-bold text-sm mb-3">
           ❤️ Saved Mosques
           <span className="text-slate-400 font-normal text-xs ml-1">({savedMosques.length})</span>
         </h3>
